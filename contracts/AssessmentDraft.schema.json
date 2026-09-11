@@ -1,0 +1,117 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "confirmation": {
+      "enum": [
+        "confirmed",
+        "provisional"
+      ],
+      "title": "Confirmation",
+      "type": "string"
+    },
+    "criterion_results": {
+      "items": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": "object"
+      },
+      "title": "Criterion Results",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "feedback": {
+      "default": "",
+      "maxLength": 12000,
+      "title": "Feedback",
+      "type": "string"
+    },
+    "grader_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Grader Version",
+      "type": "string"
+    },
+    "independent_eligible": {
+      "default": false,
+      "title": "Independent Eligible",
+      "type": "boolean"
+    },
+    "rubric_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Rubric Hash",
+      "type": "string"
+    },
+    "rubric_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Rubric Version",
+      "type": "string"
+    },
+    "score": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Score"
+    },
+    "source": {
+      "enum": [
+        "deterministic",
+        "model",
+        "human"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "graded",
+        "needs_review",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "supersedes_assessment_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Supersedes Assessment Id"
+    }
+  },
+  "required": [
+    "status",
+    "confirmation",
+    "source",
+    "grader_version",
+    "rubric_version",
+    "rubric_hash"
+  ],
+  "title": "AssessmentDraft",
+  "type": "object"
+}

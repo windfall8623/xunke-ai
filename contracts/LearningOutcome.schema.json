@@ -1,0 +1,66 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "confirmation": {
+      "enum": [
+        "confirmed",
+        "provisional"
+      ],
+      "title": "Confirmation",
+      "type": "string"
+    },
+    "help_usage": {
+      "enum": [
+        "none",
+        "hints",
+        "unknown"
+      ],
+      "title": "Help Usage",
+      "type": "string"
+    },
+    "independent_eligible": {
+      "default": false,
+      "title": "Independent Eligible",
+      "type": "boolean"
+    },
+    "question_versions": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Question Versions",
+      "type": "array"
+    },
+    "score": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Score"
+    },
+    "status": {
+      "enum": [
+        "graded",
+        "needs_review",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "confirmation",
+    "help_usage",
+    "question_versions"
+  ],
+  "title": "LearningOutcome",
+  "type": "object"
+}

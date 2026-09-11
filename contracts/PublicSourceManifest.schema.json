@@ -1,0 +1,80 @@
+{
+  "additionalProperties": false,
+  "description": "Explicit public source identity; storage and worker metadata never enter it.",
+  "properties": {
+    "authorization_revision": {
+      "minimum": 1,
+      "title": "Authorization Revision",
+      "type": "integer"
+    },
+    "canonical_text_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Canonical Text Hash",
+      "type": "string"
+    },
+    "doc_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Doc Id",
+      "type": "string"
+    },
+    "document_version_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Document Version Id",
+      "type": "string"
+    },
+    "index_build_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Index Build Id",
+      "type": "string"
+    },
+    "parse_artifact_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Parse Artifact Id",
+      "type": "string"
+    },
+    "section_catalog_revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Section Catalog Revision"
+    },
+    "section_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Section Ids",
+      "type": "array"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "title": {
+      "default": "",
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "doc_id",
+    "document_version_id",
+    "source_sha256",
+    "parse_artifact_id",
+    "canonical_text_hash",
+    "index_build_id",
+    "authorization_revision"
+  ],
+  "title": "PublicSourceManifest",
+  "type": "object"
+}

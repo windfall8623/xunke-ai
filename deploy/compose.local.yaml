@@ -1,0 +1,19 @@
+# Use together with compose.yaml; Docker Compose >=2.24.4 is required.
+services:
+  api:
+    environment: &local-environment
+      APP_ENV: development
+      COOKIE_SECURE: "false"
+      WEB_ORIGINS: '["http://localhost:18080","http://127.0.0.1:18080"]'
+  rag-owner:
+    environment: *local-environment
+  migrate:
+    environment: *local-environment
+  web:
+    ports: !override
+      - "127.0.0.1:18080:8080"
+    volumes: !override
+      - type: bind
+        source: ./nginx-site.local.conf
+        target: /etc/nginx/sites-enabled/site.conf
+        read_only: true

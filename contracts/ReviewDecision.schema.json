@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "advance": {
+      "title": "Advance",
+      "type": "boolean"
+    },
+    "due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Due At"
+    },
+    "reason": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "stage": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Stage",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "stage",
+    "due_at",
+    "reason",
+    "advance"
+  ],
+  "title": "ReviewDecision",
+  "type": "object"
+}

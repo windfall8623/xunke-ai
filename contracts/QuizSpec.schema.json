@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "RequestedDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc_id"
+      ],
+      "title": "RequestedDocument",
+      "type": "object"
+    },
+    "RequestedScope": {
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/RequestedDocument"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Documents",
+          "type": "array"
+        },
+        "type": {
+          "const": "selected_documents",
+          "default": "selected_documents",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documents"
+      ],
+      "title": "RequestedScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "difficulty": {
+      "default": "mixed",
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "mixed"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "objective_titles": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Objective Titles",
+      "type": "array"
+    },
+    "question_count": {
+      "default": 5,
+      "maximum": 10,
+      "minimum": 3,
+      "title": "Question Count",
+      "type": "integer"
+    },
+    "scope": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RequestedScope"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "source_policy": {
+      "default": "topic",
+      "enum": [
+        "topic",
+        "strict_docs",
+        "doc_plus_web"
+      ],
+      "title": "Source Policy",
+      "type": "string"
+    },
+    "user_input": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "User Input",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_input"
+  ],
+  "title": "QuizSpec",
+  "type": "object"
+}

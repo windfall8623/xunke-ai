@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "concept_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Concept Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "source_status": {
+      "default": "active",
+      "enum": [
+        "active",
+        "revoked"
+      ],
+      "title": "Source Status",
+      "type": "string"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "scope_revision",
+    "concept_id",
+    "space_id",
+    "revision",
+    "created_at"
+  ],
+  "title": "StudyConceptView",
+  "type": "object"
+}

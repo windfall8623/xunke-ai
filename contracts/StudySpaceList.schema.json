@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "PublicResolvedScope": {
+      "additionalProperties": false,
+      "description": "Reusable response projection; authorization still uses ResolvedScope.",
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/PublicSourceManifest"
+          },
+          "maxItems": 5,
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "title": "PublicResolvedScope",
+      "type": "object"
+    },
+    "PublicSourceManifest": {
+      "additionalProperties": false,
+      "description": "Explicit public source identity; storage and worker metadata never enter it.",
+      "properties": {
+        "authorization_revision": {
+          "minimum": 1,
+          "title": "Authorization Revision",
+          "type": "integer"
+        },
+        "canonical_text_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Canonical Text Hash",
+          "type": "string"
+        },
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "document_version_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Document Version Id",
+          "type": "string"
+        },
+        "index_build_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Index Build Id",
+          "type": "string"
+        },
+        "parse_artifact_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Parse Artifact Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "document_version_id",
+        "source_sha256",
+        "parse_artifact_id",
+        "canonical_text_hash",
+        "index_build_id",
+        "authorization_revision"
+      ],
+      "title": "PublicSourceManifest",
+      "type": "object"
+    },
+    "StudySpaceView": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicResolvedScope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scope_revision": {
+          "minimum": 1,
+          "title": "Scope Revision",
+          "type": "integer"
+        },
+        "source_status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "revoked"
+          ],
+          "title": "Source Status",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Space Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "archived"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "timezone": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "space_id",
+        "title",
+        "timezone",
+        "status",
+        "scope_revision",
+        "revision",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "StudySpaceView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/StudySpaceView"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "page": {
+      "minimum": 1,
+      "title": "Page",
+      "type": "integer"
+    },
+    "page_size": {
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Page Size",
+      "type": "integer"
+    },
+    "total": {
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size"
+  ],
+  "title": "StudySpaceList",
+  "type": "object"
+}

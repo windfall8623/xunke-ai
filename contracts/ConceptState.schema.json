@@ -1,0 +1,75 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Due At"
+    },
+    "last_activity_local_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Activity Local Date"
+    },
+    "last_question_versions": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Last Question Versions",
+      "type": "array"
+    },
+    "last_success_local_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Success Local Date"
+    },
+    "revision": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "seen_question_versions": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Seen Question Versions",
+      "type": "array"
+    },
+    "stage": {
+      "default": 0,
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Stage",
+      "type": "integer"
+    }
+  },
+  "title": "ConceptState",
+  "type": "object"
+}

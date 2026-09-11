@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "ObjectiveRef": {
+      "additionalProperties": false,
+      "properties": {
+        "concept_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Concept Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "concept_id",
+        "title"
+      ],
+      "title": "ObjectiveRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answer_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Answer Id",
+      "type": "string"
+    },
+    "block_ids": {
+      "items": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Block Ids",
+      "type": "array"
+    },
+    "difficulty": {
+      "default": "mixed",
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "mixed"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "objectives": {
+      "items": {
+        "$ref": "#/$defs/ObjectiveRef"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "question_count": {
+      "default": 5,
+      "maximum": 10,
+      "minimum": 3,
+      "title": "Question Count",
+      "type": "integer"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer_id",
+    "block_ids",
+    "space_id",
+    "scope_revision",
+    "objectives"
+  ],
+  "title": "StudyQuizFromQaBody",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "unit_ids": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Unit Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "unit_ids"
+  ],
+  "title": "StudyUnitReorder",
+  "type": "object"
+}

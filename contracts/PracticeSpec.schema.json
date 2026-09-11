@@ -1,0 +1,79 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "concept_ids": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Concept Ids",
+      "type": "array"
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "mixed"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "objectives": {
+      "items": {
+        "maxLength": 500,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "question_count": {
+      "maximum": 10,
+      "minimum": 3,
+      "title": "Question Count",
+      "type": "integer"
+    },
+    "question_types": {
+      "items": {
+        "enum": [
+          "cloze",
+          "numeric",
+          "short_answer"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Question Types",
+      "type": "array"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "space_id",
+    "scope_revision",
+    "objectives",
+    "concept_ids",
+    "question_types",
+    "question_count",
+    "difficulty"
+  ],
+  "title": "PracticeSpec",
+  "type": "object"
+}

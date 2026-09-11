@@ -1,0 +1,783 @@
+{
+  "$defs": {
+    "AssessmentDraft": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation": {
+          "enum": [
+            "confirmed",
+            "provisional"
+          ],
+          "title": "Confirmation",
+          "type": "string"
+        },
+        "criterion_results": {
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Criterion Results",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "feedback": {
+          "default": "",
+          "maxLength": 12000,
+          "title": "Feedback",
+          "type": "string"
+        },
+        "grader_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Grader Version",
+          "type": "string"
+        },
+        "independent_eligible": {
+          "default": false,
+          "title": "Independent Eligible",
+          "type": "boolean"
+        },
+        "rubric_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Rubric Hash",
+          "type": "string"
+        },
+        "rubric_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Rubric Version",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "source": {
+          "enum": [
+            "deterministic",
+            "model",
+            "human"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "graded",
+            "needs_review",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "supersedes_assessment_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supersedes Assessment Id"
+        }
+      },
+      "required": [
+        "status",
+        "confirmation",
+        "source",
+        "grader_version",
+        "rubric_version",
+        "rubric_hash"
+      ],
+      "title": "AssessmentDraft",
+      "type": "object"
+    },
+    "GradeArtifact": {
+      "additionalProperties": false,
+      "description": "Server-sealed assessment; the grader also verifies its immutable snapshot.",
+      "properties": {
+        "artifact_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "assessment": {
+          "$ref": "#/$defs/AssessmentDraft"
+        },
+        "attempt_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "calibration_profile_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Profile Hash"
+        },
+        "case_type": {
+          "const": "answer_grading",
+          "default": "answer_grading",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "grader_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Grader Version",
+          "type": "string"
+        },
+        "grading_request_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Grading Request Id",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "production",
+            "evaluation"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model_fingerprint": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model Fingerprint",
+          "type": "string"
+        },
+        "owner_id": {
+          "exclusiveMinimum": 0,
+          "title": "Owner Id",
+          "type": "integer"
+        },
+        "prompt_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prompt Hash",
+          "type": "string"
+        },
+        "prompt_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "question_version": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Question Version",
+          "type": "string"
+        },
+        "response_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Response Hash",
+          "type": "string"
+        },
+        "rubric_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Rubric Hash",
+          "type": "string"
+        },
+        "rubric_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Rubric Version",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "grade-artifact.v1",
+          "default": "grade-artifact.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "scope_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Scope Fingerprint",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/PracticeUsage"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "run_id",
+        "owner_id",
+        "mode",
+        "attempt_id",
+        "grading_request_id",
+        "question_version",
+        "rubric_version",
+        "rubric_hash",
+        "response_hash",
+        "scope_fingerprint",
+        "grader_version",
+        "model_fingerprint",
+        "prompt_version",
+        "prompt_hash",
+        "assessment",
+        "usage"
+      ],
+      "title": "GradeArtifact",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "LearningEvaluationUsage": {
+      "additionalProperties": false,
+      "description": "One outer provider ledger; private artifact usage is trace-only.",
+      "properties": {
+        "calls": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Calls",
+          "type": "array"
+        },
+        "cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Cny"
+        },
+        "cost_status": {
+          "default": "unreported",
+          "enum": [
+            "unreported",
+            "estimated",
+            "reported"
+          ],
+          "title": "Cost Status",
+          "type": "string"
+        },
+        "cost_status_cny": {
+          "default": "unreported",
+          "enum": [
+            "unreported",
+            "estimated",
+            "unknown"
+          ],
+          "title": "Cost Status Cny",
+          "type": "string"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "embedding_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Calls",
+          "type": "integer"
+        },
+        "embedding_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Tokens",
+          "type": "integer"
+        },
+        "fetch_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fetch Calls",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "known_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "default": "0",
+          "title": "Known Cost Cny"
+        },
+        "ledger_complete": {
+          "default": false,
+          "title": "Ledger Complete",
+          "type": "boolean"
+        },
+        "llm_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "reranker_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reranker Calls",
+          "type": "integer"
+        },
+        "reserved_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reserved Cost Cny"
+        },
+        "search_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Search Calls",
+          "type": "integer"
+        },
+        "stage_ms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Stage Ms",
+          "type": "object"
+        },
+        "token_count_method": {
+          "default": "provider-reported-or-utf8-upper-bound-v1",
+          "title": "Token Count Method",
+          "type": "string"
+        },
+        "unknown_call_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unknown Call Count",
+          "type": "integer"
+        },
+        "unknown_reserved_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unknown Reserved Cost Cny"
+        }
+      },
+      "title": "LearningEvaluationUsage",
+      "type": "object"
+    },
+    "PracticeCallUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "minimum": 1,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "call_id": {
+          "title": "Call Id",
+          "type": "string"
+        },
+        "cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Cny"
+        },
+        "cost_status": {
+          "default": "unknown",
+          "enum": [
+            "estimated",
+            "unknown"
+          ],
+          "title": "Cost Status",
+          "type": "string"
+        },
+        "reserved_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reserved Cost Cny"
+        },
+        "stage": {
+          "enum": [
+            "llm",
+            "embedding",
+            "reranker",
+            "search",
+            "fetch",
+            "images"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "reserved",
+            "completed",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "call_id",
+        "task_id",
+        "attempt",
+        "stage",
+        "status"
+      ],
+      "title": "PracticeCallUsage",
+      "type": "object"
+    },
+    "PracticeUsage": {
+      "additionalProperties": false,
+      "description": "The worker fills the complete logical-request ledger across task retries.",
+      "properties": {
+        "calls": {
+          "items": {
+            "$ref": "#/$defs/PracticeCallUsage"
+          },
+          "title": "Calls",
+          "type": "array"
+        },
+        "cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Cny"
+        },
+        "cost_status": {
+          "default": "unreported",
+          "enum": [
+            "unreported",
+            "estimated",
+            "reported"
+          ],
+          "title": "Cost Status",
+          "type": "string"
+        },
+        "cost_status_cny": {
+          "default": "unreported",
+          "enum": [
+            "unreported",
+            "estimated",
+            "unknown"
+          ],
+          "title": "Cost Status Cny",
+          "type": "string"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "embedding_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Calls",
+          "type": "integer"
+        },
+        "embedding_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Tokens",
+          "type": "integer"
+        },
+        "fetch_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fetch Calls",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "known_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "default": "0",
+          "title": "Known Cost Cny"
+        },
+        "ledger_complete": {
+          "default": false,
+          "title": "Ledger Complete",
+          "type": "boolean"
+        },
+        "llm_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "reranker_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reranker Calls",
+          "type": "integer"
+        },
+        "reserved_cost_cny": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reserved Cost Cny"
+        },
+        "search_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Search Calls",
+          "type": "integer"
+        },
+        "stage_ms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Stage Ms",
+          "type": "object"
+        },
+        "token_count_method": {
+          "default": "provider-reported-or-utf8-upper-bound-v1",
+          "title": "Token Count Method",
+          "type": "string"
+        }
+      },
+      "title": "PracticeUsage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "case_type": {
+      "const": "answer_grading",
+      "default": "answer_grading",
+      "title": "Case Type",
+      "type": "string"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "grade": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GradeArtifact"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "repeat_index": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Repeat Index",
+      "type": "integer"
+    },
+    "run_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "sample_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Sample Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed",
+        "cancelled",
+        "timeout"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "#/$defs/LearningEvaluationUsage"
+    }
+  },
+  "required": [
+    "run_id",
+    "sample_id",
+    "status"
+  ],
+  "title": "AnswerGradingEvalArtifact",
+  "type": "object"
+}

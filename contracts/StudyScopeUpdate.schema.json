@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "RequestedDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc_id"
+      ],
+      "title": "RequestedDocument",
+      "type": "object"
+    },
+    "RequestedScope": {
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/RequestedDocument"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Documents",
+          "type": "array"
+        },
+        "type": {
+          "const": "selected_documents",
+          "default": "selected_documents",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documents"
+      ],
+      "title": "RequestedScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "scope": {
+      "$ref": "#/$defs/RequestedScope"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "scope"
+  ],
+  "title": "StudyScopeUpdate",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "concept_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Concept Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "concept_id",
+    "title"
+  ],
+  "title": "ObjectiveRef",
+  "type": "object"
+}

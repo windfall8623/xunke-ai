@@ -1,0 +1,94 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "daily_minutes": {
+      "default": 30,
+      "maximum": 240,
+      "minimum": 5,
+      "title": "Daily Minutes",
+      "type": "integer"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "goal_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Goal Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "source_status": {
+      "default": "active",
+      "enum": [
+        "active",
+        "revoked"
+      ],
+      "title": "Source Status",
+      "type": "string"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    },
+    "status": {
+      "default": "planned",
+      "enum": [
+        "planned",
+        "active",
+        "completed",
+        "paused"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "scope_revision",
+    "goal_id",
+    "space_id",
+    "revision",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "StudyGoalView",
+  "type": "object"
+}

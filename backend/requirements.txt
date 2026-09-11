@@ -1,0 +1,4 @@
+# Install the verified, hash-locked Python 3.11 runtime.
+# Editable deterministic evaluation package: install ../evaluation with --no-deps.
+--require-hashes
+-r requirements.lock

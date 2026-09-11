@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "daily_minutes": {
+      "anyOf": [
+        {
+          "maximum": 240,
+          "minimum": 5,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Daily Minutes"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "planned",
+            "active",
+            "completed",
+            "paused"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "maxLength": 80,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "expected_revision"
+  ],
+  "title": "StudyGoalUpdate",
+  "type": "object"
+}

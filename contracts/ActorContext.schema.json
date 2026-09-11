@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "owner_id": {
+      "exclusiveMinimum": 0,
+      "title": "Owner Id",
+      "type": "integer"
+    },
+    "roles": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Roles",
+      "type": "array"
+    }
+  },
+  "required": [
+    "owner_id"
+  ],
+  "title": "ActorContext",
+  "type": "object"
+}

@@ -1,0 +1,135 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "assessment_set_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Assessment Set Hash"
+    },
+    "due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Due At"
+    },
+    "evidence_count": {
+      "minimum": 0,
+      "title": "Evidence Count",
+      "type": "integer"
+    },
+    "last_activity_local_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Activity Local Date"
+    },
+    "last_completion_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Completion Id"
+    },
+    "last_success_local_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Success Local Date"
+    },
+    "override_due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Override Due At"
+    },
+    "paused": {
+      "title": "Paused",
+      "type": "boolean"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "rule_due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Rule Due At"
+    },
+    "rule_version": {
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "stage": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Stage",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "scope_revision",
+    "rule_version",
+    "evidence_count",
+    "stage",
+    "revision",
+    "last_activity_local_date",
+    "last_success_local_date",
+    "rule_due_at",
+    "due_at",
+    "override_due_at",
+    "paused",
+    "assessment_set_hash",
+    "last_completion_id"
+  ],
+  "title": "StudyConceptStateView",
+  "type": "object"
+}

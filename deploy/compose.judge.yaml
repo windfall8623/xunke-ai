@@ -1,0 +1,23 @@
+# Opt-in image and worker permission. Each run still needs a complete, explicit
+# external_judge config with model/revision, budgets, pricing and calibration.
+# The JSON selects native Anthropic Messages or an OpenAI-compatible endpoint.
+# Only the dedicated judge key enters the scorer; LLM_PROVIDER and generation
+# credentials are not inherited. The ragas target includes the native SDK.
+services:
+  api:
+    environment:
+      EVAL_JUDGE_CONFIG_PATH: /app/config/eval-judge.json
+    volumes:
+      - type: bind
+        source: ${EVAL_JUDGE_CONFIG_FILE:?Set EVAL_JUDGE_CONFIG_FILE to an administrator-reviewed judge JSON file}
+        target: /app/config/eval-judge.json
+        read_only: true
+        bind:
+          create_host_path: false
+  eval-scorer:
+    image: zhixue-ai-evaluation-ragas:${IMAGE_TAG:-local}
+    build:
+      target: ragas
+    environment:
+      EVAL_JUDGE_API_KEY: ${EVAL_JUDGE_API_KEY:?Set EVAL_JUDGE_API_KEY before enabling the external judge}
+    command: ["python", "-m", "rag_eval.worker", "--worker-id", "compose-eval-scorer", "--allow-external-judge"]

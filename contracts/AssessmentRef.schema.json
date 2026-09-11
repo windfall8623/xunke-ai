@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "assessment_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Assessment Id",
+      "type": "string"
+    },
+    "attempt_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Attempt Id",
+      "type": "string"
+    },
+    "confirmation": {
+      "enum": [
+        "confirmed",
+        "provisional"
+      ],
+      "title": "Confirmation",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "graded",
+        "needs_review",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "attempt_id",
+    "revision",
+    "status",
+    "confirmation"
+  ],
+  "title": "AssessmentRef",
+  "type": "object"
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title description">
+  <title id="title">知学 AI 标志</title>
+  <desc id="description">展开的书页与代表智能启发的星芒。</desc>
+  <rect width="64" height="64" rx="18" fill="#4e5bd6" />
+  <path d="M14 24C20 21 26 23 32 27C38 23 44 21 50 24V46C44 43 38 45 32 49C26 45 20 43 14 46Z" fill="#fff" />
+  <path d="M32 28V47" fill="none" stroke="#4e5bd6" stroke-width="2.5" stroke-linecap="round" />
+  <path d="M20 30C23 30 26 31 28 32M20 36C23 36 26 37 28 38" fill="none" stroke="#c8cffb" stroke-width="2" stroke-linecap="round" />
+  <path d="M47 7L49.1 11.9L54 14L49.1 16.1L47 21L44.9 16.1L40 14L44.9 11.9Z" fill="#c8f0dc" />
+</svg>

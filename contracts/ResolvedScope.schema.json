@@ -1,0 +1,151 @@
+{
+  "$defs": {
+    "SourceManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "authorization_revision": {
+          "minimum": 1,
+          "title": "Authorization Revision",
+          "type": "integer"
+        },
+        "canonical_artifact_key": {
+          "default": "",
+          "title": "Canonical Artifact Key",
+          "type": "string"
+        },
+        "canonical_text_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Canonical Text Hash",
+          "type": "string"
+        },
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "document_version_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Document Version Id",
+          "type": "string"
+        },
+        "index_build_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Index Build Id",
+          "type": "string"
+        },
+        "index_profile_hash": {
+          "default": "",
+          "title": "Index Profile Hash",
+          "type": "string"
+        },
+        "index_profile_id": {
+          "default": "legacy-char-v1",
+          "title": "Index Profile Id",
+          "type": "string"
+        },
+        "namespace": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Namespace",
+          "type": "string"
+        },
+        "owner_id": {
+          "exclusiveMinimum": 0,
+          "title": "Owner Id",
+          "type": "integer"
+        },
+        "parse_artifact_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Parse Artifact Id",
+          "type": "string"
+        },
+        "projection_key": {
+          "default": "",
+          "title": "Projection Key",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "owner_id",
+        "namespace",
+        "doc_id",
+        "document_version_id",
+        "source_sha256",
+        "parse_artifact_id",
+        "canonical_text_hash",
+        "index_build_id",
+        "attempt_id",
+        "authorization_revision"
+      ],
+      "title": "SourceManifest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/SourceManifest"
+      },
+      "maxItems": 5,
+      "title": "Documents",
+      "type": "array"
+    },
+    "namespace": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Namespace",
+      "type": "string"
+    },
+    "owner_id": {
+      "exclusiveMinimum": 0,
+      "title": "Owner Id",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "owner_id",
+    "namespace"
+  ],
+  "title": "ResolvedScope",
+  "type": "object"
+}

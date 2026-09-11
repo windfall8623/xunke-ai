@@ -1,0 +1,4 @@
+# Isolated Python 3.11 runtime. Never install this into backend/.venv.
+setuptools==84.0.0
+jsonschema==4.25.1
+httpx==0.28.1

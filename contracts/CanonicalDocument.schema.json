@@ -1,0 +1,291 @@
+{
+  "$defs": {
+    "CanonicalBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        },
+        "end_char": {
+          "exclusiveMinimum": 0,
+          "title": "End Char",
+          "type": "integer"
+        },
+        "heading_level": {
+          "anyOf": [
+            {
+              "maximum": 9,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Heading Level"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "paragraph",
+            "heading",
+            "table_row",
+            "page",
+            "code"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "line_end": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line End"
+        },
+        "line_start": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line Start"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "paragraph": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Paragraph"
+        },
+        "section_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "start_char": {
+          "minimum": 0,
+          "title": "Start Char",
+          "type": "integer"
+        },
+        "table_row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Row"
+        }
+      },
+      "required": [
+        "block_id",
+        "kind",
+        "start_char",
+        "end_char",
+        "section_id"
+      ],
+      "title": "CanonicalBlock",
+      "type": "object"
+    },
+    "Section": {
+      "additionalProperties": false,
+      "properties": {
+        "end_char": {
+          "exclusiveMinimum": 0,
+          "title": "End Char",
+          "type": "integer"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "level": {
+          "default": 1,
+          "maximum": 9,
+          "minimum": 0,
+          "title": "Level",
+          "type": "integer"
+        },
+        "section_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "start_char": {
+          "minimum": 0,
+          "title": "Start Char",
+          "type": "integer"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "section_id",
+        "title",
+        "start_char",
+        "end_char"
+      ],
+      "title": "Section",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/CanonicalBlock"
+      },
+      "minItems": 1,
+      "title": "Blocks",
+      "type": "array"
+    },
+    "canonical_text_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Canonical Text Hash",
+      "type": "string"
+    },
+    "doc_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Doc Id",
+      "type": "string"
+    },
+    "document_version_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Document Version Id",
+      "type": "string"
+    },
+    "file_type": {
+      "enum": [
+        "pdf",
+        "docx",
+        "md",
+        "txt"
+      ],
+      "title": "File Type",
+      "type": "string"
+    },
+    "namespace": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Namespace",
+      "type": "string"
+    },
+    "normalizer_version": {
+      "title": "Normalizer Version",
+      "type": "string"
+    },
+    "owner_id": {
+      "exclusiveMinimum": 0,
+      "title": "Owner Id",
+      "type": "integer"
+    },
+    "parse_artifact_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Parse Artifact Id",
+      "type": "string"
+    },
+    "parser_version": {
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "canonical-document.v1",
+      "default": "canonical-document.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sections": {
+      "items": {
+        "$ref": "#/$defs/Section"
+      },
+      "title": "Sections",
+      "type": "array"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "text": {
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "owner_id",
+    "namespace",
+    "doc_id",
+    "document_version_id",
+    "title",
+    "file_type",
+    "source_sha256",
+    "parse_artifact_id",
+    "canonical_text_hash",
+    "parser_version",
+    "normalizer_version",
+    "text",
+    "blocks"
+  ],
+  "title": "CanonicalDocument",
+  "type": "object"
+}

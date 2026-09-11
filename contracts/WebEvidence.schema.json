@@ -1,0 +1,140 @@
+{
+  "$defs": {
+    "WebLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        },
+        "end_char": {
+          "exclusiveMinimum": 0,
+          "title": "End Char",
+          "type": "integer"
+        },
+        "quote_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Quote Hash",
+          "type": "string"
+        },
+        "start_char": {
+          "minimum": 0,
+          "title": "Start Char",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "start_char",
+        "end_char",
+        "quote_hash"
+      ],
+      "title": "WebLocator",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "evidence_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "excerpt": {
+      "minLength": 1,
+      "title": "Excerpt",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "locator": {
+      "$ref": "#/$defs/WebLocator"
+    },
+    "namespace": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Namespace",
+      "type": "string"
+    },
+    "owner_id": {
+      "exclusiveMinimum": 0,
+      "title": "Owner Id",
+      "type": "integer"
+    },
+    "retrieval_scores": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Retrieval Scores",
+      "type": "object"
+    },
+    "score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Score"
+    },
+    "snapshot_artifact_key": {
+      "default": "",
+      "title": "Snapshot Artifact Key",
+      "type": "string"
+    },
+    "snapshot_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Snapshot Hash",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "source_type": {
+      "const": "web",
+      "default": "web",
+      "title": "Source Type",
+      "type": "string"
+    },
+    "text_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Text Hash",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "owner_id",
+    "namespace",
+    "title",
+    "excerpt",
+    "text_hash",
+    "url",
+    "fetched_at",
+    "snapshot_id",
+    "snapshot_hash",
+    "locator"
+  ],
+  "title": "WebEvidence",
+  "type": "object"
+}

@@ -1,0 +1,216 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "claimed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Claimed At"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completed At"
+    },
+    "concept_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Concept Id",
+      "type": "string"
+    },
+    "concept_title": {
+      "title": "Concept Title",
+      "type": "string"
+    },
+    "due_at": {
+      "format": "date-time",
+      "title": "Due At",
+      "type": "string"
+    },
+    "is_current": {
+      "title": "Is Current",
+      "type": "boolean"
+    },
+    "last_error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Error Code"
+    },
+    "origin_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Origin Id"
+    },
+    "origin_kind": {
+      "anyOf": [
+        {
+          "enum": [
+            "quiz",
+            "practice"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Origin Kind"
+    },
+    "override_due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Override Due At"
+    },
+    "paused": {
+      "title": "Paused",
+      "type": "boolean"
+    },
+    "review_task_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Review Task Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "rule_due_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Rule Due At"
+    },
+    "rule_version": {
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "schedule_seq": {
+      "minimum": 1,
+      "title": "Schedule Seq",
+      "type": "integer"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "source_status": {
+      "enum": [
+        "active",
+        "revoked"
+      ],
+      "title": "Source Status",
+      "type": "string"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    },
+    "space_title": {
+      "title": "Space Title",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "scheduled",
+        "claimed",
+        "running",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Task Id"
+    },
+    "timezone": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Timezone",
+      "type": "string"
+    }
+  },
+  "required": [
+    "review_task_id",
+    "space_id",
+    "scope_revision",
+    "concept_id",
+    "space_title",
+    "concept_title",
+    "timezone",
+    "schedule_seq",
+    "revision",
+    "status",
+    "paused",
+    "is_current",
+    "rule_version",
+    "rule_due_at",
+    "due_at",
+    "override_due_at",
+    "task_id",
+    "origin_kind",
+    "origin_id",
+    "last_error_code",
+    "claimed_at",
+    "completed_at",
+    "source_status"
+  ],
+  "title": "StudyReviewView",
+  "type": "object"
+}

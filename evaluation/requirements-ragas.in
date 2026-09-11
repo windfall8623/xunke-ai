@@ -1,0 +1,7 @@
+# Optional judge runtime; no GPU, llama-index, or Ragas [all] extras.
+-r requirements.in
+ragas==0.4.3
+# 0.4.2 removed chat_models.vertexai, still imported by ragas 0.4.3.
+langchain-community==0.4.1
+# Official native Anthropic Messages SDK; only the opt-in judge runtime uses it.
+anthropic==0.125.0

@@ -1,0 +1,514 @@
+.qa-page {
+  min-width: 0;
+  .page-heading {
+    align-items: center;
+  }
+}
+.qa-layout {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.qa-main {
+  min-width: 0;
+}
+.qa-session-sidebar.card {
+  padding: 20px 14px;
+  position: sticky;
+  top: 20px;
+}
+.qa-sessions-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 0 6px 16px;
+  h2 {
+    margin: 0;
+    font-size: 0.92rem;
+  }
+}
+.qa-session-links {
+  display: grid;
+  gap: 6px;
+  a {
+    display: grid;
+    gap: 8px;
+    border-radius: 10px;
+    padding: 13px 12px;
+    overflow-wrap: anywhere;
+    border: 1px solid transparent;
+    &.active {
+      background: #eef0fc;
+      border-color: #dfe4fa;
+      color: var(--primary-dark);
+    }
+    &:hover {
+      background: #f6f7fc;
+    }
+  }
+  strong {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.7;
+  }
+  span {
+    color: var(--muted);
+    font-size: 0.65rem;
+  }
+}
+.qa-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+.qa-session-toggle.button {
+  display: none;
+}
+.qa-new-session.card {
+  padding: 28px;
+}
+.qa-scope-form,
+.qa-feedback-form {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  > label {
+    display: grid;
+    gap: 8px;
+    font-size: 0.82rem;
+  }
+  > p {
+    margin-bottom: 0;
+  }
+  > .checkbox-row {
+    display: flex;
+    align-items: start;
+    small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+  }
+  .document-options {
+    max-height: 48vh;
+    overflow-y: auto;
+    padding: 3px;
+  }
+  .section-options {
+    min-width: 0;
+  }
+  .checkbox-row {
+    overflow-wrap: anywhere;
+  }
+  fieldset {
+    border: 0;
+  }
+  > button {
+    justify-self: start;
+  }
+}
+.qa-document-option {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  &:last-child {
+    border-bottom: 0;
+  }
+  .checkbox-row > span {
+    min-width: 0;
+  }
+}
+.qa-conversation.card {
+  padding: 0;
+  overflow: hidden;
+}
+.qa-conversation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 25px 28px 18px;
+  h2 {
+    margin-bottom: 5px;
+    overflow-wrap: anywhere;
+  }
+  > div:first-child {
+    min-width: 0;
+  }
+}
+.qa-heading-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}
+.qa-scope-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 28px 20px;
+  border-bottom: 1px solid var(--border);
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.68rem;
+    line-height: 1.7;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+}
+.qa-load-history.text-button {
+  margin: 20px auto 0;
+  display: flex;
+}
+.qa-messages {
+  display: grid;
+  gap: 24px;
+  padding: 26px 28px;
+  min-width: 0;
+}
+.qa-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  > p,
+  .qa-answer-block > p {
+    white-space: pre-wrap;
+    margin-bottom: 0;
+    line-height: 1.95;
+    font-size: 0.88rem;
+  }
+}
+.qa-message-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  > span {
+    font-size: 0.6rem;
+    color: #8d96a7;
+  }
+}
+.qa-message-user {
+  padding: 16px 19px;
+  border-radius: 14px 14px 3px 14px;
+  background: #f0f3fb;
+  justify-self: end;
+  max-width: 92%;
+  min-width: min(180px, 90%);
+}
+.qa-message-assistant {
+  padding: 3px 0 7px;
+}
+.qa-message-revoked {
+  color: var(--muted);
+  background: #f4f5f7;
+  padding: 16px 18px;
+  border-radius: 10px;
+}
+.qa-answer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  > .tiny {
+    font-size: 0.6rem;
+  }
+}
+.qa-outcome.badge {
+  background: #edf7f2;
+  color: #357760;
+}
+.qa-outcome-insufficient_evidence.badge,
+.qa-outcome-needs_clarification.badge,
+.qa-outcome-partial.badge {
+  background: #fff5e6;
+  color: #90642a;
+}
+.qa-outcome-conflicting_sources.badge {
+  background: #fbf0ee;
+  color: #a15b47;
+}
+.qa-answer-block {
+  min-width: 0;
+  margin-bottom: 18px;
+}
+.qa-block-notice {
+  color: #64718a;
+}
+.qa-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+.qa-citation {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+  border: 1px solid #dfe5f0;
+  background: #fafbff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.66rem;
+  line-height: 1.6;
+  color: #5c6e94;
+  > svg {
+    margin-top: 2px;
+  }
+  > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  &:hover {
+    background: #eef1fc;
+    border-color: #c6cff1;
+  }
+}
+.qa-answer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 17px;
+  border-top: 1px solid #f0f2f7;
+  padding-top: 13px;
+  margin-top: 8px;
+  .text-button {
+    font-size: 0.7rem;
+  }
+}
+.qa-task {
+  padding: 16px 18px;
+  background: #f7f8fc;
+  border-radius: 10px;
+  p {
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+  }
+  p[role='status'] {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .button-row {
+    margin-top: 10px;
+  }
+  &.qa-task-failed {
+    background: #fff3f0;
+    color: #a75246;
+  }
+}
+.qa-composer {
+  display: grid;
+  gap: 11px;
+  padding: 22px 28px 24px;
+  border-top: 1px solid var(--border);
+  background: #fdfdff;
+  > label {
+    font-size: 0.77rem;
+    font-weight: 600;
+  }
+  textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 100px;
+    max-height: 320px;
+    font-size: 0.84rem;
+    line-height: 1.8;
+  }
+  .notice {
+    margin: 0;
+  }
+}
+.qa-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  > span {
+    font-size: 0.64rem;
+  }
+}
+.qa-uncertain {
+  display: block;
+  p {
+    margin: 0 0 8px;
+  }
+}
+.qa-revoked {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 40px 24px;
+  color: var(--muted);
+  > h3,
+  > p {
+    margin: 0;
+  }
+}
+.qa-evidence-drawer.dialog {
+  margin: 0 0 0 auto;
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(540px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  .dialog-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+  }
+  .dialog-body {
+    min-width: 0;
+    padding-bottom: 45px;
+  }
+  .evidence-heading h3,
+  .evidence-heading p {
+    overflow-wrap: anywhere;
+  }
+  .evidence-heading p {
+    margin: 4px 0;
+  }
+  .evidence-quote p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 2;
+  }
+}
+.document-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 1100px) {
+  .qa-layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .qa-session-sidebar.card {
+    padding: 18px 10px;
+  }
+  .qa-conversation-heading {
+    padding-inline: 20px;
+    flex-wrap: wrap;
+  }
+  .qa-scope-summary,
+  .qa-messages,
+  .qa-composer {
+    padding-inline: 20px;
+  }
+  .qa-keyboard-hint {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .qa-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .qa-session-toggle.button {
+    display: inline-flex;
+  }
+  .qa-session-sidebar.card {
+    display: none;
+    position: static;
+    &.is-open {
+      display: block;
+    }
+  }
+  .qa-session-links {
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 767px) {
+  .qa-page .page-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+    h1 {
+      font-size: 1.6rem;
+    }
+  }
+  .qa-page .page-heading .button {
+    font-size: 0.75rem;
+    padding: 10px 13px;
+  }
+  .qa-new-session.card {
+    padding: 21px 18px;
+  }
+  .qa-scope-form .document-options {
+    max-height: 44vh;
+  }
+  .qa-conversation-heading {
+    padding: 20px 17px 14px;
+    gap: 12px;
+    h2 {
+      font-size: 1rem;
+    }
+  }
+  .qa-heading-actions {
+    gap: 14px;
+    .text-button {
+      font-size: 0.7rem;
+    }
+  }
+  .qa-scope-summary {
+    padding: 0 17px 16px;
+  }
+  .qa-messages {
+    padding: 21px 17px;
+    gap: 21px;
+  }
+  .qa-message > p,
+  .qa-message .qa-answer-block > p {
+    font-size: 0.83rem;
+  }
+  .qa-message-user {
+    max-width: 96%;
+    padding: 14px;
+  }
+  .qa-composer {
+    padding: 18px 17px 21px;
+    textarea {
+      font-size: 16px;
+    }
+  }
+  .qa-composer-footer .button {
+    font-size: 0.76rem;
+    padding: 12px 14px;
+  }
+  .qa-answer-actions {
+    gap: 13px;
+  }
+  .qa-evidence-drawer.dialog {
+    width: 100%;
+    .dialog-body {
+      padding-inline: 21px;
+    }
+    .evidence-quote {
+      padding: 20px 17px;
+    }
+  }
+  .app-layout .mobile-tabs a {
+    min-width: 0;
+    flex: 1;
+    span {
+      white-space: nowrap;
+    }
+  }
+}

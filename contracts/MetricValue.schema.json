@@ -1,0 +1,85 @@
+{
+  "additionalProperties": true,
+  "properties": {
+    "applicable_count": {
+      "default": 0,
+      "title": "Applicable Count",
+      "type": "integer"
+    },
+    "denominator": {
+      "default": 0,
+      "title": "Denominator",
+      "type": "number"
+    },
+    "error_count": {
+      "default": 0,
+      "title": "Error Count",
+      "type": "integer"
+    },
+    "metric_version": {
+      "default": "evidence-v1",
+      "title": "Metric Version",
+      "type": "string"
+    },
+    "numerator": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Numerator"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "na",
+        "error"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "unit": {
+      "default": "ratio",
+      "title": "Unit",
+      "type": "string"
+    },
+    "unknown_count": {
+      "default": 0,
+      "title": "Unknown Count",
+      "type": "integer"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Value"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "MetricValue",
+  "type": "object"
+}

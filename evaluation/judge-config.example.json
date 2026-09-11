@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-6",
+  "base_url": "https://api.anthropic.com",
+  "api_key_env": "EVAL_JUDGE_API_KEY",
+  "ragas_version": "0.4.3",
+  "prompt_version": "quiz-facts-v1",
+  "prompt_hash": "06e07e3496e5388dcd774a3b26c632742c1d4a86bc1fc08d662bec989e5de12e",
+  "max_llm_calls": 20,
+  "max_cost_cny": 5.0,
+  "call_cost_ceiling_cny": 1.0,
+  "max_input_tokens": 20000,
+  "max_output_tokens": 1024,
+  "timeout_seconds": 30,
+  "total_timeout_seconds": 300,
+  "price_table": {
+    "effective_date": "",
+    "input_cny_per_million": null,
+    "output_cny_per_million": null,
+    "cache_read_cny_per_million": null,
+    "cache_write_cny_per_million": null
+  },
+  "calibrated": false
+}

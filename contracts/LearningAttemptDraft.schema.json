@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answer_json": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Answer Json",
+      "type": "object"
+    },
+    "answer_kind": {
+      "enum": [
+        "single",
+        "multiple",
+        "judge",
+        "cloze",
+        "numeric",
+        "short_answer"
+      ],
+      "title": "Answer Kind",
+      "type": "string"
+    },
+    "duration_ms": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "help_usage": {
+      "enum": [
+        "none",
+        "hints",
+        "unknown"
+      ],
+      "title": "Help Usage",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "origin_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Origin Id",
+      "type": "string"
+    },
+    "origin_kind": {
+      "enum": [
+        "quiz",
+        "practice"
+      ],
+      "title": "Origin Kind",
+      "type": "string"
+    },
+    "question_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Question Id",
+      "type": "string"
+    },
+    "question_version": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Question Version",
+      "type": "string"
+    },
+    "response_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Response Hash",
+      "type": "string"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "space_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Space Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "origin_kind",
+    "origin_id",
+    "question_id",
+    "question_version",
+    "space_id",
+    "scope_revision",
+    "answer_kind",
+    "answer_json",
+    "response_hash",
+    "duration_ms",
+    "help_usage",
+    "occurred_at"
+  ],
+  "title": "LearningAttemptDraft",
+  "type": "object"
+}

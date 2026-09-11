@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "BudgetLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "deadline_seconds": {
+          "default": 180,
+          "exclusiveMinimum": 0,
+          "maximum": 1800,
+          "title": "Deadline Seconds",
+          "type": "number"
+        },
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Usd"
+        },
+        "max_embedding_calls": {
+          "default": 100,
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Max Embedding Calls",
+          "type": "integer"
+        },
+        "max_fetch_calls": {
+          "default": 10,
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Max Fetch Calls",
+          "type": "integer"
+        },
+        "max_input_tokens": {
+          "default": 60000,
+          "minimum": 0,
+          "title": "Max Input Tokens",
+          "type": "integer"
+        },
+        "max_llm_calls": {
+          "default": 5,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Max Llm Calls",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "default": 12000,
+          "minimum": 0,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "max_reranker_calls": {
+          "default": 2,
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Max Reranker Calls",
+          "type": "integer"
+        },
+        "max_search_calls": {
+          "default": 2,
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Max Search Calls",
+          "type": "integer"
+        }
+      },
+      "title": "BudgetLimits",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "budget": {
+      "$ref": "#/$defs/BudgetLimits"
+    },
+    "mode": {
+      "enum": [
+        "production",
+        "evaluation"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "storage_namespace": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Storage Namespace",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "run_id",
+    "storage_namespace"
+  ],
+  "title": "ExecutionContext",
+  "type": "object"
+}

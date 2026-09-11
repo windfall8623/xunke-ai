@@ -1,0 +1,1464 @@
+{
+  "$defs": {
+    "AnswerGradingSample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "answer": {
+          "discriminator": {
+            "mapping": {
+              "cloze": "#/$defs/ClozeAnswer",
+              "numeric": "#/$defs/NumericAnswer",
+              "short_answer": "#/$defs/ShortAnswer"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ClozeAnswer"
+            },
+            {
+              "$ref": "#/$defs/NumericAnswer"
+            },
+            {
+              "$ref": "#/$defs/ShortAnswer"
+            }
+          ],
+          "title": "Answer"
+        },
+        "case_type": {
+          "const": "answer_grading",
+          "default": "answer_grading",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "expected_error_code": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Error Code"
+        },
+        "expected_grade_status": {
+          "enum": [
+            "graded",
+            "needs_review",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Expected Grade Status",
+          "type": "string"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "gold_evidence_groups": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Gold Evidence Groups",
+          "type": "array"
+        },
+        "question": {
+          "discriminator": {
+            "mapping": {
+              "cloze": "#/$defs/ClozeQuestion",
+              "numeric": "#/$defs/NumericQuestion",
+              "short_answer": "#/$defs/ShortAnswerQuestion"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ClozeQuestion"
+            },
+            {
+              "$ref": "#/$defs/NumericQuestion"
+            },
+            {
+              "$ref": "#/$defs/ShortAnswerQuestion"
+            }
+          ],
+          "title": "Question"
+        },
+        "question_type": {
+          "enum": [
+            "cloze",
+            "numeric",
+            "short_answer"
+          ],
+          "title": "Question Type",
+          "type": "string"
+        },
+        "question_version": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Question Version",
+          "type": "string"
+        },
+        "reference_grade": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReferenceGrade"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "response_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Response Hash",
+          "type": "string"
+        },
+        "rubric_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Rubric Hash",
+          "type": "string"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "source_refs",
+        "question",
+        "question_type",
+        "question_version",
+        "rubric_hash",
+        "answer",
+        "response_hash",
+        "expected_grade_status"
+      ],
+      "title": "AnswerGradingSample",
+      "type": "object"
+    },
+    "BlankResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "blank_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Blank Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 500,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "blank_id",
+        "text"
+      ],
+      "title": "BlankResponse",
+      "type": "object"
+    },
+    "ClozeAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "blanks": {
+          "items": {
+            "$ref": "#/$defs/BlankResponse"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Blanks",
+          "type": "array"
+        },
+        "type": {
+          "const": "cloze",
+          "default": "cloze",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "blanks"
+      ],
+      "title": "ClozeAnswer",
+      "type": "object"
+    },
+    "ClozeQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "citation_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Citation Refs",
+          "type": "array"
+        },
+        "concept_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Concept Ids",
+          "type": "array"
+        },
+        "difficulty": {
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "rubric": {
+          "$ref": "#/$defs/ClozeRubric"
+        },
+        "stem": {
+          "minLength": 1,
+          "title": "Stem",
+          "type": "string"
+        },
+        "support_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Support Quotes",
+          "type": "array"
+        },
+        "type": {
+          "const": "cloze",
+          "default": "cloze",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "stem",
+        "difficulty",
+        "concept_ids",
+        "citation_refs",
+        "support_quotes",
+        "rubric"
+      ],
+      "title": "ClozeQuestion",
+      "type": "object"
+    },
+    "ClozeRubric": {
+      "additionalProperties": false,
+      "properties": {
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "normalization": {
+          "default": "nfkc-space-v1",
+          "enum": [
+            "nfkc-space-v1",
+            "nfkc-space-casefold-v1"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "slots": {
+          "items": {
+            "$ref": "#/$defs/ClozeSlot"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Slots",
+          "type": "array"
+        },
+        "version": {
+          "const": "cloze-rules-v1",
+          "default": "cloze-rules-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "slots",
+        "explanation"
+      ],
+      "title": "ClozeRubric",
+      "type": "object"
+    },
+    "ClozeSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Accepted",
+          "type": "array"
+        },
+        "blank_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Blank Id",
+          "type": "string"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Weight"
+        }
+      },
+      "required": [
+        "blank_id",
+        "accepted",
+        "weight"
+      ],
+      "title": "ClozeSlot",
+      "type": "object"
+    },
+    "NumericAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "numeric",
+          "default": "numeric",
+          "title": "Type",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "maxLength": 32,
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "NumericAnswer",
+      "type": "object"
+    },
+    "NumericQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "citation_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Citation Refs",
+          "type": "array"
+        },
+        "concept_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Concept Ids",
+          "type": "array"
+        },
+        "difficulty": {
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "rubric": {
+          "$ref": "#/$defs/NumericRubric"
+        },
+        "stem": {
+          "minLength": 1,
+          "title": "Stem",
+          "type": "string"
+        },
+        "support_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Support Quotes",
+          "type": "array"
+        },
+        "type": {
+          "const": "numeric",
+          "default": "numeric",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "stem",
+        "difficulty",
+        "concept_ids",
+        "citation_refs",
+        "support_quotes",
+        "rubric"
+      ],
+      "title": "NumericQuestion",
+      "type": "object"
+    },
+    "NumericRubric": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute_tolerance": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Absolute Tolerance"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "relative_tolerance": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Relative Tolerance"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Target"
+        },
+        "unit": {
+          "maxLength": 32,
+          "title": "Unit",
+          "type": "string"
+        },
+        "unit_aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Unit Aliases",
+          "type": "array"
+        },
+        "version": {
+          "const": "numeric-rules-v1",
+          "default": "numeric-rules-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "absolute_tolerance",
+        "relative_tolerance",
+        "unit",
+        "unit_aliases",
+        "explanation"
+      ],
+      "title": "NumericRubric",
+      "type": "object"
+    },
+    "PolicySample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "case_type": {
+          "const": "policy",
+          "default": "policy",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "harness": {
+          "additionalProperties": true,
+          "title": "Harness",
+          "type": "object"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "harness"
+      ],
+      "title": "PolicySample",
+      "type": "object"
+    },
+    "PracticeGenerationRubric": {
+      "additionalProperties": false,
+      "description": "Review instructions, never a model's claim that review has passed.",
+      "properties": {
+        "notes": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Notes",
+          "type": "string"
+        },
+        "required_semantics": {
+          "items": {
+            "enum": [
+              "answer_correctness",
+              "source_support",
+              "solvability",
+              "explanation_correctness",
+              "scope_compliance",
+              "citation_support",
+              "citation_completeness"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 7,
+          "title": "Required Semantics",
+          "type": "array"
+        },
+        "version": {
+          "const": "practice-generation-rubric.v1",
+          "default": "practice-generation-rubric.v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "PracticeGenerationRubric",
+      "type": "object"
+    },
+    "PracticeGenerationSample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "case_type": {
+          "const": "practice_generation",
+          "default": "practice_generation",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "expected_error_code": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Error Code"
+        },
+        "expected_outcome": {
+          "enum": [
+            "generate",
+            "refuse",
+            "failed"
+          ],
+          "title": "Expected Outcome",
+          "type": "string"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "generation_rubric": {
+          "$ref": "#/$defs/PracticeGenerationRubric"
+        },
+        "gold_evidence_groups": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Gold Evidence Groups",
+          "type": "array"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "spec": {
+          "$ref": "#/$defs/PracticeSpec"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "source_refs",
+        "spec",
+        "expected_outcome"
+      ],
+      "title": "PracticeGenerationSample",
+      "type": "object"
+    },
+    "PracticeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "concept_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Concept Ids",
+          "type": "array"
+        },
+        "difficulty": {
+          "enum": [
+            "easy",
+            "medium",
+            "hard",
+            "mixed"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "objectives": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Objectives",
+          "type": "array"
+        },
+        "question_count": {
+          "maximum": 10,
+          "minimum": 3,
+          "title": "Question Count",
+          "type": "integer"
+        },
+        "question_types": {
+          "items": {
+            "enum": [
+              "cloze",
+              "numeric",
+              "short_answer"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Question Types",
+          "type": "array"
+        },
+        "scope_revision": {
+          "minimum": 1,
+          "title": "Scope Revision",
+          "type": "integer"
+        },
+        "space_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Space Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "space_id",
+        "scope_revision",
+        "objectives",
+        "concept_ids",
+        "question_types",
+        "question_count",
+        "difficulty"
+      ],
+      "title": "PracticeSpec",
+      "type": "object"
+    },
+    "QaHistoryTurn": {
+      "additionalProperties": false,
+      "description": "A complete pair in this sample's source scope, bound by the eval runner.\n\nDataset authors cannot provide an arbitrary runtime scope fingerprint. A new\nsample/source scope is required for history from a different document set.",
+      "properties": {
+        "answer": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "answer"
+      ],
+      "title": "QaHistoryTurn",
+      "type": "object"
+    },
+    "QaSample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "case_type": {
+          "const": "qa",
+          "default": "qa",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "expected_answer_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "answered",
+                "partial",
+                "needs_clarification",
+                "insufficient_evidence",
+                "conflicting_sources"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Answer Status"
+        },
+        "expected_error_code": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Error Code"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "gold_evidence_groups": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Gold Evidence Groups",
+          "type": "array"
+        },
+        "history": {
+          "items": {
+            "$ref": "#/$defs/QaHistoryTurn"
+          },
+          "maxItems": 6,
+          "title": "History",
+          "type": "array"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "source_refs",
+        "question"
+      ],
+      "title": "QaSample",
+      "type": "object"
+    },
+    "QuizSample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "case_type": {
+          "const": "quiz",
+          "default": "quiz",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "expected_outcome": {
+          "enum": [
+            "generate",
+            "refuse"
+          ],
+          "title": "Expected Outcome",
+          "type": "string"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "gold_evidence_groups": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Gold Evidence Groups",
+          "type": "array"
+        },
+        "question_count": {
+          "maximum": 10,
+          "minimum": 3,
+          "title": "Question Count",
+          "type": "integer"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_policy": {
+          "default": "strict_docs",
+          "enum": [
+            "topic",
+            "strict_docs",
+            "doc_plus_web"
+          ],
+          "title": "Source Policy",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "user_input": {
+          "minLength": 1,
+          "title": "User Input",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "user_input",
+        "question_count",
+        "expected_outcome"
+      ],
+      "title": "QuizSample",
+      "type": "object"
+    },
+    "ReferenceGrade": {
+      "additionalProperties": false,
+      "properties": {
+        "provenance": {
+          "enum": [
+            "synthetic_fixture",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "status": {
+          "enum": [
+            "graded",
+            "needs_review",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "provenance"
+      ],
+      "title": "ReferenceGrade",
+      "type": "object"
+    },
+    "RetrievalSample": {
+      "additionalProperties": true,
+      "properties": {
+        "annotation": {
+          "additionalProperties": true,
+          "title": "Annotation",
+          "type": "object"
+        },
+        "case_type": {
+          "const": "retrieval",
+          "default": "retrieval",
+          "title": "Case Type",
+          "type": "string"
+        },
+        "family_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Family Ids",
+          "type": "array"
+        },
+        "gold_evidence_groups": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Gold Evidence Groups",
+          "type": "array"
+        },
+        "query": {
+          "minLength": 1,
+          "title": "Query",
+          "type": "string"
+        },
+        "sample_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 5,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "judge_calibration",
+            "locked_test"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "split",
+        "query"
+      ],
+      "title": "RetrievalSample",
+      "type": "object"
+    },
+    "RubricCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "criterion_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "reference_point": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Reference Point",
+          "type": "string"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Weight"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "reference_point",
+        "weight",
+        "evidence_refs"
+      ],
+      "title": "RubricCriterion",
+      "type": "object"
+    },
+    "ShortAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "const": "short_answer",
+          "default": "short_answer",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "ShortAnswer",
+      "type": "object"
+    },
+    "ShortAnswerQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "citation_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Citation Refs",
+          "type": "array"
+        },
+        "concept_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Concept Ids",
+          "type": "array"
+        },
+        "difficulty": {
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "rubric": {
+          "$ref": "#/$defs/ShortAnswerRubric"
+        },
+        "stem": {
+          "minLength": 1,
+          "title": "Stem",
+          "type": "string"
+        },
+        "support_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Support Quotes",
+          "type": "array"
+        },
+        "type": {
+          "const": "short_answer",
+          "default": "short_answer",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "stem",
+        "difficulty",
+        "concept_ids",
+        "citation_refs",
+        "support_quotes",
+        "rubric"
+      ],
+      "title": "ShortAnswerQuestion",
+      "type": "object"
+    },
+    "ShortAnswerRubric": {
+      "additionalProperties": false,
+      "properties": {
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/RubricCriterion"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "reference_answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Reference Answer",
+          "type": "string"
+        },
+        "version": {
+          "const": "short-answer-v1",
+          "default": "short-answer-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference_answer",
+        "criteria",
+        "explanation"
+      ],
+      "title": "ShortAnswerRubric",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "answer_grading": "#/$defs/AnswerGradingSample",
+      "policy": "#/$defs/PolicySample",
+      "practice_generation": "#/$defs/PracticeGenerationSample",
+      "qa": "#/$defs/QaSample",
+      "quiz": "#/$defs/QuizSample",
+      "retrieval": "#/$defs/RetrievalSample"
+    },
+    "propertyName": "case_type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RetrievalSample"
+    },
+    {
+      "$ref": "#/$defs/QuizSample"
+    },
+    {
+      "$ref": "#/$defs/QaSample"
+    },
+    {
+      "$ref": "#/$defs/PolicySample"
+    },
+    {
+      "$ref": "#/$defs/PracticeGenerationSample"
+    },
+    {
+      "$ref": "#/$defs/AnswerGradingSample"
+    }
+  ]
+}

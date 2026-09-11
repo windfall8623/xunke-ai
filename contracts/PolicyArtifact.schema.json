@@ -1,0 +1,134 @@
+{
+  "$defs": {
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "cost_status": {
+          "default": "unreported",
+          "enum": [
+            "unreported",
+            "estimated",
+            "reported"
+          ],
+          "title": "Cost Status",
+          "type": "string"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "embedding_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Calls",
+          "type": "integer"
+        },
+        "embedding_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Embedding Tokens",
+          "type": "integer"
+        },
+        "fetch_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fetch Calls",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "llm_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "reranker_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reranker Calls",
+          "type": "integer"
+        },
+        "search_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Search Calls",
+          "type": "integer"
+        },
+        "stage_ms": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Stage Ms",
+          "type": "object"
+        },
+        "token_count_method": {
+          "default": "provider-reported-or-utf8-upper-bound-v1",
+          "title": "Token Count Method",
+          "type": "string"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "case_type": {
+      "const": "policy",
+      "default": "policy",
+      "title": "Case Type",
+      "type": "string"
+    },
+    "observations": {
+      "additionalProperties": true,
+      "title": "Observations",
+      "type": "object"
+    },
+    "run_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "policy-artifact.v1",
+      "default": "policy-artifact.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "side_effect_diff": {
+      "additionalProperties": true,
+      "title": "Side Effect Diff",
+      "type": "object"
+    },
+    "usage": {
+      "$ref": "#/$defs/Usage"
+    }
+  },
+  "required": [
+    "run_id",
+    "observations"
+  ],
+  "title": "PolicyArtifact",
+  "type": "object"
+}

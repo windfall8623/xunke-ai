@@ -1,0 +1,725 @@
+{
+  "$defs": {
+    "PracticeAssessmentView": {
+      "additionalProperties": false,
+      "properties": {
+        "assessment_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Assessment Id",
+          "type": "string"
+        },
+        "attempt_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "confirmation": {
+          "enum": [
+            "confirmed",
+            "provisional"
+          ],
+          "title": "Confirmation",
+          "type": "string"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "criterion_results": {
+          "items": {
+            "$ref": "#/$defs/PracticeCriterionResultView"
+          },
+          "title": "Criterion Results",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "feedback": {
+          "default": "",
+          "maxLength": 12000,
+          "title": "Feedback",
+          "type": "string"
+        },
+        "independent_eligible": {
+          "default": false,
+          "title": "Independent Eligible",
+          "type": "boolean"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        },
+        "source": {
+          "enum": [
+            "deterministic",
+            "model",
+            "human"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "graded",
+            "needs_review",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "supersedes_assessment_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supersedes Assessment Id"
+        }
+      },
+      "required": [
+        "assessment_id",
+        "attempt_id",
+        "revision",
+        "status",
+        "source",
+        "confirmation"
+      ],
+      "title": "PracticeAssessmentView",
+      "type": "object"
+    },
+    "PracticeCriterionResultView": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_quotes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Answer Quotes",
+          "type": "array"
+        },
+        "credit": {
+          "enum": [
+            "full",
+            "half",
+            "none",
+            "uncertain"
+          ],
+          "title": "Credit",
+          "type": "string"
+        },
+        "criterion_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "credit"
+      ],
+      "title": "PracticeCriterionResultView",
+      "type": "object"
+    },
+    "PublicResolvedScope": {
+      "additionalProperties": false,
+      "description": "Reusable response projection; authorization still uses ResolvedScope.",
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/PublicSourceManifest"
+          },
+          "maxItems": 5,
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "title": "PublicResolvedScope",
+      "type": "object"
+    },
+    "PublicSourceManifest": {
+      "additionalProperties": false,
+      "description": "Explicit public source identity; storage and worker metadata never enter it.",
+      "properties": {
+        "authorization_revision": {
+          "minimum": 1,
+          "title": "Authorization Revision",
+          "type": "integer"
+        },
+        "canonical_text_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Canonical Text Hash",
+          "type": "string"
+        },
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "document_version_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Document Version Id",
+          "type": "string"
+        },
+        "index_build_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Index Build Id",
+          "type": "string"
+        },
+        "parse_artifact_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Parse Artifact Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "document_version_id",
+        "source_sha256",
+        "parse_artifact_id",
+        "canonical_text_hash",
+        "index_build_id",
+        "authorization_revision"
+      ],
+      "title": "PublicSourceManifest",
+      "type": "object"
+    },
+    "StudyConceptSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "concept_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Concept Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "concept_id",
+        "title"
+      ],
+      "title": "StudyConceptSummary",
+      "type": "object"
+    },
+    "StudyReviewView": {
+      "additionalProperties": false,
+      "properties": {
+        "claimed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Claimed At"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Completed At"
+        },
+        "concept_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Concept Id",
+          "type": "string"
+        },
+        "concept_title": {
+          "title": "Concept Title",
+          "type": "string"
+        },
+        "due_at": {
+          "format": "date-time",
+          "title": "Due At",
+          "type": "string"
+        },
+        "is_current": {
+          "title": "Is Current",
+          "type": "boolean"
+        },
+        "last_error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Error Code"
+        },
+        "origin_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Origin Id"
+        },
+        "origin_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "quiz",
+                "practice"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Origin Kind"
+        },
+        "override_due_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Override Due At"
+        },
+        "paused": {
+          "title": "Paused",
+          "type": "boolean"
+        },
+        "review_task_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Review Task Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "rule_due_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rule Due At"
+        },
+        "rule_version": {
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "schedule_seq": {
+          "minimum": 1,
+          "title": "Schedule Seq",
+          "type": "integer"
+        },
+        "scope_revision": {
+          "minimum": 1,
+          "title": "Scope Revision",
+          "type": "integer"
+        },
+        "source_status": {
+          "enum": [
+            "active",
+            "revoked"
+          ],
+          "title": "Source Status",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Space Id",
+          "type": "string"
+        },
+        "space_title": {
+          "title": "Space Title",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "scheduled",
+            "claimed",
+            "running",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Task Id"
+        },
+        "timezone": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "review_task_id",
+        "space_id",
+        "scope_revision",
+        "concept_id",
+        "space_title",
+        "concept_title",
+        "timezone",
+        "schedule_seq",
+        "revision",
+        "status",
+        "paused",
+        "is_current",
+        "rule_version",
+        "rule_due_at",
+        "due_at",
+        "override_due_at",
+        "task_id",
+        "origin_kind",
+        "origin_id",
+        "last_error_code",
+        "claimed_at",
+        "completed_at",
+        "source_status"
+      ],
+      "title": "StudyReviewView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assessment_set_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Assessment Set Hash"
+    },
+    "attempted_count": {
+      "minimum": 0,
+      "title": "Attempted Count",
+      "type": "integer"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completed At"
+    },
+    "completion_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completion Id"
+    },
+    "concepts": {
+      "items": {
+        "$ref": "#/$defs/StudyConceptSummary"
+      },
+      "title": "Concepts",
+      "type": "array"
+    },
+    "confirmed_count": {
+      "minimum": 0,
+      "title": "Confirmed Count",
+      "type": "integer"
+    },
+    "correct_count": {
+      "minimum": 0,
+      "title": "Correct Count",
+      "type": "integer"
+    },
+    "current_assessments": {
+      "items": {
+        "$ref": "#/$defs/PracticeAssessmentView"
+      },
+      "title": "Current Assessments",
+      "type": "array"
+    },
+    "history_id": {
+      "title": "History Id",
+      "type": "string"
+    },
+    "next_reviews": {
+      "items": {
+        "$ref": "#/$defs/StudyReviewView"
+      },
+      "title": "Next Reviews",
+      "type": "array"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "origin_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Origin Id",
+      "type": "string"
+    },
+    "origin_kind": {
+      "enum": [
+        "quiz",
+        "practice"
+      ],
+      "title": "Origin Kind",
+      "type": "string"
+    },
+    "pending_count": {
+      "minimum": 0,
+      "title": "Pending Count",
+      "type": "integer"
+    },
+    "projection_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Projection Revision"
+    },
+    "projection_status": {
+      "enum": [
+        "not_ready",
+        "pending",
+        "pending_assessments",
+        "current",
+        "failed"
+      ],
+      "title": "Projection Status",
+      "type": "string"
+    },
+    "question_count": {
+      "minimum": 0,
+      "title": "Question Count",
+      "type": "integer"
+    },
+    "scope": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PublicResolvedScope"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scope_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Scope Revision"
+    },
+    "source_status": {
+      "enum": [
+        "active",
+        "revoked"
+      ],
+      "title": "Source Status",
+      "type": "string"
+    },
+    "space_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Space Id"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "wrong_count": {
+      "minimum": 0,
+      "title": "Wrong Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "history_id",
+    "origin_kind",
+    "origin_id",
+    "space_id",
+    "scope_revision",
+    "title",
+    "status",
+    "occurred_at",
+    "completed_at",
+    "completion_id",
+    "question_count",
+    "attempted_count",
+    "confirmed_count",
+    "correct_count",
+    "wrong_count",
+    "pending_count",
+    "current_assessments",
+    "assessment_set_hash",
+    "projection_status",
+    "projection_revision",
+    "concepts",
+    "next_reviews",
+    "scope",
+    "source_status"
+  ],
+  "title": "StudyHistoryView",
+  "type": "object"
+}

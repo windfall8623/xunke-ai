@@ -1,0 +1,59 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv*/
+venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# 私有配置与凭据，切勿提交
+.env
+.env.*
+!.env.example
+!.env.*.example
+deploy/judge-config.json
+
+# TLS 证书由部署方自备
+deploy/certs/
+
+# 备份产物
+deploy/backups/
+
+# 后端运行时数据（上传文件、向量索引）
+backend/data/
+data/
+*.sqlite3
+*.sqlite3-*
+*.sqlite
+*.sqlite-*
+
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.swc/
+
+# 测试运行与本机工具产物
+coverage/
+test-results/
+playwright-report/
+.runtime/
+.superpowers/

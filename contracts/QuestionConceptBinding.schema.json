@@ -1,0 +1,34 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "concept_ids": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Concept Ids",
+      "type": "array"
+    },
+    "question_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Question Id",
+      "type": "string"
+    },
+    "question_version": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Question Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "question_id",
+    "question_version",
+    "concept_ids"
+  ],
+  "title": "QuestionConceptBinding",
+  "type": "object"
+}

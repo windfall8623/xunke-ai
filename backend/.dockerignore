@@ -1,0 +1,37 @@
+# 后端镜像使用仓库根目录作为构建上下文，完整规则见根 .dockerignore。
+# 真实配置在运行时注入，不能打包进镜像。
+.env
+.env.*
+
+# 版本控制与 IDE
+.git
+.gitignore
+.vscode
+.idea
+
+# Python 运行产物
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv*/
+venv/
+
+# 上传资料与索引通过数据卷持久化，无需打包本机数据
+data/
+*.sqlite*
+*.log
+
+# 测试与运行产物；保留镜像需要的 scripts 和 sql
+test/
+tests/
+test-results/
+coverage/
+htmlcov/
+.coverage*

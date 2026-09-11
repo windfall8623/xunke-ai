@@ -1,0 +1,199 @@
+{
+  "$defs": {
+    "AnswerBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        },
+        "citation_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Citation Refs",
+          "type": "array"
+        },
+        "kind": {
+          "default": "fact",
+          "enum": [
+            "fact",
+            "notice"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "text"
+      ],
+      "title": "AnswerBlock",
+      "type": "object"
+    },
+    "PublicResolvedScope": {
+      "additionalProperties": false,
+      "description": "Reusable response projection; authorization still uses ResolvedScope.",
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/PublicSourceManifest"
+          },
+          "maxItems": 5,
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "title": "PublicResolvedScope",
+      "type": "object"
+    },
+    "PublicSourceManifest": {
+      "additionalProperties": false,
+      "description": "Explicit public source identity; storage and worker metadata never enter it.",
+      "properties": {
+        "authorization_revision": {
+          "minimum": 1,
+          "title": "Authorization Revision",
+          "type": "integer"
+        },
+        "canonical_text_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Canonical Text Hash",
+          "type": "string"
+        },
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "document_version_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Document Version Id",
+          "type": "string"
+        },
+        "index_build_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Index Build Id",
+          "type": "string"
+        },
+        "parse_artifact_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Parse Artifact Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "document_version_id",
+        "source_sha256",
+        "parse_artifact_id",
+        "canonical_text_hash",
+        "index_build_id",
+        "authorization_revision"
+      ],
+      "title": "PublicSourceManifest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answer_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Answer Id",
+      "type": "string"
+    },
+    "answer_status": {
+      "enum": [
+        "answered",
+        "partial"
+      ],
+      "title": "Answer Status",
+      "type": "string"
+    },
+    "fact_blocks": {
+      "items": {
+        "$ref": "#/$defs/AnswerBlock"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Fact Blocks",
+      "type": "array"
+    },
+    "retrieval_query": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Retrieval Query",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/PublicResolvedScope"
+    },
+    "scope_revision": {
+      "minimum": 1,
+      "title": "Scope Revision",
+      "type": "integer"
+    },
+    "session_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Session Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer_id",
+    "session_id",
+    "scope_revision",
+    "answer_status",
+    "scope",
+    "retrieval_query",
+    "fact_blocks"
+  ],
+  "title": "StudyQaPracticeContextView",
+  "type": "object"
+}

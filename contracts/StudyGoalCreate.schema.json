@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "daily_minutes": {
+      "default": 30,
+      "maximum": 240,
+      "minimum": 5,
+      "title": "Daily Minutes",
+      "type": "integer"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "scope_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scope Revision"
+    },
+    "status": {
+      "default": "planned",
+      "enum": [
+        "planned",
+        "active",
+        "completed",
+        "paused"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "StudyGoalCreate",
+  "type": "object"
+}

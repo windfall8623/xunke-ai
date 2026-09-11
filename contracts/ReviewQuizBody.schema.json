@@ -1,0 +1,52 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "difficulty": {
+      "default": "mixed",
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "mixed"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "expected_revisions": {
+      "additionalProperties": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "propertyNames": {
+        "maxLength": 64,
+        "minLength": 1
+      },
+      "title": "Expected Revisions",
+      "type": "object"
+    },
+    "question_count": {
+      "default": 5,
+      "maximum": 10,
+      "minimum": 3,
+      "title": "Question Count",
+      "type": "integer"
+    },
+    "review_task_ids": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Review Task Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "review_task_ids",
+    "expected_revisions"
+  ],
+  "title": "ReviewQuizBody",
+  "type": "object"
+}

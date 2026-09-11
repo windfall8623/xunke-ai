@@ -1,0 +1,16 @@
+# Keep migration, contract, source and lockfile hashes stable across checkouts.
+* text=auto eol=lf
+# Applied migration checksums include their original line endings (000 is CRLF).
+backend/migrations/*.sql -text whitespace=cr-at-eol
+# Dataset and archived-baseline manifests refer to exact source bytes.
+evaluation/datasets/** -text whitespace=cr-at-eol
+evaluation/baselines/** -text whitespace=cr-at-eol
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.pdf -text
+*.docx -text
+*.tar.gz -text

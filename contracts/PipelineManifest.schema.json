@@ -1,0 +1,454 @@
+{
+  "$defs": {
+    "IndexProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "budget_tokenizer": {
+          "default": "utf8-upper-bound-v1",
+          "title": "Budget Tokenizer",
+          "type": "string"
+        },
+        "child_overlap_tokens": {
+          "default": 64,
+          "minimum": 0,
+          "title": "Child Overlap Tokens",
+          "type": "integer"
+        },
+        "child_tokens": {
+          "default": 384,
+          "exclusiveMinimum": 0,
+          "title": "Child Tokens",
+          "type": "integer"
+        },
+        "chunk_overlap": {
+          "default": 150,
+          "minimum": 0,
+          "title": "Chunk Overlap",
+          "type": "integer"
+        },
+        "chunk_size": {
+          "default": 1000,
+          "exclusiveMinimum": 0,
+          "title": "Chunk Size",
+          "type": "integer"
+        },
+        "chunker": {
+          "default": "recursive_character",
+          "enum": [
+            "recursive_character",
+            "structure_token"
+          ],
+          "title": "Chunker",
+          "type": "string"
+        },
+        "embedding_dimensions": {
+          "default": 1024,
+          "exclusiveMinimum": 0,
+          "maximum": 65536,
+          "title": "Embedding Dimensions",
+          "type": "integer"
+        },
+        "embedding_input_version": {
+          "default": "plain-canonical-v1",
+          "title": "Embedding Input Version",
+          "type": "string"
+        },
+        "embedding_model": {
+          "default": "text-embedding-v4",
+          "title": "Embedding Model",
+          "type": "string"
+        },
+        "embedding_space": {
+          "default": "dashscope-compatible-v1",
+          "title": "Embedding Space",
+          "type": "string"
+        },
+        "parent_tokens": {
+          "default": 1200,
+          "exclusiveMinimum": 0,
+          "title": "Parent Tokens",
+          "type": "integer"
+        },
+        "profile_id": {
+          "default": "legacy-char-v1",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "tokenizer_version": {
+          "default": "zh-ascii-v1",
+          "title": "Tokenizer Version",
+          "type": "string"
+        }
+      },
+      "title": "IndexProfile",
+      "type": "object"
+    },
+    "LLMRerankerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "const": "merged-candidates-per-round-v1",
+          "default": "merged-candidates-per-round-v1",
+          "title": "Application",
+          "type": "string"
+        },
+        "endpoint_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Endpoint Hash",
+          "type": "string"
+        },
+        "max_input_tokens": {
+          "default": 12000,
+          "maximum": 30000,
+          "minimum": 1024,
+          "title": "Max Input Tokens",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "default": 512,
+          "maximum": 512,
+          "minimum": 256,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "prompt_version": {
+          "const": "listwise-ranking-v1",
+          "default": "listwise-ranking-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "deepseek",
+            "anthropic",
+            "openai_compatible"
+          ],
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "endpoint_hash"
+      ],
+      "title": "LLMRerankerConfig",
+      "type": "object"
+    },
+    "PipelineConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_limit": {
+          "default": 40,
+          "maximum": 40,
+          "minimum": 1,
+          "title": "Candidate Limit",
+          "type": "integer"
+        },
+        "context_token_budget": {
+          "default": 6000,
+          "maximum": 6000,
+          "minimum": 1,
+          "title": "Context Token Budget",
+          "type": "integer"
+        },
+        "coverage_strategy": {
+          "anyOf": [
+            {
+              "enum": [
+                "single-goal-v1",
+                "catalog-v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coverage Strategy"
+        },
+        "dense_top_k": {
+          "default": 20,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Dense Top K",
+          "type": "integer"
+        },
+        "final_top_k": {
+          "default": 8,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Final Top K",
+          "type": "integer"
+        },
+        "generator_model": {
+          "default": "configured",
+          "title": "Generator Model",
+          "type": "string"
+        },
+        "index_profile_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Index Profile Hash"
+        },
+        "index_profile_id": {
+          "default": "legacy-char-v1",
+          "title": "Index Profile Id",
+          "type": "string"
+        },
+        "legacy_source_archive_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy Source Archive Sha256"
+        },
+        "legacy_source_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy Source Commit"
+        },
+        "lexical_top_k": {
+          "default": 20,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Lexical Top K",
+          "type": "integer"
+        },
+        "max_generation_attempts": {
+          "default": 2,
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Max Generation Attempts",
+          "type": "integer"
+        },
+        "max_llm_calls": {
+          "default": 5,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Max Llm Calls",
+          "type": "integer"
+        },
+        "max_retrieval_rounds": {
+          "default": 2,
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Max Retrieval Rounds",
+          "type": "integer"
+        },
+        "max_subqueries": {
+          "default": 3,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Subqueries",
+          "type": "integer"
+        },
+        "model_context_window": {
+          "default": 32768,
+          "minimum": 2048,
+          "title": "Model Context Window",
+          "type": "integer"
+        },
+        "output_token_reserve": {
+          "default": 4096,
+          "maximum": 12000,
+          "minimum": 128,
+          "title": "Output Token Reserve",
+          "type": "integer"
+        },
+        "parent_expansion": {
+          "default": false,
+          "title": "Parent Expansion",
+          "type": "boolean"
+        },
+        "pipeline_version": {
+          "default": "rag-v1",
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "default": "evidence-quiz-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "require_semantic_validation": {
+          "default": true,
+          "title": "Require Semantic Validation",
+          "type": "boolean"
+        },
+        "reranker": {
+          "$ref": "#/$defs/RerankerConfig"
+        },
+        "retriever": {
+          "default": "hybrid",
+          "enum": [
+            "legacy_dense",
+            "llamaindex_dense",
+            "bm25",
+            "hybrid"
+          ],
+          "title": "Retriever",
+          "type": "string"
+        },
+        "rrf_k": {
+          "default": 60,
+          "minimum": 1,
+          "title": "Rrf K",
+          "type": "integer"
+        }
+      },
+      "title": "PipelineConfig",
+      "type": "object"
+    },
+    "RerankerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_rrf_fallback": {
+          "default": false,
+          "title": "Allow Rrf Fallback",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endpoint"
+        },
+        "license": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "License"
+        },
+        "llm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LLMRerankerConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Revision"
+        },
+        "provider": {
+          "default": "none",
+          "enum": [
+            "none",
+            "bge-v2-m3",
+            "qwen3-reranker-0.6b",
+            "llm"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 10,
+          "exclusiveMinimum": 0,
+          "maximum": 180,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "RerankerConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "code_hash": {
+      "title": "Code Hash",
+      "type": "string"
+    },
+    "config": {
+      "$ref": "#/$defs/PipelineConfig"
+    },
+    "dependency_hash": {
+      "title": "Dependency Hash",
+      "type": "string"
+    },
+    "index_profile": {
+      "$ref": "#/$defs/IndexProfile"
+    },
+    "normalizer_version": {
+      "title": "Normalizer Version",
+      "type": "string"
+    },
+    "parser_version": {
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "pipeline_config_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Pipeline Config Hash",
+      "type": "string"
+    },
+    "policy_version": {
+      "default": "explicit-source-v1",
+      "title": "Policy Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pipeline_config_hash",
+    "code_hash",
+    "dependency_hash",
+    "config",
+    "index_profile",
+    "parser_version",
+    "normalizer_version"
+  ],
+  "title": "PipelineManifest",
+  "type": "object"
+}

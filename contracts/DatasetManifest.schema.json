@@ -1,0 +1,59 @@
+{
+  "additionalProperties": true,
+  "properties": {
+    "annotation_version": {
+      "default": "v1",
+      "title": "Annotation Version",
+      "type": "string"
+    },
+    "dataset_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Id"
+    },
+    "review": {
+      "additionalProperties": true,
+      "title": "Review",
+      "type": "object"
+    },
+    "schema_version": {
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "state": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "reviewed",
+        "frozen",
+        "revoked"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "version": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "title": "DatasetManifest",
+  "type": "object"
+}

@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "RequestedDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "section_catalog_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Catalog Revision"
+        },
+        "section_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Section Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc_id"
+      ],
+      "title": "RequestedDocument",
+      "type": "object"
+    },
+    "RequestedScope": {
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/RequestedDocument"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Documents",
+          "type": "array"
+        },
+        "type": {
+          "const": "selected_documents",
+          "default": "selected_documents",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documents"
+      ],
+      "title": "RequestedScope",
+      "type": "object"
+    },
+    "StudyUnitView": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "goal_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Goal Id",
+          "type": "string"
+        },
+        "position": {
+          "minimum": 0,
+          "title": "Position",
+          "type": "integer"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RequestedScope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope_revision": {
+          "minimum": 1,
+          "title": "Scope Revision",
+          "type": "integer"
+        },
+        "source_status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "revoked"
+          ],
+          "title": "Source Status",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Space Id",
+          "type": "string"
+        },
+        "status": {
+          "default": "planned",
+          "enum": [
+            "planned",
+            "active",
+            "completed",
+            "paused"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "unit_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Unit Id",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "scope_revision",
+        "scope",
+        "position",
+        "unit_id",
+        "goal_id",
+        "space_id",
+        "revision",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "StudyUnitView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "goal_revision": {
+      "minimum": 1,
+      "title": "Goal Revision",
+      "type": "integer"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/StudyUnitView"
+      },
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "items",
+    "goal_revision"
+  ],
+  "title": "StudyUnitList",
+  "type": "object"
+}
