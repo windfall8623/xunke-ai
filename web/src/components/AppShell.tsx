@@ -26,7 +26,7 @@ export function AppShell() {
     { to: '/', icon: BookOpen, label: '开始学习', end: true },
     { to: '/knowledge', icon: Library, label: '我的资料', end: false },
     { to: '/qa', icon: MessageCircle, label: '知识库问答', end: false },
-    { to: '/study', icon: GraduationCap, label: '学习空间', end: false },
+    { to: '/study', icon: GraduationCap, label: '我的课程', end: false },
     { to: '/me', icon: UserRound, label: '学习记录', end: false },
     ...(evaluator
       ? [{ to: '/evaluations', icon: FlaskConical, label: '评测工作台', end: false }]

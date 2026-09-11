@@ -214,6 +214,8 @@ async def call_external(
         cap = (
             5
             if job["kind"] in {"quiz", "qa", "eval_sample", "practice_generate"}
+            else 3
+            if job["kind"] == "course_lesson"
             else 2
         )
         daily = s.user_daily_llm_calls

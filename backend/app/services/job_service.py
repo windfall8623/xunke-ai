@@ -21,6 +21,8 @@ OPERATIONS = {
     "learning_project": "learning.project",
     "practice_generate": "practice.generate",
     "practice_grade": "practice.grade",
+    "course_outline": "course.outline",
+    "course_lesson": "course.lesson",
 }
 
 
@@ -169,6 +171,8 @@ async def claim_job(worker_id, *, task_id=None, kinds=None):
         timeout = (
             600
             if row["kind"] in ("ingest", "delete", "images")
+            else s.course_job_deadline_seconds
+            if row["kind"] in ("course_outline", "course_lesson")
             else s.job_deadline_seconds
         )
         deadline = row["deadline_at"] or now() + timedelta(seconds=timeout)

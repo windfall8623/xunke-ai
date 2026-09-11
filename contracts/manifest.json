@@ -9,6 +9,7 @@
     "CanonicalDocument.schema.json": "4ae878880b7dc1fc2ac196538531ef48f9991e95acfb628600d63d13be6ca6e9",
     "ChatAnswerArtifact.schema.json": "6ba4d7d6c05408358a731a2ec6d09a603738cd6d7532b44e8976b7705901a4f2",
     "ConceptState.schema.json": "d0f970d7deea9e381757f6bcd65f04e09530848a2aec526b1f1ebdc50ca785df",
+    "CourseDraft.schema.json": "cb5386eacb31bde8249d7322da701ed0b6a1aba443778b0c470569d523ee49f9",
     "DatasetManifest.schema.json": "a407196a0164f5501685d0125841b5983069b257af8792e6dcb783420111d340",
     "DocumentEvidence.schema.json": "ad83d2a6f59567ea1ec1074fbabee9b4c70042e8128b04ca9ea7781a89b872cb",
     "EvalSample.schema.json": "204c659501ed520a8170e202cb0f988f15189c2b4aa57c98f32321dcedbb5fd6",
@@ -19,6 +20,7 @@
     "LearningAttemptDraft.schema.json": "eb6b864dbf5d7531e4a128ba7940014376d759f6fec54e6e48f16da2deabde8a",
     "LearningCompletionRef.schema.json": "45601c364d6d5851299905886ff1dc43f5b490d9ab214b06f17d1127f9b3404d",
     "LearningOutcome.schema.json": "5880bd3e855d88dc599174f7150e9ca1f3eb0fee51294e2bc6936494216f7738",
+    "LessonDraft.schema.json": "ff3f93e9171310dcb08965479dbdf184dcf67abed3f1286c1c7b428c2e908677",
     "MetricValue.schema.json": "c3a433d0d5d3073b61e230e45cd4f3b89c4aef22006f064ff86d366eb2f2ff93",
     "ObjectiveRef.schema.json": "12904cad52b45e6b130cdd6d2afb746121a75cd4f027177ae51e4031b8626cbe",
     "PipelineManifest.schema.json": "cf363055ceb0a43070ad989513c40cfc5ba94513b52148f15a299c1af3446cd3",
@@ -68,7 +70,7 @@
     "StudyWrongQuestionList.schema.json": "93b8d4213fc079e04d3b542b90210b0b71ccfc5026f61d4c1955646112ecad91",
     "StudyWrongQuestionView.schema.json": "4cafff6bddae7e2785f3b09fc0c5c689fc09a9a1294ee8a63003b4caf2b17c89",
     "WebEvidence.schema.json": "b49473859ac844c797e1f5c75be54741918379e44857989f9a12fd924e1a7e2c",
-    "openapi.json": "b3e8072e806adfe5be5a9fb84d958ad0b63baffd571e4803a9365f0531319b2d"
+    "openapi.json": "ca46b73aaa97ca2704c35bb2778712def0c17cd1efb8ff6a8d2708aaaf50522e"
   },
   "schema_version": "1"
 }

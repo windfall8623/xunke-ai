@@ -248,12 +248,14 @@ class OwnerWorker:
         report_generator=None,
         practice_provider=None,
         grading_provider=None,
+        course_generator=None,
         worker_id=None,
     ):
         self.engine = engine
         self.report_generator = report_generator
         self.practice_provider = practice_provider
         self.grading_provider = grading_provider
+        self.course_generator = course_generator
         self.worker_id = worker_id or uid("owner")
         self._serial = asyncio.Lock()
 
@@ -373,6 +375,10 @@ class OwnerWorker:
                 from app.workers.qa_job import run_qa
 
                 await run_qa(job, actor, self.engine, usage_loader=_metered_usage)
+            elif job["kind"] in {"course_outline", "course_lesson"}:
+                from app.workers.course_job import run_course
+
+                await run_course(job, self.engine, self.course_generator, usage_loader=_metered_usage)
             elif job["kind"] == "report":
                 await self._report(job, actor)
             elif job["kind"] == "learning_project":
@@ -939,6 +945,10 @@ class OwnerWorker:
                     from app.workers.practice_job import reconcile_practice_job
 
                     await reconcile_practice_job(job, conn)
+                elif job["kind"] in {"course_outline", "course_lesson"}:
+                    from app.workers.course_job import reconcile_course
+
+                    await reconcile_course(job, conn)
                 elif job["kind"] == "images" and request.get("quiz_id"):
                     await execute(
                         "UPDATE quiz_sessions SET images_status='failed' WHERE quiz_id=%s AND user_id=%s "
@@ -981,6 +991,7 @@ async def _main(args):
             report_generator=runtime.report_generator,
             practice_provider=runtime.practice_provider,
             grading_provider=runtime.grading_provider,
+            course_generator=runtime.course_generator,
             worker_id=args.worker_id,
         )
         stop = asyncio.Event()

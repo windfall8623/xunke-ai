@@ -239,7 +239,7 @@ export function StudyNavigation() {
   return (
     <nav className="button-row" aria-label="学习功能">
       <Link className="button secondary" to="/study">
-        学习空间
+        课程与空间
       </Link>
       <Link className="button secondary" to="/study/reviews">
         复习安排

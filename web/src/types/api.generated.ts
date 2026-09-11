@@ -153,6 +153,228 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/courses': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Courses */
+    get: operations['list_courses_api_v1_courses_get']
+    put?: never
+    /** Create */
+    post: operations['create_api_v1_courses_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/tasks/{task_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Task */
+    get: operations['task_api_v1_courses_tasks__task_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/tasks/{task_id}/cancel': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Cancel */
+    post: operations['cancel_api_v1_courses_tasks__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Course */
+    get: operations['course_api_v1_courses__course_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/evidence/{source_ref}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Outline Evidence */
+    get: operations['outline_evidence_api_v1_courses__course_id__evidence__source_ref__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Lesson */
+    get: operations['lesson_api_v1_courses__course_id__lessons__lesson_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/evidence/{source_ref}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Lesson Evidence */
+    get: operations['lesson_evidence_api_v1_courses__course_id__lessons__lesson_id__evidence__source_ref__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/generation-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate */
+    post: operations['generate_api_v1_courses__course_id__lessons__lesson_id__generation_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/progress': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Read */
+    patch: operations['read_api_v1_courses__course_id__lessons__lesson_id__progress_patch']
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/quiz-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Practice */
+    post: operations['practice_api_v1_courses__course_id__lessons__lesson_id__quiz_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/outline': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Edit */
+    patch: operations['edit_api_v1_courses__course_id__outline_patch']
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/outline-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Retry */
+    post: operations['retry_api_v1_courses__course_id__outline_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/progress': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Progress */
+    get: operations['progress_api_v1_courses__course_id__progress_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/eval/compare': {
     parameters: {
       query?: never
@@ -2001,6 +2223,118 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[CourseEvidenceView] */
+    ApiResponse_CourseEvidenceView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseEvidenceView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseLessonView] */
+    ApiResponse_CourseLessonView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseLessonView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseList] */
+    ApiResponse_CourseList_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseProgressView] */
+    ApiResponse_CourseProgressView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseProgressView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseQuizLinkView] */
+    ApiResponse_CourseQuizLinkView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseQuizLinkView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseTaskView] */
+    ApiResponse_CourseTaskView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseTaskView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseView] */
+    ApiResponse_CourseView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[DatasetList] */
     ApiResponse_DatasetList_: {
       /**
@@ -3325,6 +3659,370 @@ export interface components {
        */
       status: 'estimated' | 'unknown' | 'not_applicable'
     }
+    /** CourseCreate */
+    CourseCreate: {
+      /**
+       * Daily Minutes
+       * @default 20
+       */
+      daily_minutes: number
+      /**
+       * Goal
+       * @default
+       */
+      goal: string
+      /**
+       * Lesson Count
+       * @default 6
+       */
+      lesson_count: number
+      /**
+       * Prior Knowledge
+       * @default
+       */
+      prior_knowledge: string
+      scope?: components['schemas']['RequestedScope'] | null
+      /**
+       * Source Policy
+       * @default topic
+       * @enum {string}
+       */
+      source_policy: 'topic' | 'strict_docs'
+      /** Topic */
+      topic: string
+    }
+    /** CourseEvidenceView */
+    CourseEvidenceView: {
+      /** Doc Id */
+      doc_id: string
+      /** Document Version Id */
+      document_version_id: string
+      /** Excerpt */
+      excerpt: string
+      locator: components['schemas']['DocumentLocator']
+      /** Source Ref */
+      source_ref: string
+      /** Title */
+      title: string
+    }
+    /** CourseLessonGenerate */
+    CourseLessonGenerate: {
+      /** Expected Course Revision */
+      expected_course_revision: number
+    }
+    /** CourseLessonSummary */
+    CourseLessonSummary: {
+      /**
+       * Availability
+       * @default ready
+       * @enum {string}
+       */
+      availability: 'ready' | 'material_gap'
+      /** Completion Check */
+      completion_check?: string | null
+      /** Concepts */
+      concepts?: components['schemas']['TeachConcept'][]
+      /** Content Version */
+      content_version: number
+      /** Estimated Minutes */
+      estimated_minutes?: number | null
+      /** Last Opened At */
+      last_opened_at?: string | null
+      /** Lesson Id */
+      lesson_id: string
+      /** Objective */
+      objective?: string | null
+      /** Position */
+      position: number
+      /** Prerequisite Unit Refs */
+      prerequisite_unit_refs?: string[] | null
+      /** Read At */
+      read_at?: string | null
+      /** Revision */
+      revision: number
+      /** Source Refs */
+      source_refs?: string[]
+      /**
+       * Status
+       * @enum {string}
+       */
+      status:
+        | 'not_generated'
+        | 'generating'
+        | 'ready'
+        | 'material_gap'
+        | 'failed'
+        | 'cancelled'
+        | 'source_revoked'
+      /** Title */
+      title: string
+      /** Unit Ref */
+      unit_ref: string
+    }
+    /** CourseLessonTitle */
+    CourseLessonTitle: {
+      /** Lesson Id */
+      lesson_id: string
+      /** Title */
+      title: string
+    }
+    /** CourseLessonView */
+    CourseLessonView: {
+      active_task?: components['schemas']['CourseTaskView'] | null
+      /** Blocks */
+      blocks?: components['schemas']['LessonBlock'][]
+      /** Checks */
+      checks?: components['schemas']['LessonCheck'][]
+      /** Content Version */
+      content_version: number
+      /** Course Id */
+      course_id: string
+      /** Estimated Minutes */
+      estimated_minutes?: number | null
+      /** Last Opened At */
+      last_opened_at?: string | null
+      latest_task?: components['schemas']['CourseTaskView'] | null
+      /** Lesson Id */
+      lesson_id: string
+      /** Next Step */
+      next_step?: string | null
+      /** Objective */
+      objective?: string | null
+      /** Quiz Links */
+      quiz_links?: components['schemas']['CourseQuizLinkView'][]
+      /** Read At */
+      read_at?: string | null
+      /** Revision */
+      revision: number
+      /** Sources */
+      sources?: components['schemas']['TeachSource'][]
+      /**
+       * Status
+       * @enum {string}
+       */
+      status:
+        | 'not_generated'
+        | 'generating'
+        | 'ready'
+        | 'material_gap'
+        | 'failed'
+        | 'cancelled'
+        | 'source_revoked'
+      /** Title */
+      title: string
+      /** Warnings */
+      warnings?: string[]
+    }
+    /** CourseList */
+    CourseList: {
+      /** Items */
+      items: components['schemas']['CourseView'][]
+      /** Page */
+      page: number
+      /** Page Size */
+      page_size: number
+      /** Total */
+      total: number
+    }
+    /** CourseNextAction */
+    CourseNextAction: {
+      /** Lesson Id */
+      lesson_id?: string | null
+      /** Link Id */
+      link_id?: string | null
+      /** Quiz Id */
+      quiz_id?: string | null
+      /** Reason */
+      reason: string
+      /** Task Id */
+      task_id?: string | null
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: 'continue_quiz' | 'review_lesson' | 'learn_lesson' | 'practice_lesson' | 'view_summary'
+    }
+    /** CourseOutlineUpdate */
+    CourseOutlineUpdate: {
+      /** Expected Revision */
+      expected_revision: number
+      /** Lesson Titles */
+      lesson_titles?: components['schemas']['CourseLessonTitle'][]
+      /** Title */
+      title?: string | null
+    }
+    /** CourseProgressView */
+    CourseProgressView: {
+      /** Available Lessons */
+      available_lessons: number
+      /** Course Id */
+      course_id: string
+      /** Generated Lessons */
+      generated_lessons: number
+      /** Initial Accuracy */
+      initial_accuracy?: number | null
+      /** Initial Answered */
+      initial_answered: number
+      /** Initial Correct */
+      initial_correct: number
+      next_action: components['schemas']['CourseNextAction']
+      /** Practiced Lessons */
+      practiced_lessons: number
+      /** Read Lessons */
+      read_lessons: number
+      /** Review Runs */
+      review_runs?: components['schemas']['CourseReviewRun'][]
+      /** Total Lessons */
+      total_lessons: number
+      /** Weak Points */
+      weak_points?: components['schemas']['CourseWeakPoint'][]
+    }
+    /** CourseQuizCreate */
+    CourseQuizCreate: {
+      /** Expected Content Version */
+      expected_content_version: number
+      /**
+       * Kind
+       * @default initial
+       * @enum {string}
+       */
+      kind: 'initial' | 'review'
+      /** Parent Link Id */
+      parent_link_id?: string | null
+    }
+    /** CourseQuizLinkView */
+    CourseQuizLinkView: {
+      /** Content Version */
+      content_version: number
+      /** Created At */
+      created_at: string
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'initial' | 'review'
+      /** Lesson Id */
+      lesson_id: string
+      /** Link Id */
+      link_id: string
+      /** Parent Link Id */
+      parent_link_id?: string | null
+      task: components['schemas']['TaskView']
+    }
+    /** CourseReadUpdate */
+    CourseReadUpdate: {
+      /** Expected Revision */
+      expected_revision: number
+      /** Read */
+      read: boolean
+    }
+    /** CourseReviewRun */
+    CourseReviewRun: {
+      /** Accuracy */
+      accuracy?: number | null
+      /** Answered */
+      answered: number
+      /** Correct */
+      correct: number
+      /** Created At */
+      created_at: string
+      /** Lesson Id */
+      lesson_id: string
+      /** Link Id */
+      link_id: string
+      /** Quiz Id */
+      quiz_id?: string | null
+      /** Status */
+      status: string
+      /** Total */
+      total: number
+    }
+    /** CourseTaskView */
+    CourseTaskView: {
+      /** Course Id */
+      course_id: string
+      /** Error Code */
+      error_code?: string | null
+      /** Error Message */
+      error_message?: string | null
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'course_outline' | 'course_lesson'
+      /** Lesson Id */
+      lesson_id?: string | null
+      /**
+       * Stage
+       * @default queued
+       */
+      stage: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+      /** Task Id */
+      task_id: string
+    }
+    /** CourseView */
+    CourseView: {
+      active_task?: components['schemas']['CourseTaskView'] | null
+      /** Course Id */
+      course_id: string
+      /** Created At */
+      created_at: string
+      latest_task?: components['schemas']['CourseTaskView'] | null
+      /** Lessons */
+      lessons?: components['schemas']['CourseLessonSummary'][]
+      mission?: components['schemas']['TeachMission'] | null
+      /**
+       * Outline Editable
+       * @default false
+       */
+      outline_editable: boolean
+      /** Resume Lesson Id */
+      resume_lesson_id?: string | null
+      /** Revision */
+      revision: number
+      scope?: components['schemas']['PublicResolvedScope'] | null
+      /**
+       * Source Policy
+       * @enum {string}
+       */
+      source_policy: 'topic' | 'strict_docs'
+      /**
+       * Source Status
+       * @enum {string}
+       */
+      source_status: 'active' | 'revoked'
+      /** Sources */
+      sources?: components['schemas']['TeachSource'][]
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'generating' | 'ready' | 'partial' | 'failed' | 'cancelled' | 'source_revoked'
+      /** Title */
+      title: string
+      /** Updated At */
+      updated_at: string
+      /** Warnings */
+      warnings?: string[]
+    }
+    /** CourseWeakPoint */
+    CourseWeakPoint: {
+      /** Knowledge Point */
+      knowledge_point: string
+      /** Lesson Id */
+      lesson_id: string
+      /** Link Id */
+      link_id: string
+      /** Question Id */
+      question_id: string
+      /** Quiz Id */
+      quiz_id: string
+    }
     /** CoveragePlan */
     CoveragePlan: {
       /**
@@ -3986,6 +4684,45 @@ export interface components {
        * @default null
        */
       unknown_reserved_cost_cny: number | string | null
+    }
+    /** LessonBlock */
+    LessonBlock: {
+      /** Source Refs */
+      source_refs?: string[]
+      /**
+       * Synthetic
+       * @default false
+       */
+      synthetic: boolean
+      /** Text */
+      text: string
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: 'explanation' | 'example' | 'reference' | 'recap'
+    }
+    /** LessonCheck */
+    LessonCheck: {
+      /** Check Ref */
+      check_ref: string
+      /** Options */
+      options?: components['schemas']['LessonCheckOption'][]
+      /** Prompt */
+      prompt: string
+      /**
+       * Question Type
+       * @default reflection
+       * @enum {string}
+       */
+      question_type: 'single' | 'multiple' | 'judge' | 'short_answer' | 'reflection'
+    }
+    /** LessonCheckOption */
+    LessonCheckOption: {
+      /** Key */
+      key: string
+      /** Text */
+      text: string
     }
     /** LoginBody */
     LoginBody: {
@@ -6953,6 +7690,47 @@ export interface components {
       /** Task Id */
       task_id: string
     }
+    /** TeachConcept */
+    TeachConcept: {
+      /** Concept Id */
+      concept_id?: string | null
+      /** Concept Ref */
+      concept_ref: string
+      /** Title */
+      title: string
+    }
+    /** TeachMission */
+    TeachMission: {
+      /** Daily Minutes */
+      daily_minutes?: number | null
+      /** Deadline */
+      deadline?: string | null
+      /** Goal */
+      goal: string
+      /** Prior Knowledge */
+      prior_knowledge?: string[]
+      /** Success Criteria */
+      success_criteria?: string[]
+    }
+    /** TeachSource */
+    TeachSource: {
+      /** Document Version Id */
+      document_version_id?: string | null
+      /** Evidence Id */
+      evidence_id?: string | null
+      /**
+       * Kind
+       * @default rag_evidence
+       * @enum {string}
+       */
+      kind: 'provided_material' | 'rag_evidence'
+      /** Locator */
+      locator?: string | null
+      /** Source Ref */
+      source_ref: string
+      /** Title */
+      title: string
+    }
     /** UpdateProfileRequest */
     UpdateProfileRequest: {
       /** Avatar Url */
@@ -7433,6 +8211,474 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_SessionView_']
+        }
+      }
+    }
+  }
+  list_courses_api_v1_courses_get: {
+    parameters: {
+      query?: {
+        page?: number
+        page_size?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseList_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_api_v1_courses_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  task_api_v1_courses_tasks__task_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  cancel_api_v1_courses_tasks__task_id__cancel_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  course_api_v1_courses__course_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  outline_evidence_api_v1_courses__course_id__evidence__source_ref__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        source_ref: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseEvidenceView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  lesson_api_v1_courses__course_id__lessons__lesson_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        lesson_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseLessonView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  lesson_evidence_api_v1_courses__course_id__lessons__lesson_id__evidence__source_ref__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        lesson_id: string
+        source_ref: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseEvidenceView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  generate_api_v1_courses__course_id__lessons__lesson_id__generation_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        lesson_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseLessonGenerate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  read_api_v1_courses__course_id__lessons__lesson_id__progress_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        lesson_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseReadUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseLessonView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  practice_api_v1_courses__course_id__lessons__lesson_id__quiz_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        lesson_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseQuizCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseQuizLinkView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  edit_api_v1_courses__course_id__outline_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseOutlineUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  retry_api_v1_courses__course_id__outline_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  progress_api_v1_courses__course_id__progress_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseProgressView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

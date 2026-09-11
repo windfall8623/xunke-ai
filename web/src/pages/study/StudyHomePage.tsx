@@ -7,6 +7,7 @@ import { Dialog } from '../../components/Dialog'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { StudyScopePicker } from '../../features/study/StudyScopePicker'
 import { StudyActivitySummary } from '../../features/study/StudyActivitySummary'
+import { CourseListSection } from '../../features/courses/CourseListSection'
 import { StudyNavigation } from './ReviewPage'
 import {
   createStudySubmissionKeys,
@@ -41,17 +42,25 @@ function StudyHome({ identity }: { identity: string | number }) {
     <div className="stack-form" style={{ minWidth: 0 }}>
       <PageHeading
         eyebrow="知学 AI · 持续学习"
-        title="学习空间"
-        description="按主题保存资料、目标和练习，让每次学习接得上。"
+        title="我的学习"
+        description="找到原课程，接着读一课、练一组，让每次学习接得上。"
         action={
-          <button className="button primary" onClick={() => setCreating(true)}>
+          <Link className="button primary" to="/study/courses/new">
             <Plus size={17} />
-            新建学习空间
-          </button>
+            开始新课程
+          </Link>
         }
       />
       <StudyNavigation />
+      <CourseListSection showCreate={false} />
       <StudyActivitySummary />
+      <div className="section-line">
+        <h2>学习空间</h2>
+        <button className="button secondary" onClick={() => setCreating(true)}>
+          <Plus size={17} />
+          新建学习空间
+        </button>
+      </div>
       <div className="button-row">
         <label>
           显示范围

@@ -14,6 +14,8 @@ import { ProfilePage } from '../pages/ProfilePage'
 import { PracticePage } from '../pages/PracticePage'
 import { PracticeTaskPage } from '../pages/PracticeTaskPage'
 import { StudyHomePage } from '../pages/study/StudyHomePage'
+import { CourseCreatePage } from '../pages/study/CourseCreatePage'
+import { CoursePage } from '../pages/study/CoursePage'
 import { StudySpacePage } from '../pages/study/StudySpacePage'
 import { ReviewPage } from '../pages/study/ReviewPage'
 import { ConceptProgressPage } from '../pages/study/ConceptProgressPage'
@@ -49,6 +51,8 @@ export function AppRoutes() {
             <Route path="qa" element={<QaPage />} />
             <Route path="qa/:sessionId" element={<QaPage />} />
             <Route path="study" element={<StudyHomePage />} />
+            <Route path="study/courses/new" element={<CourseCreatePage />} />
+            <Route path="study/courses/:courseId" element={<CoursePage />} />
             <Route path="study/spaces/:spaceId" element={<StudySpacePage />} />
             <Route path="study/reviews" element={<ReviewPage />} />
             <Route path="study/concepts/:conceptId" element={<ConceptProgressPage />} />

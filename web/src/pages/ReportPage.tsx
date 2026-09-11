@@ -10,14 +10,17 @@ import {
   Target,
 } from 'lucide-react'
 import { useRef } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading, StatusBadge } from '../components/ui'
 import { api } from '../services/api'
 import { providerErrorMessage } from '../services/providerErrors'
+import { safeCourseReturn, withCourseReturn } from '../services/courseNavigation'
 
 export function ReportPage() {
   const { quizId = '' } = useParams()
+  const [params] = useSearchParams()
+  const courseReturn = safeCourseReturn(params.get('returnTo'))
   const identity = useIdentityKey()
   const key = useRef(crypto.randomUUID())
   const navigate = useNavigate()
@@ -66,10 +69,20 @@ export function ReportPage() {
   )
   return (
     <div className="report-page">
-      <Link className="back-link" to={`/quizzes/${encodeURIComponent(quizId)}`}>
+      <Link
+        className="back-link"
+        to={withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}`, courseReturn)}
+      >
         <ArrowLeft size={16} />
         回看练习
       </Link>
+      {courseReturn && (
+        <Link className="button secondary" to={courseReturn}>
+          <BookOpen size={16} />
+          返回课程，查看学习进度
+          <ArrowRight size={16} />
+        </Link>
+      )}
       <header className="report-hero">
         <div className="report-emblem">
           <Award size={36} />
@@ -198,11 +211,18 @@ export function ReportPage() {
             变成下一次的进步。
           </h2>
           <p>
-            {invalidSource
-              ? '原始依据已失效或未核验。请明确选择新的资料再练习。'
-              : '沿用这次的资料范围，为薄弱知识点再练 3 题。'}
+            {courseReturn
+              ? '回到对应课时查看讲解与学习进度，也可针对本次错题再练 3 题。'
+              : invalidSource
+                ? '原始依据已失效或未核验。请明确选择新的资料再练习。'
+                : '沿用这次的资料范围，为薄弱知识点再练 3 题。'}
           </p>
-          {invalidSource ? (
+          {courseReturn ? (
+            <Link className="button primary" to={`${courseReturn}#course-practice`}>
+              回到本课继续学习
+              <ArrowRight size={17} />
+            </Link>
+          ) : invalidSource ? (
             <Link className="button primary" to="/">
               重新选择资料
               <ArrowRight size={17} />
@@ -235,7 +255,10 @@ export function ReportPage() {
             return (
               <Link
                 key={answer.question_id}
-                to={`/quizzes/${encodeURIComponent(quizId)}?question=${encodeURIComponent(answer.question_id)}`}
+                to={withCourseReturn(
+                  `/quizzes/${encodeURIComponent(quizId)}?question=${encodeURIComponent(answer.question_id)}`,
+                  courseReturn,
+                )}
                 className="review-item"
               >
                 <span className="icon-tile peach">

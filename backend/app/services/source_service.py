@@ -835,9 +835,11 @@ async def cleanup_document(owner, doc_id, store):
         raise conflict("source_not_revoked", "只能清理已撤销的资料")
     from app.services.qa_service import purge_document
     from app.services.learning_cleanup_service import purge_document as purge_learning
+    from app.services.course_service import purge_document as purge_courses
 
     await purge_document(owner, doc_id)
     await purge_learning(owner, doc_id)
+    await purge_courses(owner, doc_id)
     remaining = store.purge_document(
         owner_id=owner, namespace=row["namespace"], doc_id=doc_id
     )

@@ -21,6 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/opt/venv/bin:$PATH \
     DATA_DIR=/app/data \
     EVAL_CONTRACTS_DIR=/contracts \
+    TEACH_SKILL_DIR=/opt/zhixue/skills/zhixue-teach \
     MYSQL_AUTO_INIT=false
 
 RUN apt-get update \
@@ -38,6 +39,7 @@ COPY --chown=zhixue:zhixue backend/migrations ./migrations
 COPY --chown=zhixue:zhixue backend/scripts ./scripts
 COPY --chown=zhixue:zhixue backend/requirements.lock ./requirements.lock
 COPY --chown=zhixue:zhixue contracts /contracts
+COPY --chown=zhixue:zhixue .agents/skills/zhixue-teach /opt/zhixue/skills/zhixue-teach
 COPY --chown=zhixue:zhixue evaluation/requirements.lock evaluation/requirements-ragas.lock ./evaluation-runtime/
 USER 10001:10001
 EXPOSE 8000

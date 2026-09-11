@@ -20,6 +20,7 @@ def outputs():
     from app.models.evaluation import MetricValue
     from app.practice.contracts import GradeArtifact, PracticeArtifact, PracticeSpec
     from app.qa.contracts import ChatAnswerArtifact
+    from app.teaching.contracts import CourseDraft, LessonDraft
     from app.rag import contracts
     from app.rag.evaluation_artifacts import (
         AnswerGradingEvalArtifact,
@@ -53,6 +54,8 @@ def outputs():
             "EvalSample.schema.json": TypeAdapter(EvalSample).json_schema(),
             "MetricValue.schema.json": MetricValue.model_json_schema(),
             "ChatAnswerArtifact.schema.json": ChatAnswerArtifact.model_json_schema(),
+            "CourseDraft.schema.json": CourseDraft.model_json_schema(),
+            "LessonDraft.schema.json": LessonDraft.model_json_schema(),
             "EvaluationArtifact.schema.json": TypeAdapter(
                 EvaluationArtifact
             ).json_schema(),

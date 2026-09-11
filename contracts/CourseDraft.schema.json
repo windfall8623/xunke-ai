@@ -1,0 +1,412 @@
+{
+  "$defs": {
+    "CoursePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "mission": {
+          "$ref": "#/$defs/TeachMission"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "units": {
+          "items": {
+            "$ref": "#/$defs/TeachUnit"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Units",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title",
+        "mission",
+        "units"
+      ],
+      "title": "CoursePayload",
+      "type": "object"
+    },
+    "TeachConcept": {
+      "additionalProperties": false,
+      "properties": {
+        "concept_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Concept Id"
+        },
+        "concept_ref": {
+          "title": "Concept Ref",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "concept_ref",
+        "title"
+      ],
+      "title": "TeachConcept",
+      "type": "object"
+    },
+    "TeachContext": {
+      "additionalProperties": false,
+      "properties": {
+        "course_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Course Id"
+        },
+        "scope_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Revision"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        }
+      },
+      "title": "TeachContext",
+      "type": "object"
+    },
+    "TeachMission": {
+      "additionalProperties": false,
+      "properties": {
+        "daily_minutes": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 5,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Daily Minutes"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "prior_knowledge": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Prior Knowledge",
+          "type": "array"
+        },
+        "success_criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Success Criteria",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal"
+      ],
+      "title": "TeachMission",
+      "type": "object"
+    },
+    "TeachSource": {
+      "additionalProperties": false,
+      "properties": {
+        "document_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Version Id"
+        },
+        "evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Id"
+        },
+        "kind": {
+          "default": "rag_evidence",
+          "enum": [
+            "provided_material",
+            "rag_evidence"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locator"
+        },
+        "source_ref": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "title"
+      ],
+      "title": "TeachSource",
+      "type": "object"
+    },
+    "TeachUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "availability": {
+          "default": "ready",
+          "enum": [
+            "ready",
+            "material_gap"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "completion_check": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completion Check"
+        },
+        "concepts": {
+          "items": {
+            "$ref": "#/$defs/TeachConcept"
+          },
+          "maxItems": 10,
+          "title": "Concepts",
+          "type": "array"
+        },
+        "estimated_minutes": {
+          "anyOf": [
+            {
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Minutes"
+        },
+        "objective": {
+          "anyOf": [
+            {
+              "maxLength": 1500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective"
+        },
+        "prerequisite_unit_refs": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prerequisite Unit Refs"
+        },
+        "source_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "unit_ref": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Unit Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_ref",
+        "title"
+      ],
+      "title": "TeachUnit",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "context": {
+      "$ref": "#/$defs/TeachContext"
+    },
+    "kind": {
+      "const": "course_draft",
+      "default": "course_draft",
+      "title": "Kind",
+      "type": "string"
+    },
+    "payload": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CoursePayload"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Questions",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "zhixue-teach.v1",
+      "default": "zhixue-teach.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_policy": {
+      "enum": [
+        "topic",
+        "strict_docs"
+      ],
+      "title": "Source Policy",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/TeachSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "status": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "needs_input",
+        "needs_sources",
+        "insufficient_evidence"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_policy"
+  ],
+  "title": "CourseDraft",
+  "type": "object"
+}

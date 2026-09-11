@@ -15,6 +15,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading } from '../components/ui'
+import { CourseListSection } from '../features/courses/CourseListSection'
 import { api } from '../services/api'
 import type { Difficulty, GenerateRequest, SelectedDocument } from '../types/api'
 
@@ -81,7 +82,7 @@ export function HomePage() {
           <h1>
             今天，想学点什么<span className="accent">？</span>
           </h1>
-          <p className="muted">一个主题，一份资料。一组为你而出的练习。</p>
+          <p className="muted">从一门课程开始，按节学习、练习并回顾。</p>
         </div>
         <div className="heading-art" aria-hidden="true">
           <span className="art-spark">✦</span>
@@ -98,6 +99,7 @@ export function HomePage() {
           </div>
         </div>
       </header>
+      <CourseListSection compact />
       <div className="home-grid">
         <section className="card composer">
           <div className="card-heading">
@@ -105,8 +107,8 @@ export function HomePage() {
               <Sparkles size={21} />
             </span>
             <div>
-              <h2>创建一组练习</h2>
-              <p>从你的目标出发，找到刚刚好的挑战。</p>
+              <h2>自由练习</h2>
+              <p>也可以围绕一个目标，单独生成一组题目。</p>
             </div>
           </div>
           <form onSubmit={submit}>
@@ -330,7 +332,7 @@ export function HomePage() {
                 <ShieldIcon />
                 进度自动保存
               </span>
-              <button type="submit" className="button primary" disabled={generate.isPending}>
+              <button type="submit" className="button secondary" disabled={generate.isPending}>
                 {generate.isPending ? '正在创建…' : user ? '生成练习' : '登录并生成练习'}
                 <ArrowRight size={18} />
               </button>

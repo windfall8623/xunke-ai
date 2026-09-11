@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.routes import (
     auth,
+    courses,
     evaluation,
     feedback,
     health,
@@ -78,6 +79,7 @@ app.include_router(knowledge.router, prefix="/api/v1")
 app.include_router(knowledge.eval_router, prefix="/api/v1")
 app.include_router(qa.router, prefix="/api/v1")
 app.include_router(study.router, prefix="/api/v1")
+app.include_router(courses.router, prefix="/api/v1")
 app.include_router(practice.router, prefix="/api/v1")
 app.include_router(practice_grading.router, prefix="/api/v1")
 app.include_router(practice_views.router, prefix="/api/v1")

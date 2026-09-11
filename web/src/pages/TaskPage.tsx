@@ -6,6 +6,7 @@ import { useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading, StatusBadge } from '../components/ui'
 import { api } from '../services/api'
 import { providerErrorMessage } from '../services/providerErrors'
+import { safeStudyReturn, withCourseReturn } from '../services/courseNavigation'
 
 const stages: Record<string, { label: string; step: number }> = {
   pending: { label: '等待开始', step: 0 },
@@ -32,10 +33,7 @@ const errors: Record<string, string> = {
 export function TaskPage() {
   const { taskId = '' } = useParams()
   const [searchParams] = useSearchParams()
-  const requestedReturn = searchParams.get('returnTo') || ''
-  const returnTo = /^\/(?:qa|study)(?:\/[A-Za-z0-9_-]+)*$/.test(requestedReturn)
-    ? requestedReturn
-    : '/'
+  const returnTo = safeStudyReturn(searchParams.get('returnTo')) || '/'
   const identity = useIdentityKey()
   const [observe, setObserve] = useState(true)
   const navigate = useNavigate()
@@ -53,8 +51,10 @@ export function TaskPage() {
   useEffect(() => {
     const quizId = task?.quiz_id || task?.result?.quiz_id
     if (task?.status === 'completed' && quizId)
-      navigate(`/quizzes/${encodeURIComponent(quizId)}`, { replace: true })
-  }, [task, navigate])
+      navigate(withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}`, returnTo), {
+        replace: true,
+      })
+  }, [task, navigate, returnTo])
   const stage = stages[task?.stage || task?.status || 'pending'] || {
     label: '正在准备练习',
     step: 1,
@@ -64,7 +64,11 @@ export function TaskPage() {
     <div className="narrow-page">
       <Link className="back-link" to={returnTo}>
         <ArrowLeft size={16} />
-        {returnTo.startsWith('/qa') ? '返回资料问答' : '返回学习首页'}
+        {returnTo.startsWith('/study/courses/')
+          ? '返回课程'
+          : returnTo.startsWith('/qa')
+            ? '返回资料问答'
+            : '返回学习首页'}
       </Link>
       <section className="card task-card">
         <div className="task-orbit">

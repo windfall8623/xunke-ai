@@ -15,7 +15,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.llm.configuration import resolve_llm_config
-from app.llm.langchain_factory import ChatModelCloser, create_chat_model
+from app.llm.langchain_factory import ChatModelCloser, create_chat_model, chat_model_from_config
 from app.llm.responses import response_text
 from app.models.learning import ReportText
 from app.practice.providers import LangChainPracticeProvider
@@ -40,6 +40,7 @@ from app.rag.providers.web_evidence import (
 )
 from app.services.provider_meter import MeteredChat, MeteredHTTP, call_external
 from app.services.source_service import reauthorize_scope
+from app.teaching.generator import CourseGenerator
 
 
 class UnconfiguredEmbedding:
@@ -153,6 +154,7 @@ class Runtime:
     clients: list = field(default_factory=list)
     practice_provider: LangChainPracticeProvider | None = None
     grading_provider: LangChainShortAnswerProvider | None = None
+    course_generator: CourseGenerator | None = None
 
     async def close(self):
         try:
@@ -182,12 +184,25 @@ def build_runtime(settings=None) -> Runtime:
             )
         )
         chat, llm_reranker, qa_generator, practice_provider = None, None, None, None
-        grading_provider = None
+        grading_provider, course_generator = None, None
         llm_config = resolve_llm_config(settings)
         if llm_config.configured:
             model = create_chat_model(settings, temperature=0.2)
             clients.append(ChatModelCloser(model))
             chat = MeteredChat(model)
+            if settings.course_enabled:
+                course_model = chat_model_from_config(
+                    llm_config, temperature=0.3, max_tokens=4500,
+                    timeout_seconds=settings.course_provider_timeout_seconds,
+                )
+                clients.append(ChatModelCloser(course_model))
+                course_generator = CourseGenerator(
+                    MeteredChat(course_model.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
+                    MeteredChat(course_model, purpose="course_lesson", output_upper=4500),
+                    timeout_seconds=settings.course_provider_timeout_seconds,
+                    model_configuration={"provider": llm_config.provider, "model": llm_config.model,
+                                         "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
+                )
             # Registry profiles share these output/context bounds. The job
             # additionally checks its pinned bounds before any practice call.
             practice_limits = PipelineConfig()
@@ -298,6 +313,7 @@ def build_runtime(settings=None) -> Runtime:
             clients=clients,
             practice_provider=practice_provider,
             grading_provider=grading_provider,
+            course_generator=course_generator,
         )
     except BaseException:
         # Client constructors do not make network calls. A failed configuration

@@ -627,6 +627,265 @@
         "title": "ApiResponse[CompletionReceipt]",
         "type": "object"
       },
+      "ApiResponse_CourseEvidenceView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseEvidenceView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseEvidenceView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseLessonView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseLessonView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseLessonView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseList_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseList"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseList]",
+        "type": "object"
+      },
+      "ApiResponse_CourseProgressView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseProgressView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseProgressView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseQuizLinkView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseQuizLinkView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseQuizLinkView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseTaskView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTaskView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseTaskView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseView]",
+        "type": "object"
+      },
       "ApiResponse_DatasetList_": {
         "properties": {
           "code": {
@@ -3794,6 +4053,1096 @@
         "title": "CostPreviewComponent",
         "type": "object"
       },
+      "CourseCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "daily_minutes": {
+            "default": 20,
+            "maximum": 120.0,
+            "minimum": 5.0,
+            "title": "Daily Minutes",
+            "type": "integer"
+          },
+          "goal": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Goal",
+            "type": "string"
+          },
+          "lesson_count": {
+            "default": 6,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Lesson Count",
+            "type": "integer"
+          },
+          "prior_knowledge": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Prior Knowledge",
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestedScope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_policy": {
+            "default": "topic",
+            "enum": [
+              "topic",
+              "strict_docs"
+            ],
+            "title": "Source Policy",
+            "type": "string"
+          },
+          "topic": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "title": "CourseCreate",
+        "type": "object"
+      },
+      "CourseEvidenceView": {
+        "additionalProperties": false,
+        "properties": {
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "document_version_id": {
+            "title": "Document Version Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/DocumentLocator"
+          },
+          "source_ref": {
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_ref",
+          "title",
+          "excerpt",
+          "doc_id",
+          "document_version_id",
+          "locator"
+        ],
+        "title": "CourseEvidenceView",
+        "type": "object"
+      },
+      "CourseLessonGenerate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_course_revision": {
+            "minimum": 1.0,
+            "title": "Expected Course Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_course_revision"
+        ],
+        "title": "CourseLessonGenerate",
+        "type": "object"
+      },
+      "CourseLessonSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "default": "ready",
+            "enum": [
+              "ready",
+              "material_gap"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
+          "completion_check": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Check"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/TeachConcept"
+            },
+            "maxItems": 10,
+            "title": "Concepts",
+            "type": "array"
+          },
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "estimated_minutes": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Minutes"
+          },
+          "last_opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Opened At"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "maxLength": 1500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "prerequisite_unit_refs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prerequisite Unit Refs"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "generating",
+              "ready",
+              "material_gap",
+              "failed",
+              "cancelled",
+              "source_revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "unit_ref": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Unit Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_ref",
+          "title",
+          "lesson_id",
+          "position",
+          "status",
+          "revision",
+          "content_version"
+        ],
+        "title": "CourseLessonSummary",
+        "type": "object"
+      },
+      "CourseLessonTitle": {
+        "additionalProperties": false,
+        "properties": {
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lesson_id",
+          "title"
+        ],
+        "title": "CourseLessonTitle",
+        "type": "object"
+      },
+      "CourseLessonView": {
+        "additionalProperties": false,
+        "properties": {
+          "active_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTaskView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/LessonBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/LessonCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "estimated_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Minutes"
+          },
+          "last_opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Opened At"
+          },
+          "latest_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTaskView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "next_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Step"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "quiz_links": {
+            "items": {
+              "$ref": "#/components/schemas/CourseQuizLinkView"
+            },
+            "title": "Quiz Links",
+            "type": "array"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/TeachSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "generating",
+              "ready",
+              "material_gap",
+              "failed",
+              "cancelled",
+              "source_revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lesson_id",
+          "course_id",
+          "title",
+          "status",
+          "revision",
+          "content_version"
+        ],
+        "title": "CourseLessonView",
+        "type": "object"
+      },
+      "CourseList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CourseView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "CourseList",
+        "type": "object"
+      },
+      "CourseNextAction": {
+        "additionalProperties": false,
+        "properties": {
+          "lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Id"
+          },
+          "link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Id"
+          },
+          "quiz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "type": {
+            "enum": [
+              "continue_quiz",
+              "review_lesson",
+              "learn_lesson",
+              "practice_lesson",
+              "view_summary"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "reason"
+        ],
+        "title": "CourseNextAction",
+        "type": "object"
+      },
+      "CourseOutlineUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "lesson_titles": {
+            "items": {
+              "$ref": "#/components/schemas/CourseLessonTitle"
+            },
+            "maxItems": 10,
+            "title": "Lesson Titles",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "CourseOutlineUpdate",
+        "type": "object"
+      },
+      "CourseProgressView": {
+        "additionalProperties": false,
+        "properties": {
+          "available_lessons": {
+            "title": "Available Lessons",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "generated_lessons": {
+            "title": "Generated Lessons",
+            "type": "integer"
+          },
+          "initial_accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Accuracy"
+          },
+          "initial_answered": {
+            "title": "Initial Answered",
+            "type": "integer"
+          },
+          "initial_correct": {
+            "title": "Initial Correct",
+            "type": "integer"
+          },
+          "next_action": {
+            "$ref": "#/components/schemas/CourseNextAction"
+          },
+          "practiced_lessons": {
+            "title": "Practiced Lessons",
+            "type": "integer"
+          },
+          "read_lessons": {
+            "title": "Read Lessons",
+            "type": "integer"
+          },
+          "review_runs": {
+            "items": {
+              "$ref": "#/components/schemas/CourseReviewRun"
+            },
+            "title": "Review Runs",
+            "type": "array"
+          },
+          "total_lessons": {
+            "title": "Total Lessons",
+            "type": "integer"
+          },
+          "weak_points": {
+            "items": {
+              "$ref": "#/components/schemas/CourseWeakPoint"
+            },
+            "title": "Weak Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "course_id",
+          "total_lessons",
+          "available_lessons",
+          "generated_lessons",
+          "read_lessons",
+          "practiced_lessons",
+          "initial_answered",
+          "initial_correct",
+          "next_action"
+        ],
+        "title": "CourseProgressView",
+        "type": "object"
+      },
+      "CourseQuizCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_content_version": {
+            "minimum": 1.0,
+            "title": "Expected Content Version",
+            "type": "integer"
+          },
+          "kind": {
+            "default": "initial",
+            "enum": [
+              "initial",
+              "review"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "parent_link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Link Id"
+          }
+        },
+        "required": [
+          "expected_content_version"
+        ],
+        "title": "CourseQuizCreate",
+        "type": "object"
+      },
+      "CourseQuizLinkView": {
+        "additionalProperties": false,
+        "properties": {
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "initial",
+              "review"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          },
+          "parent_link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Link Id"
+          },
+          "task": {
+            "$ref": "#/components/schemas/TaskView"
+          }
+        },
+        "required": [
+          "link_id",
+          "lesson_id",
+          "kind",
+          "content_version",
+          "created_at",
+          "task"
+        ],
+        "title": "CourseQuizLinkView",
+        "type": "object"
+      },
+      "CourseReadUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "read"
+        ],
+        "title": "CourseReadUpdate",
+        "type": "object"
+      },
+      "CourseReviewRun": {
+        "additionalProperties": false,
+        "properties": {
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "answered": {
+            "title": "Answered",
+            "type": "integer"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          },
+          "quiz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "link_id",
+          "lesson_id",
+          "status",
+          "answered",
+          "correct",
+          "total",
+          "created_at"
+        ],
+        "title": "CourseReviewRun",
+        "type": "object"
+      },
+      "CourseTaskView": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "kind": {
+            "enum": [
+              "course_outline",
+              "course_lesson"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Id"
+          },
+          "stage": {
+            "default": "queued",
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "course_id",
+          "kind",
+          "status"
+        ],
+        "title": "CourseTaskView",
+        "type": "object"
+      },
+      "CourseView": {
+        "additionalProperties": false,
+        "properties": {
+          "active_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTaskView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "latest_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTaskView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/CourseLessonSummary"
+            },
+            "title": "Lessons",
+            "type": "array"
+          },
+          "mission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeachMission"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outline_editable": {
+            "default": false,
+            "title": "Outline Editable",
+            "type": "boolean"
+          },
+          "resume_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Lesson Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicResolvedScope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_policy": {
+            "enum": [
+              "topic",
+              "strict_docs"
+            ],
+            "title": "Source Policy",
+            "type": "string"
+          },
+          "source_status": {
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "title": "Source Status",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/TeachSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "generating",
+              "ready",
+              "partial",
+              "failed",
+              "cancelled",
+              "source_revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "course_id",
+          "title",
+          "source_policy",
+          "source_status",
+          "status",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CourseView",
+        "type": "object"
+      },
+      "CourseWeakPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "knowledge_point": {
+            "title": "Knowledge Point",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          },
+          "question_id": {
+            "title": "Question Id",
+            "type": "string"
+          },
+          "quiz_id": {
+            "title": "Quiz Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lesson_id",
+          "link_id",
+          "quiz_id",
+          "question_id",
+          "knowledge_point"
+        ],
+        "title": "CourseWeakPoint",
+        "type": "object"
+      },
       "CoveragePlan": {
         "additionalProperties": false,
         "properties": {
@@ -5547,6 +6896,105 @@
           }
         },
         "title": "LearningEvaluationUsage",
+        "type": "object"
+      },
+      "LessonBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "source_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "synthetic": {
+            "default": false,
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "explanation",
+              "example",
+              "reference",
+              "recap"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "LessonBlock",
+        "type": "object"
+      },
+      "LessonCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "check_ref": {
+            "title": "Check Ref",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/LessonCheckOption"
+            },
+            "maxItems": 10,
+            "title": "Options",
+            "type": "array"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "question_type": {
+            "default": "reflection",
+            "enum": [
+              "single",
+              "multiple",
+              "judge",
+              "short_answer",
+              "reflection"
+            ],
+            "title": "Question Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_ref",
+          "prompt"
+        ],
+        "title": "LessonCheck",
+        "type": "object"
+      },
+      "LessonCheckOption": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "text"
+        ],
+        "title": "LessonCheckOption",
         "type": "object"
       },
       "LoginBody": {
@@ -13626,6 +15074,153 @@
         "title": "TaskView",
         "type": "object"
       },
+      "TeachConcept": {
+        "additionalProperties": false,
+        "properties": {
+          "concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
+          "concept_ref": {
+            "title": "Concept Ref",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept_ref",
+          "title"
+        ],
+        "title": "TeachConcept",
+        "type": "object"
+      },
+      "TeachMission": {
+        "additionalProperties": false,
+        "properties": {
+          "daily_minutes": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 5.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Minutes"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "goal": {
+            "title": "Goal",
+            "type": "string"
+          },
+          "prior_knowledge": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Prior Knowledge",
+            "type": "array"
+          },
+          "success_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Success Criteria",
+            "type": "array"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "TeachMission",
+        "type": "object"
+      },
+      "TeachSource": {
+        "additionalProperties": false,
+        "properties": {
+          "document_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "kind": {
+            "default": "rag_evidence",
+            "enum": [
+              "provided_material",
+              "rag_evidence"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          },
+          "source_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_ref",
+          "title"
+        ],
+        "title": "TeachSource",
+        "type": "object"
+      },
       "UpdateProfileRequest": {
         "properties": {
           "avatar_url": {
@@ -14431,6 +16026,754 @@
         "summary": "Session",
         "tags": [
           "authentication"
+        ]
+      }
+    },
+    "/api/v1/courses": {
+      "get": {
+        "operationId": "list_courses_api_v1_courses_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseList_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Courses",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "create_api_v1_courses_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTaskView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/tasks/{task_id}": {
+      "get": {
+        "operationId": "task_api_v1_courses_tasks__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTaskView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/tasks/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_api_v1_courses_tasks__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTaskView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}": {
+      "get": {
+        "operationId": "course_api_v1_courses__course_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Course",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/evidence/{source_ref}": {
+      "get": {
+        "operationId": "outline_evidence_api_v1_courses__course_id__evidence__source_ref__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source_ref",
+            "required": true,
+            "schema": {
+              "title": "Source Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseEvidenceView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Outline Evidence",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}": {
+      "get": {
+        "operationId": "lesson_api_v1_courses__course_id__lessons__lesson_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseLessonView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lesson",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/evidence/{source_ref}": {
+      "get": {
+        "operationId": "lesson_evidence_api_v1_courses__course_id__lessons__lesson_id__evidence__source_ref__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source_ref",
+            "required": true,
+            "schema": {
+              "title": "Source Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseEvidenceView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lesson Evidence",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/generation-jobs": {
+      "post": {
+        "operationId": "generate_api_v1_courses__course_id__lessons__lesson_id__generation_jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseLessonGenerate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTaskView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/progress": {
+      "patch": {
+        "operationId": "read_api_v1_courses__course_id__lessons__lesson_id__progress_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseReadUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseLessonView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/quiz-jobs": {
+      "post": {
+        "operationId": "practice_api_v1_courses__course_id__lessons__lesson_id__quiz_jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseQuizCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseQuizLinkView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Practice",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/outline": {
+      "patch": {
+        "operationId": "edit_api_v1_courses__course_id__outline_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseOutlineUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/outline-jobs": {
+      "post": {
+        "operationId": "retry_api_v1_courses__course_id__outline_jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTaskView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/progress": {
+      "get": {
+        "operationId": "progress_api_v1_courses__course_id__progress_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseProgressView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Progress",
+        "tags": [
+          "courses"
         ]
       }
     },

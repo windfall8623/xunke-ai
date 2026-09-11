@@ -16,10 +16,13 @@ import { ErrorNotice, Loading, StatusBadge, safeImageUrl } from '../components/u
 import { useQuizProgress } from '../features/quiz/useQuizProgress'
 import { EvidencePanel } from '../features/evidence/EvidencePanel'
 import { FeedbackForm } from '../features/quiz/FeedbackForm'
+import { safeCourseReturn, withCourseReturn } from '../services/courseNavigation'
 
 export function QuizPage() {
   const { quizId = '' } = useParams()
   const [params] = useSearchParams()
+  const courseReturn = safeCourseReturn(params.get('returnTo'))
+  const reportPath = withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}/report`, courseReturn)
   const { quizQuery, answerMutation, completion } = useQuizProgress(quizId)
   const quiz = quizQuery.data
   const [index, setIndex] = useState(0)
@@ -66,9 +69,9 @@ export function QuizPage() {
   return (
     <div className="quiz-page">
       <div className="quiz-topline">
-        <Link to="/me" className="back-link">
+        <Link to={courseReturn || '/me'} className="back-link">
           <ArrowLeft size={16} />
-          学习记录
+          {courseReturn ? '返回本课' : '学习记录'}
         </Link>
         <div>
           <StatusBadge status={quiz.source_policy} />
@@ -210,10 +213,7 @@ export function QuizPage() {
                 <ArrowRight size={16} />
               </button>
             ) : settled ? (
-              <Link
-                className="button secondary"
-                to={`/quizzes/${encodeURIComponent(quizId)}/report`}
-              >
+              <Link className="button secondary" to={reportPath}>
                 查看报告
                 <ArrowRight size={16} />
               </Link>
@@ -230,10 +230,7 @@ export function QuizPage() {
                 </span>
               </div>
               {settled ? (
-                <Link
-                  to={`/quizzes/${encodeURIComponent(quizId)}/report`}
-                  className="button primary"
-                >
+                <Link to={reportPath} className="button primary">
                   查看学习报告
                 </Link>
               ) : (
@@ -243,7 +240,7 @@ export function QuizPage() {
                   onClick={() => {
                     if (!completion.isPending)
                       completion.mutate(undefined, {
-                        onSuccess: () => navigate(`/quizzes/${encodeURIComponent(quizId)}/report`),
+                        onSuccess: () => navigate(reportPath),
                       })
                   }}
                 >

@@ -104,6 +104,79 @@ async def enqueue_resolved_quiz(actor, spec, scope, key, *, learning_context=Non
     return await job_service.get_task(actor.owner_id, job["task_id"])
 
 
+async def resolved_review_request(
+    actor, quiz_id, question_count, difficulty, *, conn=None
+):
+    """Prepare a review from saved answers and its original frozen sources."""
+    from app.services.source_service import reauthorize_scope
+
+    original = await learning_service.owned_quiz(
+        actor.owner_id, quiz_id, conn=conn
+    )
+    detail = await learning_service.get_detail(actor.owner_id, quiz_id, conn=conn)
+    wrong_ids = {
+        answer["question_id"]
+        for answer in detail["answer_records"]
+        if not answer["is_correct"]
+    }
+    if not wrong_ids:
+        raise conflict("no_weak_points", "请先完成练习，或选择新的学习主题")
+    if (
+        original["source_status"] == "legacy_unverified"
+        or not original["user_input"]
+    ):
+        raise conflict(
+            "review_source_unverified",
+            "旧题缺少可核验来源，请重新选择学习主题和资料",
+        )
+    raw_scope = load(original["source_scope_json"])
+    if raw_scope is None:
+        if original["source_policy"] != "topic":
+            raise conflict(
+                "review_source_unverified", "原练习缺少可核验的资料范围"
+            )
+        scope = ResolvedScope(owner_id=actor.owner_id, namespace="production")
+    else:
+        scope = ResolvedScope.model_validate(raw_scope)
+    if (original["source_policy"] == "topic") == bool(scope.documents):
+        raise conflict("review_source_unverified", "原练习的来源策略与资料范围不一致")
+    await reauthorize_scope(scope, conn=conn)
+    weak = [
+        question.get("knowledge_point") or question["stem"]
+        for question in load(original["questions_json"], [])
+        if question["id"] in wrong_ids
+    ]
+    if not weak:
+        raise conflict("no_weak_points", "原练习缺少可用的错题记录")
+    requested_scope = None
+    if original["source_policy"] != "topic":
+        if not scope.documents:
+            raise conflict(
+                "review_source_unverified", "原练习缺少可核验的资料范围"
+            )
+        requested_scope = {
+            "documents": [
+                {
+                    "doc_id": source.doc_id,
+                    "section_ids": source.section_ids,
+                    "section_catalog_revision": source.section_catalog_revision,
+                }
+                for source in scope.documents
+            ]
+        }
+    spec = QuizSpec(
+        user_input=original["user_input"],
+        objective_titles=weak[:10],
+        question_count=question_count,
+        difficulty=difficulty,
+        source_policy=original["source_policy"],
+        scope=requested_scope,
+    )
+    spec, scope, request = resolved_quiz_request(actor, spec, scope)
+    request["review_of_quiz_id"] = quiz_id
+    return spec, scope, request
+
+
 async def create_quiz_job(actor, body, key):
     if (
         not get_settings().quiz_min_questions
@@ -119,45 +192,10 @@ async def create_quiz_job(actor, body, key):
         return await job_service.get_task(actor.owner_id, old["task_id"])
     scope = None
     if body.review_of_quiz_id:
-        original = await learning_service.owned_quiz(
-            actor.owner_id, body.review_of_quiz_id
+        spec, resolved_scope, _ = await resolved_review_request(
+            actor, body.review_of_quiz_id, body.question_count, body.difficulty
         )
-        detail = await learning_service.get_detail(
-            actor.owner_id, body.review_of_quiz_id
-        )
-        wrong_ids = {
-            a["question_id"] for a in detail["answer_records"] if not a["is_correct"]
-        }
-        if not wrong_ids:
-            raise conflict("no_weak_points", "请先完成练习，或选择新的学习主题")
-        weak = [
-            q.get("knowledge_point") or q["stem"]
-            for q in load(original["questions_json"])
-            if q["id"] in wrong_ids
-        ]
-        scope = load(original["source_scope_json"])
-        if scope:
-            from app.services.source_service import reauthorize_scope
-
-            await reauthorize_scope(scope)
-        if (
-            original["source_status"] == "legacy_unverified"
-            or not original["user_input"]
-        ):
-            raise conflict(
-                "review_source_unverified",
-                "旧题缺少可核验来源，请重新选择学习主题和资料",
-            )
-        spec = QuizSpec(
-            user_input=original["user_input"],
-            objective_titles=weak[:10],
-            question_count=body.question_count,
-            difficulty=body.difficulty,
-            source_policy=original["source_policy"],
-            scope={"documents": [{"doc_id": m["doc_id"]} for m in scope["documents"]]}
-            if scope
-            else None,
-        )
+        scope = resolved_scope.model_dump(mode="json")
     else:
         raw = {
             key: value

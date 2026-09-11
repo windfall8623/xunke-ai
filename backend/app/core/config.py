@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     quiz_min_questions: int = 3
     quiz_max_questions: int = 10
     practice_enabled: bool = False
+    course_enabled: bool = False
+    course_provider_timeout_seconds: int = Field(default=120, ge=10, le=300)
+    course_job_deadline_seconds: int = Field(default=300, ge=30, le=1800)
     practice_short_answer_enabled: bool = False
     practice_grading_output_tokens: int = Field(default=2048, ge=1, le=12000)
     practice_grading_context_window: int = Field(default=32768, ge=13000)
