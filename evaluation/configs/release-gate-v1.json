@@ -1,0 +1,67 @@
+{
+  "protocol_version": "comparison-v1",
+  "primary_metric": "context_evidence_group_recall",
+  "required_metrics": [
+    "context_evidence_group_recall",
+    "answer_correctness",
+    "source_support",
+    "valid_question_yield",
+    "full_set_pass"
+  ],
+  "noninferiority_metrics": {
+    "source_support": {
+      "margin": 0.02
+    },
+    "answer_correctness": {
+      "margin": 0.02
+    },
+    "valid_question_yield": {
+      "margin": 0.02
+    },
+    "full_set_pass": {
+      "margin": 0.02
+    }
+  },
+  "hard_gates": {
+    "authorization_safety": {
+      "min": 1
+    },
+    "production_isolation": {
+      "min": 1
+    },
+    "revocation_safety": {
+      "min": 1
+    },
+    "question_schema_pass": {
+      "min": 1
+    },
+    "question_count_pass": {
+      "min": 1
+    },
+    "citation_id_validity": {
+      "min": 1
+    },
+    "citation_authorization": {
+      "min": 1
+    },
+    "citation_hash_match": {
+      "min": 1
+    },
+    "context_budget_pass": {
+      "min": 1
+    }
+  },
+  "bootstrap_iterations": 2000,
+  "seed": 1729,
+  "min_locked_clusters": 20,
+  "compatibility_fields": [
+    "dataset_hash",
+    "annotation_version",
+    "metric_version",
+    "judge_config_hash",
+    "cache_protocol",
+    "context_token_budget",
+    "split",
+    "repeat_count"
+  ]
+}

@@ -1,3 +1,10 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["external: requires an explicitly configured external provider; excluded from ordinary local CI"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 88

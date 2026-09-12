@@ -1,0 +1,16 @@
+{
+  "validated_cases": 60,
+  "distinct_questions": 60,
+  "source_documents": 76,
+  "verified_artifact_hashes": 60,
+  "dataset_valid": true,
+  "human_reviewed_count": 0,
+  "formal_gold_eligible": false,
+  "dataset_file_checksums_verified": 77,
+  "results_sha256": "2d31997e63ed27ca5478c69362cb2d9791e3be18ebb127f9ea414cc4ffae83a1",
+  "summary_sha256": "8fc42c1124c03a8b7f00a8b6381cc02c5404f4352c12fa532e706b264996ad0b",
+  "dataset_manifest_sha256": "731b6c059dc31056d8175b161dafdd5a10e51b45570bc53b52f2949cb5da439c",
+  "dataset_cases_sha256": "6edc5ba8ab48c0de755bd403ab17ca1e6ed39364ef7da2965a501a227b59240a",
+  "dataset_content_hash": "cea4a92375bdf0e25eca00c714da6b821a7899dd5fe3443cb0bdabff29f380d3",
+  "execution_code_hash": "f873f0f97072b8efdcfe7cf026c775dd6fa8e8ae162d0922bb7f648b77ff73e3"
+}

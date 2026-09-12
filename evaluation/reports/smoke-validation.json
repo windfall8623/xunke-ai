@@ -1,0 +1,95 @@
+{
+  "valid": true,
+  "freezable": false,
+  "state": "draft",
+  "counts": {
+    "retrieval": 30,
+    "quiz": 10,
+    "policy": 6,
+    "samples": 46,
+    "source_documents": 4,
+    "families": 4,
+    "clusters": 2
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "code": "human_review_incomplete"
+    },
+    {
+      "code": "independent_second_review_incomplete"
+    },
+    {
+      "code": "freeze_checklist_incomplete"
+    }
+  ],
+  "clusters": {
+    "smoke-family-01": [
+      "smoke-r-001",
+      "smoke-r-002",
+      "smoke-r-003",
+      "smoke-r-004",
+      "smoke-r-005",
+      "smoke-r-006",
+      "smoke-r-007",
+      "smoke-r-008",
+      "smoke-r-009",
+      "smoke-r-010",
+      "smoke-r-011",
+      "smoke-r-012",
+      "smoke-r-013",
+      "smoke-r-014",
+      "smoke-r-029",
+      "smoke-q-001",
+      "smoke-q-002",
+      "smoke-q-005",
+      "smoke-q-006",
+      "smoke-q-009",
+      "smoke-q-010",
+      "smoke-p-001",
+      "smoke-p-002",
+      "smoke-p-005",
+      "smoke-p-006"
+    ],
+    "smoke-family-03": [
+      "smoke-r-015",
+      "smoke-r-016",
+      "smoke-r-017",
+      "smoke-r-018",
+      "smoke-r-019",
+      "smoke-r-020",
+      "smoke-r-021",
+      "smoke-r-022",
+      "smoke-r-023",
+      "smoke-r-024",
+      "smoke-r-025",
+      "smoke-r-026",
+      "smoke-r-027",
+      "smoke-r-028",
+      "smoke-r-030",
+      "smoke-q-003",
+      "smoke-q-004",
+      "smoke-q-007",
+      "smoke-q-008",
+      "smoke-p-003",
+      "smoke-p-004"
+    ]
+  },
+  "source_similarity_audit": {
+    "version": "normalized-char5-bottom256-v1",
+    "audited_source_count": 4,
+    "near_duplicate_threshold": 0.9,
+    "connected_pairs": [],
+    "limitations": "A bounded lexical copy audit; translations, related editions, paraphrases, and shared chapters still require the family_split human checklist."
+  },
+  "review": {
+    "human_reviewed_count": 0,
+    "independently_double_reviewed_count": 0,
+    "disputed_count": 0,
+    "disputed_double_reviewed_count": 0,
+    "ordinary_required_second_review": 10
+  },
+  "dataset_content_hash": "1d0d0aee6613f3f1618df0aae86e5dabbe8ceab843b8232eb601e80f2d7e7c59",
+  "formal_gold_eligible": false,
+  "release_gold_status": "draft_not_release_gold"
+}

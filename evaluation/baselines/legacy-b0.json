@@ -1,0 +1,14 @@
+{
+  "source_commit": "7302ad2a4b16155762017b7020122ee787decbac",
+  "archive_file": "source-7302ad2.tar.gz",
+  "archive_sha256": "14123179792d55fe7e19c8d9ad9589f8ae1f02ca6171df8e077a77eeea04109b",
+  "files": [
+    "backend/app/prompts/rag_prompt.py",
+    "backend/app/prompts/quiz_prompt.py",
+    "backend/app/services/rag_service.py",
+    "backend/app/services/vector_store_service.py",
+    "backend/app/llm/quiz_chain.py",
+    "backend/requirements.txt"
+  ],
+  "purpose": "B0 historical summary pipeline; evaluation only"
+}

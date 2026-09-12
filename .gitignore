@@ -58,3 +58,6 @@ playwright-report/
 .runtime/
 .superpowers/
 docs/
+
+.venv-test/
+.pytest-tmp/

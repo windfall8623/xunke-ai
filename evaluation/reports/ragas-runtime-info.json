@@ -1,0 +1,7 @@
+{
+  "ragas_version": "0.4.3",
+  "prompt_hash": "06e07e3496e5388dcd774a3b26c632742c1d4a86bc1fc08d662bec989e5de12e",
+  "prompt_version": "quiz-facts-v1",
+  "api": "ragas.metrics.collections.Faithfulness.ascore",
+  "model_calls": 0
+}

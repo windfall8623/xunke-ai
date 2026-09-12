@@ -1,0 +1,222 @@
+name: Web, RAG and evaluation CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  ANONYMIZED_TELEMETRY: "false"
+  RAGAS_DO_NOT_TRACK: "true"
+  LANGCHAIN_TRACING_V2: "false"
+  LANGSMITH_TRACING: "false"
+  DEEPSEEK_API_KEY: ""
+  DASHSCOPE_API_KEY: ""
+  DASHSCOPE_IMAGE_API_KEY: ""
+  TAVILY_API_KEY: ""
+  OPENAI_API_KEY: ""
+  EVAL_JUDGE_API_KEY: ""
+  ENABLE_WEB_SEARCH: "false"
+
+jobs:
+  backend:
+    name: Backend and MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          # Synthetic, disposable values required by tests/platform/conftest.py.
+          MYSQL_ROOT_PASSWORD: yu-local-test
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: yu_ai_learn_test
+        ports:
+          - 13316:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root --password=yu-local-test --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      APP_ENV: test
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "13316"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: yu-local-test
+      MYSQL_DATABASE: yu_ai_learn_test
+      MYSQL_AUTO_INIT: "false"
+      COOKIE_SECURE: "false"
+      JWT_SECRET: synthetic-ci-jwt-key-at-least-32-characters
+      EVAL_WORKER_TOKEN: synthetic-ci-worker-key-at-least-32-characters
+      WEB_ORIGINS: '["http://testserver"]'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install MySQL backup and restore clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends mysql-client
+          mysql --version
+          mysqldump --version
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - name: Install the hash-locked backend and deterministic evaluation package
+        run: |
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-deps --no-build-isolation -e ../evaluation
+          python -m pip check
+      - name: Check exported OpenAPI and JSON schemas
+        run: python scripts/export_contracts.py --check
+      - name: Run backend unit, RAG and database integration tests
+        run: python -m pytest -m "not external" -q --basetemp .pytest-tmp/ci --junitxml ../.artifacts/backend.xml
+      - name: Preserve backend test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-tests
+          path: .artifacts/backend.xml
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+  evaluation:
+    name: Evaluation (${{ matrix.runtime }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: core
+            lock: requirements.lock
+          - runtime: ragas
+            lock: requirements-ragas.lock
+    defaults:
+      run:
+        working-directory: evaluation
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: evaluation/${{ matrix.lock }}
+      - name: Install this isolated scoring environment
+        run: |
+          python -m pip install --require-hashes -r "${{ matrix.lock }}"
+          python -m pip install --no-deps --no-build-isolation -e .
+          python -m pip check
+      - name: Run deterministic and installed-adapter tests without external judges
+        run: python -m pytest -m "not external" -q --junitxml ../.artifacts/evaluation-${{ matrix.runtime }}.xml
+      - name: Validate the supplied draft datasets
+        run: |
+          python -m rag_eval.cli validate --dataset datasets/smoke/manifest.json
+          python -m rag_eval.cli validate --dataset datasets/pilot/manifest.json
+      - name: Inspect the installed Ragas API and prompt hash without model calls
+        if: matrix.runtime == 'ragas'
+        run: python -m rag_eval.cli judge-info
+      - name: Preserve evaluation test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: evaluation-${{ matrix.runtime }}-tests
+          path: .artifacts/evaluation-${{ matrix.runtime }}.xml
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+  web:
+    name: Web contracts, types, unit tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked web dependencies
+        run: npm ci
+      - name: Check generated API types
+        run: npm run api:check
+      - name: Type check
+        run: npm run typecheck
+      - name: Run web unit tests
+        run: npm run test:run
+      - name: Build the production website
+        run: npm run build
+      - name: Preserve the production build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 7
+
+  browsers:
+    name: Browser workflows (${{ matrix.group }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: web
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: chromium
+            browsers: chromium
+            projects: --project=desktop --project=mobile
+          - group: firefox-webkit
+            browsers: firefox webkit
+            projects: --project=firefox --project=webkit
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked web dependencies and browser engines
+        run: |
+          npm ci
+          npx playwright install --with-deps ${{ matrix.browsers }}
+      - name: Run the existing browser projects against the isolated mock API
+        run: npx playwright test ${{ matrix.projects }}
+      - name: Preserve browser reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-${{ matrix.group }}-reports
+          path: |
+            web/playwright-report/
+            web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

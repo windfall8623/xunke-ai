@@ -1,0 +1,265 @@
+{
+  "valid": true,
+  "freezable": false,
+  "state": "draft",
+  "counts": {
+    "retrieval": 150,
+    "quiz": 30,
+    "policy": 0,
+    "samples": 180,
+    "source_documents": 20,
+    "families": 20,
+    "clusters": 20
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "code": "human_review_incomplete"
+    },
+    {
+      "code": "independent_second_review_incomplete"
+    },
+    {
+      "code": "freeze_checklist_incomplete"
+    }
+  ],
+  "clusters": {
+    "pilot-family-01": [
+      "pilot-r-001",
+      "pilot-r-002",
+      "pilot-r-003",
+      "pilot-r-004",
+      "pilot-r-005",
+      "pilot-r-006",
+      "pilot-r-007",
+      "pilot-r-008",
+      "pilot-q-001",
+      "pilot-q-021"
+    ],
+    "pilot-family-02": [
+      "pilot-r-009",
+      "pilot-r-010",
+      "pilot-r-011",
+      "pilot-r-012",
+      "pilot-r-013",
+      "pilot-r-014",
+      "pilot-r-015",
+      "pilot-r-016",
+      "pilot-q-002",
+      "pilot-q-022"
+    ],
+    "pilot-family-03": [
+      "pilot-r-017",
+      "pilot-r-018",
+      "pilot-r-019",
+      "pilot-r-020",
+      "pilot-r-021",
+      "pilot-r-022",
+      "pilot-r-023",
+      "pilot-r-024",
+      "pilot-q-003",
+      "pilot-q-023"
+    ],
+    "pilot-family-04": [
+      "pilot-r-025",
+      "pilot-r-026",
+      "pilot-r-027",
+      "pilot-r-028",
+      "pilot-r-029",
+      "pilot-r-030",
+      "pilot-r-031",
+      "pilot-r-032",
+      "pilot-q-004",
+      "pilot-q-024"
+    ],
+    "pilot-family-05": [
+      "pilot-r-033",
+      "pilot-r-034",
+      "pilot-r-035",
+      "pilot-r-036",
+      "pilot-r-037",
+      "pilot-r-038",
+      "pilot-r-039",
+      "pilot-r-040",
+      "pilot-q-005",
+      "pilot-q-025"
+    ],
+    "pilot-family-06": [
+      "pilot-r-041",
+      "pilot-r-042",
+      "pilot-r-043",
+      "pilot-r-044",
+      "pilot-r-045",
+      "pilot-r-046",
+      "pilot-r-047",
+      "pilot-r-048",
+      "pilot-q-006",
+      "pilot-q-026"
+    ],
+    "pilot-family-07": [
+      "pilot-r-049",
+      "pilot-r-050",
+      "pilot-r-051",
+      "pilot-r-052",
+      "pilot-r-053",
+      "pilot-r-054",
+      "pilot-r-055",
+      "pilot-r-056",
+      "pilot-q-007",
+      "pilot-q-027"
+    ],
+    "pilot-family-08": [
+      "pilot-r-057",
+      "pilot-r-058",
+      "pilot-r-059",
+      "pilot-r-060",
+      "pilot-r-061",
+      "pilot-r-062",
+      "pilot-r-063",
+      "pilot-r-064",
+      "pilot-q-008",
+      "pilot-q-028"
+    ],
+    "pilot-family-09": [
+      "pilot-r-065",
+      "pilot-r-066",
+      "pilot-r-067",
+      "pilot-r-068",
+      "pilot-r-069",
+      "pilot-r-070",
+      "pilot-r-071",
+      "pilot-r-072",
+      "pilot-q-009",
+      "pilot-q-029"
+    ],
+    "pilot-family-10": [
+      "pilot-r-073",
+      "pilot-r-074",
+      "pilot-r-075",
+      "pilot-r-076",
+      "pilot-r-077",
+      "pilot-r-078",
+      "pilot-r-079",
+      "pilot-r-080",
+      "pilot-q-010",
+      "pilot-q-030"
+    ],
+    "pilot-family-11": [
+      "pilot-r-081",
+      "pilot-r-082",
+      "pilot-r-083",
+      "pilot-r-084",
+      "pilot-r-085",
+      "pilot-r-086",
+      "pilot-r-087",
+      "pilot-q-011"
+    ],
+    "pilot-family-12": [
+      "pilot-r-088",
+      "pilot-r-089",
+      "pilot-r-090",
+      "pilot-r-091",
+      "pilot-r-092",
+      "pilot-r-093",
+      "pilot-r-094",
+      "pilot-q-012"
+    ],
+    "pilot-family-13": [
+      "pilot-r-095",
+      "pilot-r-096",
+      "pilot-r-097",
+      "pilot-r-098",
+      "pilot-r-099",
+      "pilot-r-100",
+      "pilot-r-101",
+      "pilot-q-013"
+    ],
+    "pilot-family-14": [
+      "pilot-r-102",
+      "pilot-r-103",
+      "pilot-r-104",
+      "pilot-r-105",
+      "pilot-r-106",
+      "pilot-r-107",
+      "pilot-r-108",
+      "pilot-q-014"
+    ],
+    "pilot-family-15": [
+      "pilot-r-109",
+      "pilot-r-110",
+      "pilot-r-111",
+      "pilot-r-112",
+      "pilot-r-113",
+      "pilot-r-114",
+      "pilot-r-115",
+      "pilot-q-015"
+    ],
+    "pilot-family-16": [
+      "pilot-r-116",
+      "pilot-r-117",
+      "pilot-r-118",
+      "pilot-r-119",
+      "pilot-r-120",
+      "pilot-r-121",
+      "pilot-r-122",
+      "pilot-q-016"
+    ],
+    "pilot-family-17": [
+      "pilot-r-123",
+      "pilot-r-124",
+      "pilot-r-125",
+      "pilot-r-126",
+      "pilot-r-127",
+      "pilot-r-128",
+      "pilot-r-129",
+      "pilot-q-017"
+    ],
+    "pilot-family-18": [
+      "pilot-r-130",
+      "pilot-r-131",
+      "pilot-r-132",
+      "pilot-r-133",
+      "pilot-r-134",
+      "pilot-r-135",
+      "pilot-r-136",
+      "pilot-q-018"
+    ],
+    "pilot-family-19": [
+      "pilot-r-137",
+      "pilot-r-138",
+      "pilot-r-139",
+      "pilot-r-140",
+      "pilot-r-141",
+      "pilot-r-142",
+      "pilot-r-143",
+      "pilot-q-019"
+    ],
+    "pilot-family-20": [
+      "pilot-r-144",
+      "pilot-r-145",
+      "pilot-r-146",
+      "pilot-r-147",
+      "pilot-r-148",
+      "pilot-r-149",
+      "pilot-r-150",
+      "pilot-q-020"
+    ]
+  },
+  "source_similarity_audit": {
+    "version": "normalized-char5-bottom256-v1",
+    "audited_source_count": 20,
+    "near_duplicate_threshold": 0.9,
+    "connected_pairs": [],
+    "limitations": "A bounded lexical copy audit; translations, related editions, paraphrases, and shared chapters still require the family_split human checklist."
+  },
+  "review": {
+    "human_reviewed_count": 0,
+    "independently_double_reviewed_count": 0,
+    "disputed_count": 0,
+    "disputed_double_reviewed_count": 0,
+    "ordinary_required_second_review": 36
+  },
+  "dataset_content_hash": "d491738ab88554d113b50c5fef48fc0e1f5014a9b3a01532432c81ffb946c69f",
+  "formal_gold_eligible": false,
+  "release_gold_status": "draft_not_release_gold"
+}

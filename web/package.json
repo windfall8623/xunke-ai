@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check"
   },
@@ -27,6 +30,12 @@
     "prettier": "3.6.2",
     "sass": "1.89.2",
     "typescript": "5.8.3",
-    "vite": "6.4.3"
+    "vite": "6.4.3",
+    "@playwright/test": "1.55.1",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "jsdom": "26.1.0",
+    "vitest": "3.2.7"
   }
 }

@@ -40,7 +40,7 @@ export function LoginPage() {
   })
   const legacyLinkEnabled =
     capabilities.isSuccess && capabilities.data?.legacy_link_enabled === true
-  const emailRegistration = mode === 'register' || mode === 'bind'
+  const emailRegistration = mode === 'register'
   const emailRegistrationEnabled =
     capabilities.isSuccess && capabilities.data?.email_registration_enabled === true
   const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - clock) / 1000))
@@ -310,7 +310,7 @@ export function LoginPage() {
               )}
               <form onSubmit={submit} className="stack-form">
                 <label>
-                  {emailRegistration ? '邮箱' : '账号或邮箱'}
+                  {emailRegistration ? '邮箱' : mode === 'bind' ? '原账号' : '账号或邮箱'}
                   <input
                     ref={accountInput}
                     name="account"
@@ -331,7 +331,13 @@ export function LoginPage() {
                     required
                     minLength={3}
                     maxLength={100}
-                    placeholder={emailRegistration ? 'name@example.com' : '输入原账号或邮箱'}
+                    placeholder={
+                      emailRegistration
+                        ? 'name@example.com'
+                        : mode === 'bind'
+                          ? '输入原微信账号'
+                          : '输入原账号或邮箱'
+                    }
                   />
                 </label>
                 {mode === 'register' && (
