@@ -85,7 +85,9 @@ jobs:
       - name: Check exported OpenAPI and JSON schemas
         run: python scripts/export_contracts.py --check
       - name: Run backend unit, RAG and database integration tests
-        run: python -m pytest -m "not external" -q --basetemp .pytest-tmp/ci --junitxml ../.artifacts/backend.xml
+        run: |
+          mkdir -p .pytest-tmp
+          python -m pytest -m "not external" -q --basetemp .pytest-tmp/ci --junitxml ../.artifacts/backend.xml
       - name: Preserve backend test report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

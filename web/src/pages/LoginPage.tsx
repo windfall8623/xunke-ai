@@ -40,7 +40,7 @@ export function LoginPage() {
   })
   const legacyLinkEnabled =
     capabilities.isSuccess && capabilities.data?.legacy_link_enabled === true
-  const emailRegistration = mode === 'register'
+  const emailRegistration: boolean = mode === 'register'
   const emailRegistrationEnabled =
     capabilities.isSuccess && capabilities.data?.email_registration_enabled === true
   const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - clock) / 1000))
