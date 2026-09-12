@@ -1,76 +1,167 @@
 <div align="center">
-  <img src="web/public/brand/zhixue-logo.svg" width="88" height="88" alt="知学 AI Logo" />
-  <h1>知学 AI · Zhixue AI</h1>
-  <p><strong>一个面向 Agent 应用开发的开源实战学习项目</strong></p>
-  <p>围绕课程学习、知识库问答与智能练习，学习 Agent 编排、RAG 检索和 AI 应用工程。</p>
+  <img src="web/public/brand/xunke-logo.svg" width="88" height="88" alt="循课 AI Logo" />
+  <h1>循课 AI · Xunke AI</h1>
+  <p><strong>把资料组织成课程，让学习有依据、有反馈、有下一步。</strong></p>
+  <p>以课程为核心的开源学习 Agent，也是一个可以运行、拆解与扩展的 Agent 应用开发项目。</p>
+  <p>
+    <a href="#quick-start">快速开始</a> ·
+    <a href="#agent-design">Agent 设计</a> ·
+    <a href="#architecture">系统架构</a> ·
+    <a href="docs/configuration.md">配置指南</a>
+  </p>
 </div>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11" />
   <img src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" alt="React 19" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
+  <img src="https://img.shields.io/badge/LangGraph-Agent%20Workflow-176B58" alt="LangGraph 工作流" />
+  <img src="https://img.shields.io/badge/LlamaIndex-RAG-5551BA" alt="LlamaIndex 检索集成" />
+  <img src="https://img.shields.io/badge/License-MIT-176B58" alt="MIT License" />
 </p>
 
-## 项目介绍
+## 循课 AI 是什么
 
-知学 AI 通过一个可以运行的 AI 学习应用，展示如何把大模型、知识库检索、任务编排和前后端开发组合成完整的产品。
+循课 AI 面向“手里有资料，却不知道如何系统学习”的个人自学场景。输入一个主题，或上传自己的资料，就能创建课程、逐课学习、围绕内容提问，再通过练习与复习记录继续推进。
 
-你可以按主题或自己的资料创建课程，查看纲要、逐课学习并完成练习；也可以围绕资料进行多轮问答，用学习空间串联目标、练习、错题与复习。通过阅读和修改代码，可以学习一个 Agent 应用如何组织检索、生成、校验、异步任务与费用管理。
+对于开发者，循课 AI 提供一套完整的 Web 实践：**LangGraph 如何控制状态与回路，LlamaIndex 如何接入可追溯检索，教学 Skill 如何进入应用，以及长任务、学习记录和模型费用如何可靠衔接。** 适合学习 Agent / RAG 应用开发、课程设计和二次开发，支持电脑与手机浏览器。
 
-项目适合希望实践 **Agent 开发、RAG 应用、AI 后端与全栈开发**的同学，支持在电脑和手机浏览器中使用，也适合作为课程设计、个人项目和二次开发的起点。
+![循课 AI 学习流程：资料或主题进入课程，再串联答疑、练习与复习](docs/assets/learning-loop.svg)
 
-## 项目特色
+## 可以做什么
 
-- **课程学习**：支持无资料主题课程和资料课程，先生成纲要，再按需生成课文；每课配三道客观题检查，阅读、首次检查与错题补练分别记录和展示。
-- **知识库问答**：上传 PDF、DOCX、Markdown、TXT，选定资料或章节进行多轮追问，点击引用查看原文，还能根据有依据的回答生成练习。
-- **智能练习**：覆盖单选、多选、判断、填空、数值、短解释六类题型，支持配置题量和难度、保存作答进度、查看反馈与解析。
-- **学习空间**：按主题管理资料、目标、单元与知识点，记录学习过程，结合错题本和复习队列安排后续练习。
-- **分层评分**：客观题、填空和数值题采用规则评分；短解释支持模型暂定评分、授权复核和独立自评，保留评分来源与历史。
-- **Agent 工作流**：使用 LangGraph 编排检索、生成与校验，根据反馈补检索或有限再生成，并控制调用次数、时间与费用。
-- **混合 RAG**：集成 LlamaIndex、Chroma、中文 BM25、RRF 融合、模型重排与父段扩展，支持切换方案进行对比。
-- **评测工作台**：管理数据集、标注依据、运行评测，对比质量、耗时与费用，支持可选的模型 Judge。
-- **完整 Web 应用**：提供账号体系、资料管理、历史记录、持久任务和 Docker 部署，支持 Claude、DeepSeek 与 OpenAI 兼容服务。
-
-## 你能学到什么
-
-| 方向 | 项目中的实践 |
+| 能力 | 使用方式 |
 | --- | --- |
-| Agent 编排 | 状态图、条件分支、结果校验、有限重试与停止条件 |
-| RAG 与上下文 | 文档分块、混合召回、重排、证据组装与引用追溯 |
-| 模型接入 | 聊天模型与 Embedding 分离，适配不同协议与服务商 |
-| AI 应用工程 | 异步任务、租约、幂等提交、失败恢复与调用预算 |
-| 学习应用设计 | 课程纲要、按需课时、问答转练习、真实学习记录与分层评分 |
-| 效果评测 | 固定数据和配置，从质量、耗时、费用三个维度比较方案 |
-| 前后端交付 | React + FastAPI、用户鉴权、数据持久化与容器化部署 |
+| **生成自己的课程** | 按主题或资料创建课程，设置目标、已有基础与每天可用时间；先看纲要，再按需生成课文。 |
+| **边学边问** | 对当前课文自由提问，解释某一段、换个例子或获取提示；保存自检回答，再按需请求反馈。 |
+| **基于资料查证** | 上传 PDF、DOCX、Markdown、TXT，限定资料或章节多轮问答，点击引用回到原文，还可从有依据的回答发起练习。 |
+| **练习与反馈** | 产品覆盖单选、多选、判断、填空、数值、短解释六类题型；课程每课配三道客观题检查，支持继续作答与查看解析。 |
+| **持续学习** | 学习空间管理目标、资料与知识点，记录首次检查、补练、错题和复习；“今日学习”结合未完成活动与到期任务推荐下一步。 |
+| **比较 RAG 方案** | 在评测工作台冻结数据和配置，比较召回、排序、引用、耗时与费用，按需启用模型 Judge。 |
 
-以资料出题为例，核心工作流如下；补检索与再生成都受预算和次数限制：
+<a id="design"></a>
+<a id="agent-design"></a>
+
+## Agent 设计：编排、工具、上下文与执行边界
+
+循课 AI 将 Agent 应用拆成可单独理解和替换的职责。模型输出先成为内容产物，通过校验后才进入业务系统；工具执行、资料访问和状态更新都有程序约束。
+
+| 关注点 | 当前设计 | 解决的问题 |
+| --- | --- | --- |
+| **LangGraph · 工作流编排** | 显式 State、Node、条件 Edge，覆盖不足补检索，校验失败有限再生成 | 让执行路径、失败原因与停止条件可追踪 |
+| **LangChain · 模型协议** | 使用 ChatAnthropic / ChatOpenAI 适配原生 Claude 与兼容接口，统一调用包装 | 业务逻辑复用同一调用入口，便于更换服务商 |
+| **LlamaIndex · 知识检索** | 通过 ChromaVectorStore 适配向量查询，转换成项目自有 Evidence，再与 BM25 / RRF 配合 | 检索框架可替换，证据与权限契约保持一致 |
+| **Tool Interfaces · 工具边界** | 显式注入检索、生成、语义校验和重新授权等接口，限定各任务可用能力 | 工具便于替换与隔离验证，模型不能任意写库或结算成绩 |
+| **Context & Memory · 上下文与记忆** | 会话持久化，按来源范围与预算选择历史；每轮事实重新检索，课程只加载相关教学规则 | 连续对话保留意图，历史回答不冒充新一轮事实依据 |
+| **Structured Output · 结果契约** | Pydantic 校验课程、题目、引用和前置关系，反馈与正式评分分别建模 | 将模型的不确定输出转换为可处理的业务状态 |
+
+### Teach Skill：先规划，再按需生成
+
+### 先规划，再按需生成
+
+一次学习从一份轻量纲要开始。用户进入具体课时后才生成正文，已生成课文保存复用；首次生成课时前可调整标题，开始后固定纲要，保持目标与内容一致。
+
+教学规则作为版本化的 [Teach Skill](.agents/skills/xunke-teach/SKILL.md) 加载，课程、课时和引用使用结构化契约校验。**模型负责提出教学内容，应用负责验证、保存和学习状态更新。** 这让教学策略可以迭代，也把等待与生成开销分散到真正需要的课时。
+
+### LlamaIndex + 混合 RAG：同一份证据贯穿检索与使用
+
+资料课程、知识库问答和资料练习复用证据结构，保留文档版本、章节与原文定位。检索时先限定用户和来源范围，再取候选；引用在生成后核验，展示时继续检查资料授权。
+
+向量与中文 BM25 分别提供语义和关键词召回，RRF 按排名融合，可选重排与父段扩展补充上下文。**检索方案可以替换，内容依据仍然可追溯。** 主题课程明确使用模型知识，资料不足则标明缺口。
+
+LlamaIndex 承担向量查询适配，Chroma 保存索引，项目自己的 Evidence 契约连接来源、上下文和引用。会话历史用于理解追问，当前授权资料提供事实依据，两者分别进入上下文管理。
+
+### LangGraph：每一次回路都有触发条件和终点
+
+资料出题采用 LangGraph 编排。证据覆盖不足时补检索，生成结果未通过校验时有限再生成；轮次、模型调用数、时间和费用共同约束执行。
 
 ```mermaid
-flowchart LR
-    A[准备学习任务] --> B[检索资料]
-    B --> C[组装证据]
-    C -->|证据足够| D[生成题目]
-    C -->|覆盖不足且有预算| B
-    D --> E[校验结果]
-    E -->|通过| F[发布练习]
-    E -->|允许重试| D
+flowchart TB
+    P["规划覆盖目标"] --> R["检索资料"]
+    R --> E["组装证据"]
+    E -->|"覆盖不足且仍有预算"| R
+    E -->|"证据足够"| G["生成题目"]
+    G --> V["结构、引用与语义校验"]
+    V -->|"未通过且允许重试"| G
+    V -->|"通过"| A["返回内容产物"]
+    A --> B["业务层校验执行权并发布"]
+    E -->|"无法满足"| X["明确失败与原因"]
+    V -->|"达到上限"| X
 ```
 
-**技术栈：** Python 3.11、FastAPI、LangGraph、LangChain、LlamaIndex、Chroma、MySQL、React 19、TypeScript、Vite、Docker Compose。
+图中展示严格资料出题链路；预算耗尽、超时或授权失效也会停止执行。**图负责生成内容产物，业务层负责发布与结算。** 课程和问答使用各自明确的业务流程，便于针对不同任务控制行为。
+
+状态包含覆盖计划、候选证据、检索轮次、生成次数和校验结果；条件边读取这些状态决定下一步。当前资料出题最多两轮检索、两次生成，且受共同调用预算约束。持久恢复由外层任务与 attempt 管理，当前未配置 LangGraph Checkpointer 做逐节点续跑。
+
+### 持久任务与预算：长任务可恢复，重复操作有边界
+
+课程、问答和出题进入 MySQL 持久任务队列。worker 用租约与心跳维护执行权，发布前再次校验，避免旧执行结果覆盖新结果；幂等键处理重复提交，成绩结算保留收据。
+
+同一套外呼计量记录模型用量，调用前预占预算、结束后结算。超时且费用未知的调用保留预占，等待对账。**任务状态、业务结果与模型费用各自有据可查。**
+
+<details>
+<summary>为什么当前使用 MySQL 任务队列，Redis 在这里适合做什么？</summary>
+
+当前采用 MySQL 的行锁与 `SKIP LOCKED` 领取任务，将任务发布、学习记录和预算状态放在已有的事务体系内协调，减少需要共同维护的基础设施。数据库保存事实，租约与幂等控制有效结果；这项选择优先服务于当前部署规模和一致性需求。
+
+Redis 当前未接入。若后续测量表明缓存、共享限流或任务通知成为瓶颈，可以针对这些职责引入 Redis；成绩与费用仍需可靠持久化，新增消息队列也仍需要处理重投、幂等和执行权。框架和组件的选择由具体问题推动。
+
+</details>
+
+### 教学反馈与学习事实分别记录
+
+自检回答可以直接保存，模型反馈按需请求；正式题目按题型评分，短解释在缺少有效校准时保留暂定状态。首次成绩、补练和复习记录分别保存，补练完成后仍能看到原来的错误。
+
+“今日学习”根据未完成练习、到期复习和课程进度计算建议，查看建议无需调用模型。**该用规则判断的地方使用规则，模型集中处理讲解与生成。**
+
+### 用同一把尺子比较改动
+
+评测冻结资料、标注和运行配置，再比较检索或生成方案。确定性检查、可选模型 Judge 和人工复核各有职责；耗时与费用和质量一起记录，帮助判断一次优化是否值得保留。
+
+独立评分进程通过受控 API 获取任务与提交结果，部署时不持有业务数据库凭据或原始资料卷。基础评测可直接运行，外部 Judge 按需启用。
+
+<a id="architecture"></a>
+
+## 系统架构
+
+![循课 AI 系统架构：Web、业务 API、持久任务、RAG 执行与独立评测](docs/assets/system-architecture.svg)
+
+| 层次 | 技术与职责 |
+| --- | --- |
+| 交互 | React 19、TypeScript、Vite、TanStack Query：课程、问答、练习与任务状态 |
+| 业务 | FastAPI、Pydantic、MySQL：身份、权限、数据契约、学习记录、任务与预算 |
+| Agent 与模型 | LangGraph StateGraph、显式工具接口、版本化 Teach Skill；LangChain 适配模型协议 |
+| 检索与上下文 | LlamaIndex、Chroma、中文 BM25 / RRF、可选重排、证据契约与上下文预算 |
+| 运行与评测 | RAG owner 集中管理本地索引，独立评测 worker 评分，Docker Compose / Nginx 部署 |
+
+LLM、Embedding 与可选重排服务分别配置。Claude 使用原生 Anthropic 协议，也支持 DeepSeek 和 OpenAI 兼容服务。Chroma 随 RAG owner 使用本地持久化目录，基础部署无需额外的 Redis 或本地 GPU。
+
+<a id="quick-start"></a>
 
 ## 快速开始
 
-推荐使用 Docker 启动。请先安装 **Docker Desktop / Docker Engine、Docker Compose 2.24.4+ 和 Python 3.11**，下载源码后在项目根目录执行。
+准备 **Docker Desktop / Docker Engine、Docker Compose 2.24.4+ 和 Python 3.11**，下载源码后在项目根目录执行。
 
-**1. 生成配置**
+**1. 生成私有配置**
 
 ```shell
 python deploy/init_env.py
 ```
 
-脚本会创建 `deploy/.env` 并生成数据库密码与应用密钥。要使用真实课程生成、问答、出题和资料检索，按下方说明填写 LLM 与 Embedding 配置；暂不配置模型时，也可以启动网页体验注册、登录和预置题目。
+脚本创建 `deploy/.env` 并生成独立随机密钥。已有该文件时直接编辑，保留现有数据库与应用密钥。
 
-**2. 构建并启动**
+**2. 配置模型与注册邮箱**
+
+编辑 `deploy/.env`，先完成下面三类配置：
+
+| 服务 | 作用 | 配置入口 |
+| --- | --- | --- |
+| **LLM** | 课程、答疑、练习与讲解 | 选择 `LLM_PROVIDER`，填写对应 API 地址、密钥和模型名 |
+| **Embedding** | 资料向量化与检索；主题课程无需此项 | `DASHSCOPE_API_KEY`、模型、地址与匹配的向量维度 |
+| **SMTP** | 新账号邮箱验证码注册 | QQ / 163 SMTP 地址、发件邮箱与客户端授权码 |
+
+完整示例见 [模型与服务配置指南](docs/configuration.md)，所有参数见 [环境变量模板](deploy/env.example)。课程与综合练习在模板中已启用；未配置模型时可以浏览首页和预置题目，已有账号仍可登录，新注册需要 SMTP。
+
+**3. 构建、迁移并启动**
 
 ```shell
 docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml build
@@ -79,155 +170,60 @@ docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.l
 docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d api rag-owner eval-scorer web
 ```
 
-**3. 打开网页**
+打开 **[http://localhost:18080](http://localhost:18080)**，通过邮箱注册并保存恢复码，即可创建课程。
 
-访问 **[http://localhost:18080](http://localhost:18080)**，注册账号后即可开始使用。
+## 第一次怎样使用
 
-在「我的课程」点击「开始新课程」，输入主题、学习目标和已有基础，设置每天时长与课时数。默认 6 节课、每天 20 分钟，可分别调整为 1–10 节和 5–120 分钟；每天时长用于约束单课的预计用时。
+1. 进入「我的课程」，输入主题、目标和已有基础，设置每天学习时间与课时数。也可以先上传资料，处理完成后选择资料或章节。
+2. 查看生成的纲要，按需调整标题，再进入第一课生成课文。
+3. 学习时使用段落解释和课内助教，保存自检回答，需要反馈时点击「检查我的理解」。
+4. 完成三题检查，查看解析与错题；在课时中继续补练，或在「今日学习」继续到期复习与下一课。
 
-| 课程模式 | 使用方式 |
+| 来源模式 | 内容依据 |
 | --- | --- |
-| 主题课程 | 无需上传资料，使用当前 LLM 生成课程，并标明未经外部资料核验 |
-| 资料课程 | 先上传并完成资料处理，再选择资料或章节；按冻结的资料版本生成内容并提供引用 |
+| **主题课程** | 基于当前 LLM 的通用知识，标明未经外部资料核验。 |
+| **资料课程** | 使用选定资料的冻结版本，保留引用，材料不足的课时标明缺口。 |
 
-课程学习流程：**生成纲要 → 按需生成课时 → 阅读与自检 → 三题练习 → 查看首次检查与补练学情**。
-
-开始生成课时前可以调整课程和课时标题。已生成课文会保存，继续学习时直接读取；阅读完成由你标记。课后检查使用单选、多选、判断题，作答后查看规则判分和解析，有错题时可回看本课并发起补练。首次检查成绩和各次补练单独展示，下一步根据未完成练习、错题和阅读记录推荐。
-
-资料课程可点击引用查看原文，保留资料、章节及来源版本。材料不足的课时会标明缺口；资料删除或授权失效后，相关内容停止展示。主题课程不调用资料检索，两种课程模式均不自动联网。
-
-也可以使用资料问答和学习空间：
-
-**上传资料 → 创建学习空间与目标 → 提问或生成练习 → 作答与查看反馈 → 错题整理与复习**
-
-在「学习空间」中选定资料范围、添加目标和知识点，即可生成综合练习；也可以从知识库回答发起练习，将问答与后续学习记录关联起来。短解释的模型评分在未配置有效校准方案时显示为暂定分，自评单独保存。
-
-网页单份资料限制为 10 MB；PDF 需要包含可提取的文字，扫描件应先进行 OCR。注册时请保存一次性恢复码，以便找回账号。
-
-## 模型与服务配置
-
-Docker 部署统一编辑 `deploy/.env`。完整配置项见 [环境变量模板](deploy/env.example)。
-
-### 基础配置：LLM + Embedding
-
-LLM 负责课程生成、问答、出题和报告；Embedding 负责资料向量化。主题课程使用当前 LLM 配置，资料课程和知识库功能还需要配置 Embedding。
-
-以下以 Claude 和 DashScope Embedding 为例：
-
-```dotenv
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=your_anthropic_api_key
-ANTHROPIC_BASE_URL=https://api.anthropic.com
-ANTHROPIC_MODEL=claude-sonnet-4-6
-
-DASHSCOPE_API_KEY=your_embedding_api_key
-DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-DASHSCOPE_EMBEDDING_MODEL=text-embedding-v4
-EMBEDDING_DIMENSIONS=1024
-```
-
-请使用服务商实际开放的模型名称。向量模型与维度必须匹配；更换 Embedding 模型后需要重建索引。Claude 地址使用 API 根地址，不填写完整的 `/messages` 路径。
-
-也可以切换聊天模型：
-
-| 服务 | 配置方式 |
-| --- | --- |
-| DeepSeek | `LLM_PROVIDER=deepseek`，填写 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_MODEL` |
-| OpenAI 兼容服务 | `LLM_PROVIDER=openai_compatible`，填写 `LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL` |
-
-MySQL 和基础评分进程由 Compose 启动，Chroma 随 RAG owner 运行，无需额外部署 Redis 或本地 GPU。资料及索引保存在本地数据卷中，检索片段会发送给你配置的模型服务。
-
-环境模板已启用综合练习：`PRACTICE_ENABLED=true`、`PRACTICE_SHORT_ANSWER_ENABLED=true`。短解释生成和评分使用当前 LLM；仅需规则题型时，可将第二项设为 `false`。
-
-### 课程生成配置
-
-环境模板已启用课程生成，使用与问答、练习相同的 LLM 配置：
-
-```dotenv
-COURSE_ENABLED=true
-COURSE_PROVIDER_TIMEOUT_SECONDS=120
-COURSE_JOB_DEADLINE_SECONDS=300
-```
-
-`COURSE_ENABLED` 控制课程生成入口；后两项分别限制单次课程模型请求和课程任务的执行时长，默认是 120 秒和 300 秒。课程按次生成纲要或一节正文，沿用现有计费与每日预算；读取已保存课文不产生模型调用。
-
-### 可选能力
-
-| 能力 | 配置方式 |
-| --- | --- |
-| 混合检索 | 设置 `RAG_PIPELINE_ID=hybrid-v1`；默认 `dense-v1` 使用向量检索 |
-| 复用 Claude 等聊天模型重排 | 设置 `RAG_PIPELINE_ID=hybrid-llm-rerank-v1`，直接使用当前 LLM 配置 |
-| 专用重排服务 | 设置 `RAG_PIPELINE_ID=hybrid-rerank-v1`，填写模板中的 `RERANKER_*` 服务配置 |
-| 联网补充 | 配置 `ENABLE_WEB_SEARCH=true` 与 `TAVILY_API_KEY`，并由用户在页面开启 |
-| 题目配图 | 配置 `DASHSCOPE_IMAGE_*`，创建练习时开启配图 |
-| 外部评测 Judge | 配置独立 Judge 模型，并启用 `compose.judge.yaml`，操作见下方折叠说明 |
-
-费用设置见模板中的 `PRICING_VERSION`、各项单价及每日预算。token 单价以人民币 / 百万 token 为单位，需按实际服务价格填写；未知价格保持未设置，避免按零费用记录。
-
-修改配置后，重新创建相关服务：
-
-```shell
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d --force-recreate api rag-owner eval-scorer
-```
-
-真实密钥保存在自己的 `.env` 中，不要提交到仓库，也不要写入会打包到浏览器的 `VITE_*` 变量。
-
-## 使用评测工作台
-
-评测流程为：**准备资料 → 创建并标注数据集 → 冻结版本 → 选择方案运行 → 查看与比较结果**。
-
-工作台需要 `evaluator` 角色。注册账号后，管理员可执行以下命令授权；将 `123` 替换为实际用户 ID，完成后重新登录：
-
-```shell
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml exec api python scripts/admin.py --user-id 123 --role evaluator
-```
-
-用户 ID 可在登录后访问 `/api/v1/auth/session`，查看 `data.user.id`。基础评测无需配置额外 Judge；外部 Judge 用于增加模型判断维度。
+资料课程与主题课程均不自动联网。当前单份文件上限为 10 MB；PDF 需含可提取文字，扫描件请先进行 OCR。
 
 <details>
-<summary>开启外部 Judge（可选）</summary>
+<summary>学习记录、评分与复习如何理解</summary>
 
-1. 将 [Judge 配置模板](evaluation/judge-config.example.json) 复制为 `deploy/judge-config.json`。
-2. 把示例中的模型、地址、价格和预算替换为自己的配置，将 `enabled` 设为 `true`。没有相应人工校准记录时，保持 `calibrated=false`。
-3. 在 `deploy/.env` 中添加：
-
-```dotenv
-EVAL_JUDGE_CONFIG_FILE=./judge-config.json
-EVAL_JUDGE_API_KEY=your_judge_api_key
-```
-
-4. 启用独立的 Ragas 评分镜像：
-
-```shell
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml -f deploy/compose.judge.yaml up -d --build api eval-scorer
-```
-
-后续操作这套部署时继续使用相同的 Compose 文件组合。Judge 可以使用与生成相同的模型，但通过独立配置和密钥变量启用。
+- 阅读完成由用户标记；生成课文、已读、已完成检查分别记录。
+- 课堂自检的保存与反馈不计正式成绩、经验值或掌握状态。
+- 课程检查使用单选、多选、判断三类客观题；填空、数值、短解释使用独立的练习与评分流程。
+- 短解释的模型评分在缺少有效校准时为暂定分，授权复核与自评独立保存。
+- 首次成绩与后续补练、复习分别记录。课程当前提供次日复习建议，支持明确选择提前复习。
+- 生成任务通过状态轮询展示进度，当前采用确定性复习规则。
 
 </details>
 
+## 使用评测工作台
+
+流程为 **准备资料 → 创建并标注数据集 → 冻结版本 → 运行方案 → 比较结果**。
+
+工作台需要 `evaluator` 角色。管理员按 [评测配置说明](docs/configuration.md#evaluation) 授权后，可从导航进入。基础评分无需外部 Judge；需要模型判断维度时，再配置独立的 Judge 服务。各类样本使用各自适用的指标，效果结论应结合实际标注与运行结果。
+
 ## 常见问题
 
-**上传后一直无法使用资料？**  
-确认文件含有可提取文字，Embedding 密钥、模型和维度配置正确。查看资料处理状态及 `rag-owner` 日志。
+**生成失败或长时间等待？**
 
-**配置修改后没有生效？**  
-Compose 需要重新创建容器；仅执行 `restart` 不会重新加载环境变量。已有 `deploy/.env` 直接编辑即可，无需重新生成数据库密码和应用密钥。
+检查所选模型是否可用、额度与预算是否充足；单次调用超时和整个任务截止时间分别配置。任务失败后可在页面重试，具体参数见 [配置指南](docs/configuration.md#timeouts)。
 
-**如何查看运行问题？**
+**配置修改后没有生效？**
 
-```shell
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml ps
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml logs --tail 100 api rag-owner eval-scorer
-```
+更新 `deploy/.env` 后需要重新创建相关容器。仅执行 `restart` 不会重新加载环境变量。
 
-**可以部署到服务器吗？**  
-可以。使用 `deploy/compose.yaml`，设置实际 HTTPS `WEB_ORIGINS`，将 `fullchain.pem` 与 `privkey.pem` 放入 `deploy/certs/` 并允许 nginx 用户读取。按快速开始中的顺序启动，去掉本地 HTTP 覆盖文件 `compose.local.yaml`。默认使用 80 / 443 端口。
+**资料上传后无法使用？**
 
-## 参与贡献
+检查可提取文字、Embedding 服务和向量维度。更换向量模型后需要重建对应资料索引。
 
-欢迎通过 Issue 反馈问题、分享使用经验，或提交 Pull Request 改进功能与文档。反馈运行问题时，请附上复现步骤、环境版本和已脱敏的错误信息。
+**如何部署到服务器？**
 
-## 开源协议
+使用 HTTPS 域名、证书与生产 Compose 配置，详见 [部署说明](docs/configuration.md#deployment)。
 
-本项目使用 [MIT License](LICENSE)，欢迎学习、使用与二次开发。
+## 参与贡献与许可
+
+欢迎通过 Issue 反馈问题、讨论使用场景，或提交 Pull Request 改进教学体验、检索策略与工程实现。反馈时附上复现步骤、环境版本和脱敏后的错误信息。
+
+项目采用 [MIT License](LICENSE)。教学 Skill 参考 Matt Pocock 的 `teach`，并增加资料来源策略、结构化课程契约和学习状态边界，来源与许可见 [第三方说明](.agents/skills/xunke-teach/THIRD_PARTY_NOTICES.md)。

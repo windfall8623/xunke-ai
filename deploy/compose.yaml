@@ -1,3 +1,5 @@
+# 项目名保留 zhixue-ai：改名会使 zhixue-ai_* 数据卷（MySQL/上传文件/向量索引）失去挂载。
+# 待数据迁移或重新初始化后，再改为 name: xunke-ai。
 name: zhixue-ai
 
 x-backend-env: &backend-env
@@ -78,7 +80,7 @@ x-backend-env: &backend-env
   LEGACY_SOURCE_COMMIT: ${LEGACY_SOURCE_COMMIT:-7302ad2}
 
 x-backend: &backend
-  image: zhixue-ai-backend:${IMAGE_TAG:-local}
+  image: xunke-ai-backend:${IMAGE_TAG:-local}
   build:
     context: ..
     dockerfile: backend/Dockerfile
@@ -98,7 +100,7 @@ services:
   # Keep loopback independent of API container replacement or long outages.
   # Reuse the built backend image without loading the app, credentials, or data.
   control-network:
-    image: zhixue-ai-backend:${IMAGE_TAG:-local}
+    image: xunke-ai-backend:${IMAGE_TAG:-local}
     command: ["python", "-c", "import signal; signal.pause()"]
     init: true
     restart: unless-stopped
@@ -131,6 +133,23 @@ services:
 
   api:
     <<: *backend
+    # Only the HTTP API sends registration mail; workers do not receive SMTP credentials.
+    environment:
+      <<: *backend-env
+      EMAIL_REGISTRATION_ENABLED: ${EMAIL_REGISTRATION_ENABLED:-true}
+      EMAIL_CODE_SECRET: ${EMAIL_CODE_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURITY: ${SMTP_SECURITY:-ssl}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-循课}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-10}
+      EMAIL_SEND_COOLDOWN_SECONDS: ${EMAIL_SEND_COOLDOWN_SECONDS:-60}
+      EMAIL_SEND_MAX_PER_EMAIL_PER_DAY: ${EMAIL_SEND_MAX_PER_EMAIL_PER_DAY:-5}
+      EMAIL_SEND_MAX_PER_IP_PER_HOUR: ${EMAIL_SEND_MAX_PER_IP_PER_HOUR:-10}
+      EMAIL_SEND_DAILY_LIMIT: ${EMAIL_SEND_DAILY_LIMIT:-100}
     network_mode: service:control-network
     depends_on:
       control-network:
@@ -162,7 +181,7 @@ services:
         order: stop-first
 
   eval-scorer:
-    image: zhixue-ai-evaluation:${IMAGE_TAG:-local}
+    image: xunke-ai-evaluation:${IMAGE_TAG:-local}
     build:
       context: ..
       dockerfile: evaluation/Dockerfile
@@ -190,7 +209,7 @@ services:
     command: ["python", "-m", "rag_eval.worker", "--worker-id", "compose-eval-scorer"]
 
   web:
-    image: zhixue-ai-web:${IMAGE_TAG:-local}
+    image: xunke-ai:${IMAGE_TAG:-local}
     build:
       context: ..
       dockerfile: web/Dockerfile

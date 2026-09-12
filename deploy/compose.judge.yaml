@@ -15,7 +15,7 @@ services:
         bind:
           create_host_path: false
   eval-scorer:
-    image: zhixue-ai-evaluation-ragas:${IMAGE_TAG:-local}
+    image: xunke-ai-evaluation-ragas:${IMAGE_TAG:-local}
     build:
       target: ragas
     environment:

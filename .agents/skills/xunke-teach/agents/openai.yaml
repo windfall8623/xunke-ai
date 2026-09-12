@@ -1,0 +1,4 @@
+interface:
+  display_name: "循课 Teach"
+  short_description: "根据学习目标和资料生成短课程、练习与今日学习建议，并保留学习依据"
+  default_prompt: "使用 $xunke-teach 根据我的目标、基础和可用资料生成课程纲要与第一课，并给出下一步学习建议。"

@@ -36,6 +36,7 @@ def main():
             "MYSQL_ROOT_PASSWORD",
             "JWT_SECRET",
             "EVAL_WORKER_TOKEN",
+            "EMAIL_CODE_SECRET",
         )
     }
     values["WEB_ORIGINS"] = json.dumps([args.web_origin], separators=(",", ":"))

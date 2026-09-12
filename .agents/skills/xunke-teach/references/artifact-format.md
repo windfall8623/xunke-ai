@@ -1,8 +1,8 @@
 # 课程草案输出格式 v1
 
-在调用方要求 JSON、保存课程草案或未来接入前端时读取。默认教学对话使用自然语言，不向学习者暴露这些协议字段。
+在调用方要求 JSON、保存课程草案或交给课程适配器处理时读取。默认教学对话使用自然语言，不向学习者暴露这些协议字段。
 
-此格式是技能的设计协议，尚不是知学 AI 已发布的 HTTP DTO 或数据库结构。不能把它直接发送到一个假定存在的课程接口。实际接入边界见 [project-integration.md](project-integration.md)。
+此格式是教学内容的结构化草案协议。循课后端已用严格的 `CourseDraft` / `LessonDraft` 校验课程与课时草案，由 Course 服务分配身份、保存版本并投影为 `CourseView` / `CourseLessonView` 等 HTTP DTO。草案仍不是创建课程或生成课时的 HTTP 请求，调用接口应使用对应的 `CourseCreate`、`CourseLessonGenerate` 等输入契约；今日学习建议与反馈草案也不代表已有同名接口。实际接入边界见 [project-integration.md](project-integration.md)。
 
 ## 通用信封
 
@@ -10,7 +10,7 @@
 
 | 字段 | 类型与含义 |
 | --- | --- |
-| `schema_version` | 固定字符串 `zhixue-teach.v1` |
+| `schema_version` | 固定字符串 `xunke-teach.v1` |
 | `kind` | `course_draft`、`lesson_draft`、`study_plan_draft` 或 `feedback_draft` |
 | `source_policy` | `strict_docs` 或 `topic` |
 | `status` | `draft`、`needs_input`、`needs_sources` 或 `insufficient_evidence` |
@@ -61,19 +61,21 @@
 每个单元包含：
 
 - `unit_ref`：当前课程内的局部引用，不使用虚构的服务端 `unit_id`。
-- `title`、`objective`：名称与本课可观察的目标。
+- `title`、`objective`：名称与本课可观察的目标；缺资料且尚不能确定目标时，`objective` 为 `null`。
 - `concepts`：`concept_ref`、`title` 对象数组；已存在的概念可另带真实 `concept_id`。
-- `prerequisite_unit_refs`：前置单元引用数组，只引用课程中已有单元，不成环；课程外的基础写入 `mission.prior_knowledge` 并注明是否已确认。
-- `estimated_minutes`：正整数估计，不表示实际耗时。
+- `prerequisite_unit_refs`：前置单元引用数组，只引用课程中已有单元，不成环；`[]` 表示已确定没有课程内前置单元，缺资料且前置关系未知时为 `null`。课程外的基础写入 `mission.prior_knowledge` 并注明是否已确认。
+- `estimated_minutes`：正整数估计，不表示实际耗时；缺资料且无法估计时为 `null`。
 - `source_refs`：对应来源。
 - `availability`：`ready` 或 `material_gap`；资料模式的未支持单元只能标为后者。
-- `completion_check`：建议如何检查本课目标，不直接生成完成状态。
+- `completion_check`：建议如何检查本课目标，不直接生成完成状态；缺资料且无法设计时为 `null`。
+
+`availability=ready` 的单元须给出明确目标、前置数组、正整数时长与检查方式。`material_gap` 单元允许上述待定字段为 `null`，`concepts` 也可为 `[]`；只保留用户提出或材料支持的范围占位，不为满足字段格式编造知识、前置关系或课时。待资料补齐后再完善，不能将占位单元纳入可立即执行的今日任务。
 
 可直接解析的主题模式示例；局部引用仅代表这份新草案：
 
 ```json
 {
-  "schema_version": "zhixue-teach.v1",
+  "schema_version": "xunke-teach.v1",
   "kind": "course_draft",
   "source_policy": "topic",
   "status": "draft",

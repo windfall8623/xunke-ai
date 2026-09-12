@@ -3,9 +3,9 @@ requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zhixue-rag-evaluation"
+name = "xunke-rag-evaluation"
 version = "1.0.0"
-description = "Zhixue AI evaluation of retrieval, quiz, QA and learning artifacts"
+description = "Xunke AI evaluation of retrieval, quiz, QA and learning artifacts"
 requires-python = ">=3.11,<3.12"
 dependencies = ["jsonschema>=4.25.1,<5", "httpx==0.28.1"]
 

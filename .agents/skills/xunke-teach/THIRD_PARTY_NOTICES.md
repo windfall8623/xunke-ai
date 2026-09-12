@@ -1,6 +1,6 @@
 # 第三方来源与许可
 
-本技能的目标导向、短课、参考材料、学习证据和连续教学设计，改编自 Matt Pocock 的 `teach`。针对知学 AI 增加了资料 / 纯 LLM 来源策略、课程草案格式及现有评分和复习系统的适配边界。
+本技能的目标导向、短课、参考材料、学习证据和连续教学设计，改编自 Matt Pocock 的 `teach`。针对循课增加了资料 / 纯 LLM 来源策略、课程草案格式及现有评分和复习系统的适配边界。
 
 - 上游：[mattpocock/skills — teach](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015/skills/productivity/teach)
 - 参考版本：`3cca18b368ae95cdbdebbff572ccafa662551015`
