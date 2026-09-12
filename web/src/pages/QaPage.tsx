@@ -24,7 +24,7 @@ export function QaPage() {
   return (
     <div className="qa-page">
       <PageHeading
-        eyebrow="ASK YOUR KNOWLEDGE"
+        eyebrow="问有所据，答有出处"
         title="知识库问答"
         description="带着问题读资料，让每个回答都有出处。"
         action={

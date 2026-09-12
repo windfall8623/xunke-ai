@@ -1,12 +1,20 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, CheckCircle2, FileText, RotateCcw } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import {
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  FileText,
+  MessageCircle,
+  RotateCcw,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, formatDate } from '../../components/ui'
 import {
   courseErrorMessage,
   courseKeys,
+  courseReviewTime,
   coursesApi,
   courseSourceRevoked,
   courseTaskErrorMessage,
@@ -19,16 +27,28 @@ import type {
   CourseLessonView,
   CourseQuizCreate,
   CourseQuizLinkView,
+  CourseReviewStart,
+  CourseReviewView,
+  CourseSelfCheckView,
+  CourseTutorTurnView,
   CourseWeakPoint,
 } from '../../types/course'
 import { CourseTaskStatus } from './CourseTaskStatus'
 import { useCourseOperation } from './useCourseOperation'
+import { LessonSelfCheck } from './LessonSelfCheck'
+import { LessonText } from './LessonText'
+import { EvidenceNoticeBar } from './EvidenceNoticeBar'
+import { LessonTutorPanel, type LessonTutorContext } from './LessonTutorPanel'
+import { useLessonTutor } from './useLessonTutor'
 
 const blockLabels = { explanation: '讲解', example: '示例', reference: '资料说明', recap: '小结' }
 
 export function CourseLesson({
   lesson,
-  weakPoints,
+  pendingWeakPoints,
+  reviews = [],
+  reviewsError,
+  onReloadReviews,
   onGenerate,
   onEvidence,
   onNext,
@@ -36,7 +56,10 @@ export function CourseLesson({
   generating = false,
 }: {
   lesson: CourseLessonView
-  weakPoints: CourseWeakPoint[]
+  pendingWeakPoints: CourseWeakPoint[]
+  reviews?: CourseReviewView[]
+  reviewsError?: unknown
+  onReloadReviews: () => void
   onGenerate: () => void
   onEvidence: (sourceRef: string) => void
   onNext?: () => void
@@ -47,6 +70,13 @@ export function CourseLesson({
   const client = useQueryClient()
   const navigate = useNavigate()
   const operation = useCourseOperation()
+  const tutor = useLessonTutor(lesson, onUnavailable)
+  const [tutorOpen, setTutorOpen] = useState(false)
+  const [tutorContext, setTutorContext] = useState<LessonTutorContext>({
+    mode: 'explain',
+    blockIndex: null,
+  })
+  const [selectedTutorTurn, setSelectedTutorTurn] = useState<string>()
   const keyFor = useMemo(
     () => createCourseSubmissionKeys(identity, `lesson:${lesson.course_id}:${lesson.lesson_id}`),
     [identity, lesson.course_id, lesson.lesson_id],
@@ -62,11 +92,24 @@ export function CourseLesson({
     .find((link) => link.kind === 'initial' && !['failed', 'cancelled'].includes(link.task.status))
   const reviewParents = [
     ...new Set(
-      weakPoints
+      pendingWeakPoints
         .filter((point) => point.lesson_id === lesson.lesson_id)
         .map((point) => point.link_id),
     ),
   ]
+  const review = reviews
+    .filter(
+      (item) =>
+        item.lesson_id === lesson.lesson_id &&
+        item.content_version === lesson.content_version &&
+        ['scheduled', 'generating', 'ready', 'failed'].includes(item.status),
+    )
+    .sort((a, b) => b.schedule_seq - a.schedule_seq)[0]
+  const activeReviewLink = review?.active_link_id
+    ? links.find((link) => link.link_id === review.active_link_id)
+    : undefined
+  const reviewInProgress = !!review && ['generating', 'ready'].includes(review.status)
+  const reviewDue = !!review && new Date(review.due_at).getTime() <= Date.now()
   useEffect(() => {
     if (courseSourceRevoked(operation.error)) onUnavailable()
     if (operation.error instanceof ApiError && operation.error.status === 409) {
@@ -74,6 +117,7 @@ export function CourseLesson({
         queryKey: courseKeys.lesson(identity, lesson.course_id, lesson.lesson_id),
       })
       void client.invalidateQueries({ queryKey: courseKeys.progress(identity, lesson.course_id) })
+      void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, lesson.course_id) })
     }
   }, [operation.error, onUnavailable, client, identity, lesson.course_id, lesson.lesson_id])
   function refresh() {
@@ -83,6 +127,8 @@ export function CourseLesson({
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, lesson.course_id) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, lesson.course_id) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, lesson.course_id) })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
   }
   function openQuiz(link: CourseQuizLinkView) {
     const quizId = link.task.quiz_id || link.task.result?.quiz_id
@@ -138,6 +184,61 @@ export function CourseLesson({
         openQuiz(link)
       },
     )
+  }
+  function startReview(early: boolean) {
+    if (!review || pending || reviewsError) return
+    if (activeReviewLink && !['failed', 'cancelled'].includes(activeReviewLink.task.status)) {
+      openQuiz(activeReviewLink)
+      return
+    }
+    const body: CourseReviewStart = {
+      review_id: review.review_id,
+      expected_revision: review.revision,
+      expected_content_version: lesson.content_version,
+      early,
+    }
+    const semantic = JSON.stringify({ body, retry_of: activeReviewLink?.task.task_id || null })
+    void operation.run(
+      'scheduled-review',
+      async (signal) => {
+        const key = await keyFor('scheduled-review', semantic)
+        if (signal.aborted) throw new DOMException('已离开课时', 'AbortError')
+        return coursesApi.startReview(lesson.course_id, lesson.lesson_id, body, key, signal)
+      },
+      (link) => {
+        refresh()
+        openQuiz(link)
+      },
+    )
+  }
+  async function explainBlock(mode: 'explain' | 'example', blockIndex: number) {
+    setTutorContext({ mode, blockIndex })
+    setSelectedTutorTurn(undefined)
+    setTutorOpen(true)
+    const turn = await tutor.ask({
+      expected_content_version: lesson.content_version,
+      mode,
+      block_index: blockIndex,
+      question: '',
+    })
+    if (turn) setSelectedTutorTurn(turn.turn_id)
+  }
+  async function checkUnderstanding(attempt: CourseSelfCheckView) {
+    setTutorContext({ mode: 'explain', blockIndex: null })
+    setSelectedTutorTurn(undefined)
+    setTutorOpen(true)
+    const turn = await tutor.ask({
+      expected_content_version: lesson.content_version,
+      mode: 'check',
+      question: '',
+      check_attempt_id: attempt.attempt_id,
+    })
+    if (turn) setSelectedTutorTurn(turn.turn_id)
+  }
+  function openFeedback(turn: CourseTutorTurnView) {
+    setTutorContext({ mode: 'explain', blockIndex: null })
+    setSelectedTutorTurn(turn.turn_id)
+    setTutorOpen(true)
   }
   const canGenerate = ['not_generated', 'failed', 'cancelled'].includes(lesson.status)
   return (
@@ -195,15 +296,7 @@ export function CourseLesson({
         ) : null
       ) : (
         <>
-          {!!lesson.warnings?.length && (
-            <div className="notice">
-              <div>
-                {lesson.warnings?.map((warning, index) => (
-                  <p key={index}>{warning}</p>
-                ))}
-              </div>
-            </div>
-          )}
+          <EvidenceNoticeBar warnings={lesson.warnings || []} />
           <section className="card course-lesson-body">
             {lesson.blocks?.map((block, index) => (
               <section className={`course-block course-block-${block.type}`} key={index}>
@@ -211,11 +304,7 @@ export function CourseLesson({
                   <h3>{blockLabels[block.type]}</h3>
                   {block.synthetic && <span className="badge">示意示例</span>}
                 </div>
-                {block.type === 'example' ? (
-                  <pre>{block.text}</pre>
-                ) : (
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{block.text}</p>
-                )}
+                <LessonText text={block.text} />
                 {!!block.source_refs?.length && (
                   <div className="course-citations">
                     {block.source_refs?.map((ref, n) => (
@@ -232,32 +321,59 @@ export function CourseLesson({
                     ))}
                   </div>
                 )}
+                <div className="course-block-help">
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={pending || tutor.busy || tutor.query.isPending || !!tutor.query.error}
+                    onClick={() => {
+                      void explainBlock('explain', index)
+                    }}
+                  >
+                    <MessageCircle size={14} />
+                    解释这一段
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={pending || tutor.busy || tutor.query.isPending || !!tutor.query.error}
+                    onClick={() => {
+                      void explainBlock('example', index)
+                    }}
+                  >
+                    换个例子
+                  </button>
+                </div>
               </section>
             ))}
           </section>
+          <div className="card course-tutor-entry">
+            <div>
+              <strong>这里还有疑问？</strong>
+              <p className="muted tiny">就本课提问、查看解释或获取提示，对话会保存在这一课。</p>
+            </div>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => {
+                setTutorContext({ mode: 'explain', blockIndex: null })
+                setSelectedTutorTurn(undefined)
+                setTutorOpen(true)
+              }}
+            >
+              <MessageCircle size={17} />
+              {tutor.activeTurn ? '查看助教回答进度' : '打开课内助教'}
+            </button>
+          </div>
           {!!lesson.checks?.length && (
-            <section className="card course-self-check">
-              <h3>停下来，想一想</h3>
-              <p className="tiny muted">
-                这些问题用于自检。完成下方的本课练习后，将保存正式作答与成绩。
-              </p>
-              <ol>
-                {lesson.checks?.map((check) => (
-                  <li key={check.check_ref}>
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{check.prompt}</p>
-                    {!!check.options?.length && (
-                      <ul>
-                        {check.options?.map((option) => (
-                          <li key={option.key}>
-                            {option.key}. {option.text}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </section>
+            <LessonSelfCheck
+              checks={lesson.checks}
+              tutor={tutor}
+              onFeedback={(attempt) => {
+                void checkUnderstanding(attempt)
+              }}
+              onOpenFeedback={openFeedback}
+            />
           )}
           <div className="card course-reading-actions">
             <div>
@@ -323,8 +439,8 @@ export function CourseLesson({
                 >
                   <RotateCcw size={16} />
                   {reviewParents.length > 1
-                    ? `第 ${index + 1} 次检查错题再练`
-                    : '本次错题再练 3 题'}
+                    ? `待补练 ${index + 1} · 再练 3 题`
+                    : '待补练 · 再练 3 题'}
                 </button>
               ))}
             </div>
@@ -335,7 +451,11 @@ export function CourseLesson({
                   <div className="course-quiz-row" key={link.link_id}>
                     <div>
                       <strong>
-                        {link.kind === 'initial' ? '首次课后检查' : '错题补练'}
+                        {link.kind === 'initial'
+                          ? '首次课后检查'
+                          : link.kind === 'scheduled_review'
+                            ? '课时复习'
+                            : '错题补练'}
                         {link.kind === 'review' ? ` · ${index + 1}` : ''}
                       </strong>
                       <p className="tiny muted">
@@ -354,9 +474,15 @@ export function CourseLesson({
                         type="button"
                         className="text-button"
                         disabled={pending}
-                        onClick={() => createQuiz(link.kind, link.parent_link_id || undefined)}
+                        onClick={() =>
+                          link.kind === 'scheduled_review'
+                            ? document
+                                .getElementById('course-review')
+                                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                            : createQuiz(link.kind, link.parent_link_id || undefined)
+                        }
                       >
-                        重新生成
+                        {link.kind === 'scheduled_review' ? '查看复习安排' : '重新生成'}
                       </button>
                     ) : (
                       <button type="button" className="text-button" onClick={() => openQuiz(link)}>
@@ -367,6 +493,58 @@ export function CourseLesson({
                   </div>
                 ))}
               </div>
+            )}
+          </section>
+          <section id="course-review" className="card course-lesson-review">
+            <div className="section-line">
+              <h3>
+                <CalendarClock size={18} />
+                下次复习建议
+              </h3>
+              <span className="badge">全新 3 题</span>
+            </div>
+            {reviewsError ? (
+              <ErrorNotice error={courseErrorMessage(reviewsError)} onRetry={onReloadReviews} />
+            ) : review ? (
+              <>
+                <p className="course-review-time">
+                  {courseReviewTime(review)}{' '}
+                  <span className="tiny muted">（{review.timezone}）</span>
+                </p>
+                <p className="muted">{review.reason}</p>
+                <p className="tiny muted">
+                  复习不覆盖首次成绩；完成作答并确认结算后，才会安排下一次复习。
+                </p>
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={pending}
+                    onClick={() => startReview(!reviewDue && !reviewInProgress)}
+                  >
+                    <RotateCcw size={16} />
+                    {operation.pending === 'scheduled-review'
+                      ? '正在准备…'
+                      : reviewInProgress
+                        ? '继续本次复习'
+                        : !reviewDue
+                          ? '提前复习'
+                          : review.status === 'failed'
+                            ? '重新准备复习 3 题'
+                            : '开始复习 3 题'}
+                  </button>
+                  <button type="button" className="text-button" onClick={onReloadReviews}>
+                    刷新安排
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="muted">完成本课练习后，会根据实际结算记录安排下一次复习。</p>
+                <button type="button" className="text-button" onClick={onReloadReviews}>
+                  刷新复习安排
+                </button>
+              </>
             )}
           </section>
           {!!lesson.sources?.length && (
@@ -395,6 +573,16 @@ export function CourseLesson({
         error={operation.error ? courseErrorMessage(operation.error) : null}
         onRetry={refresh}
       />
+      {tutorOpen && lesson.status === 'ready' && (
+        <LessonTutorPanel
+          lesson={lesson}
+          tutor={tutor}
+          context={tutorContext}
+          selectedTurnId={selectedTutorTurn}
+          onClose={() => setTutorOpen(false)}
+          onUnavailable={onUnavailable}
+        />
+      )}
     </article>
   )
 }

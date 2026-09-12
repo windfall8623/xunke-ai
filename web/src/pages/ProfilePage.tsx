@@ -74,7 +74,7 @@ export function ProfilePage() {
   return (
     <div className="profile-page">
       <PageHeading
-        eyebrow="YOUR LEARNING JOURNEY"
+        eyebrow="走过的每一步都算数"
         title="学习记录"
         description="走过的每一步，都在这里。"
         action={

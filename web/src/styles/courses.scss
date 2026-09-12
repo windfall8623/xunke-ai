@@ -573,6 +573,283 @@
   overflow-x: auto;
 }
 
+.course-block-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-top: 14px;
+  .text-button {
+    font-size: 0.8rem;
+  }
+}
+.course-tutor-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  p {
+    margin-bottom: 0;
+  }
+}
+.lesson-check-list {
+  padding-left: 24px;
+  margin-bottom: 0;
+}
+.lesson-check-item {
+  padding: 18px 0;
+  & + & {
+    border-top: 1px solid var(--border);
+  }
+  > .lesson-check-prompt {
+    font-weight: 600;
+    white-space: pre-wrap;
+    line-height: 1.85;
+  }
+  > .button-row {
+    margin-top: 14px;
+  }
+}
+.lesson-check-options {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+.lesson-check-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  input {
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  &.selected {
+    background: #f2f4ff;
+    border-color: #bfc7f1;
+  }
+}
+.lesson-check-text {
+  display: grid;
+  gap: 6px;
+  textarea {
+    width: 100%;
+    min-width: 0;
+    resize: vertical;
+  }
+  small {
+    text-align: right;
+  }
+}
+.lesson-check-feedback {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-left: 3px solid #8cbfae;
+  border-radius: 0 10px 10px 0;
+  background: #f5faf8;
+  font-size: 0.86rem;
+  line-height: 1.85;
+  p {
+    white-space: pre-wrap;
+    margin-bottom: 0;
+  }
+}
+.course-tutor-dialog {
+  width: min(680px, calc(100vw - 32px));
+  height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: 16px 16px 16px auto;
+  overscroll-behavior: contain;
+  .dialog-body {
+    display: grid;
+    gap: 18px;
+  }
+  .dialog-body > p {
+    margin: 0;
+  }
+  p,
+  h3,
+  strong,
+  button {
+    overflow-wrap: anywhere;
+  }
+}
+.lesson-tutor-turns {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.lesson-tutor-turn {
+  scroll-margin-top: 86px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  .section-line {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header strong {
+    font-size: 0.86rem;
+  }
+  p {
+    white-space: pre-wrap;
+    font-size: 0.86rem;
+    line-height: 1.9;
+  }
+  .loading-state {
+    justify-content: flex-start;
+    padding: 4px 0;
+  }
+}
+.lesson-tutor-question {
+  background: #f4f5fc;
+  border-radius: 8px;
+  padding: 12px;
+}
+.lesson-tutor-answer > p {
+  margin-bottom: 0;
+}
+.lesson-tutor-composer {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  textarea {
+    resize: vertical;
+  }
+}
+.lesson-tutor-context {
+  background: #f6f8fc;
+  border-radius: 10px;
+  padding: 12px 14px;
+  strong {
+    font-size: 0.8rem;
+  }
+  p {
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    margin-bottom: 0;
+  }
+  .text-button {
+    font-size: 0.75rem;
+  }
+}
+.course-lesson-review,
+.course-progress-reviews {
+  scroll-margin-top: 24px;
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .course-review-time {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+}
+.course-progress-reviews {
+  margin-top: 24px;
+}
+.course-history-errors {
+  margin-top: 20px;
+  font-size: 0.86rem;
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+  .tag {
+    border: 1px solid var(--border);
+    background: #f7f8fb;
+  }
+}
+.course-today-card {
+  min-width: 0;
+}
+.course-today-heading {
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+  h2 {
+    margin: 8px 0;
+    font-size: 1.24rem;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .button-row {
+    align-items: flex-end;
+  }
+}
+.course-today-budget {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+.course-today-items {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+}
+.course-today-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  & + & {
+    border-top: 1px solid var(--border);
+  }
+  > .button {
+    flex-shrink: 0;
+  }
+}
+.course-today-number {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #edf0ff;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.course-today-content {
+  flex: 1;
+  min-width: 0;
+  h3 {
+    margin: 8px 0;
+    font-size: 0.98rem;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  p {
+    margin: 6px 0 0;
+    line-height: 1.75;
+    font-size: 0.82rem;
+  }
+  .tiny {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.73rem;
+  }
+}
+
 @media (max-width: 1100px) {
   .course-progress-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -601,6 +878,44 @@
 }
 
 @media (max-width: 560px) {
+  .course-tutor-dialog {
+    margin: auto 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: 90dvh;
+    max-height: 90dvh;
+    border-radius: 18px 18px 0 0;
+    .dialog-body {
+      padding: 18px;
+    }
+    .dialog-header {
+      padding: 18px;
+    }
+  }
+  .lesson-tutor-turn {
+    padding: 12px;
+  }
+  .lesson-check-list {
+    padding-left: 18px;
+  }
+  .lesson-check-item .button-row > .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .course-today-card {
+    padding: 18px;
+  }
+  .course-today-item {
+    gap: 10px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .course-today-content {
+    flex-basis: calc(100% - 38px);
+  }
+  .course-today-item > .button {
+    margin-left: 38px;
+  }
   .course-page,
   .course-create-page {
     gap: 16px;
@@ -651,4 +966,136 @@
   .course-source-label > a {
     margin-left: 0;
   }
+}
+
+/* ---- 循证状态条 / 课文渲染 / 助教按钮降噪（2026-09 UI 优化） ---- */
+.evidence-bar {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  background: var(--warning-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: var(--text-sm);
+
+  summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+    color: var(--ink-soft);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  .evidence-bar-count {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    color: var(--ink-soft);
+  }
+}
+
+.lesson-text {
+  display: grid;
+  gap: 10px;
+
+  p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  code {
+    background: var(--primary-soft);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, 'Courier New', monospace;
+    font-size: 0.88em;
+    color: var(--primary-dark);
+  }
+}
+
+.lesson-code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 4px 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.65;
+
+  code {
+    background: none;
+    padding: 0;
+    color: var(--ink);
+  }
+}
+
+/* 助教按钮默认退隐，悬停或键盘聚焦时浮现；触屏设备始终可见 */
+.course-block-help {
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.course-block:hover .course-block-help,
+.course-block-help:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .course-block-help {
+    opacity: 1;
+  }
+}
+
+/* ---- 课程目录折叠与阅读区升级（2026-09） ---- */
+.course-workspace.outline-collapsed {
+  grid-template-columns: 46px minmax(0, 1fr);
+}
+.course-workspace.outline-collapsed .course-main {
+  max-width: 1000px;
+  width: 100%;
+  justify-self: center;
+}
+.outline-rail {
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  writing-mode: vertical-rl;
+  letter-spacing: 6px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.outline-rail:hover {
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+.outline-rail svg {
+  writing-mode: horizontal-tb;
+}
+/* 阅读排版：正文提至 16px / 1.85 行高 */
+.lesson-text p {
+  font-size: 1rem;
+  line-height: 1.85;
+}
+.lesson-code {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.course-lesson-body .course-block h3 {
+  font-size: 1.05rem;
 }

@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock3, FileText, Pencil } from 'lucide-react'
+import { CheckCircle2, Clock3, FileText, PanelLeftClose, Pencil } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { CourseLessonSummary, CourseOutlineUpdate, CourseView } from '../../types/course'
 
@@ -19,6 +19,7 @@ export function CourseOutline({
   onEvidence,
   onSave,
   disabled = false,
+  onCollapse,
 }: {
   course: CourseView
   selectedLessonId?: string | null
@@ -26,6 +27,7 @@ export function CourseOutline({
   onEvidence: (sourceRef: string) => void
   onSave: (update: CourseOutlineUpdate) => Promise<boolean>
   disabled?: boolean
+  onCollapse?: () => void
 }) {
   const lessons = course.lessons || []
   const [editing, setEditing] = useState(false)
@@ -62,6 +64,18 @@ export function CourseOutline({
       <div className="section-line">
         <h2>课程目录</h2>
         <span className="muted tiny">{lessons.length} 节</span>
+        {onCollapse && (
+          <button
+            type="button"
+            className="text-button"
+            onClick={onCollapse}
+            aria-label="收起课程目录"
+            title="收起目录，专注阅读"
+          >
+            <PanelLeftClose size={15} />
+            收起
+          </button>
+        )}
       </div>
       {course.outline_editable && !editing && (
         <button type="button" className="text-button" onClick={edit} disabled={disabled}>

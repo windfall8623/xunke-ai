@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Sparkles } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { ErrorNotice, PageHeading, StatusBadge } from '../../components/ui'
-import { StudyScopePicker } from '../../features/study/StudyScopePicker'
+import { Dialog } from '../../components/Dialog'
+import { StudyScopePicker, documentSelectionVersion } from '../../features/study/StudyScopePicker'
+import { DocumentUpload } from '../../features/knowledge/DocumentUpload'
 import { useCourseOperation } from '../../features/courses/useCourseOperation'
 import { api } from '../../services/api'
 import {
@@ -14,6 +16,7 @@ import {
   createCourseSubmissionKeys,
 } from '../../services/courses'
 import { coursePath } from '../../services/courseNavigation'
+import { clearCourseDraft, loadCourseDraft, saveCourseDraft } from '../../services/courseDrafts'
 import type { SourceScope } from '../../types/api'
 import type { CourseCreate, CourseSourcePolicy } from '../../types/course'
 import '../../styles/courses.scss'
@@ -28,13 +31,17 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
   const navigate = useNavigate()
   const operation = useCourseOperation()
   const keyFor = useMemo(() => createCourseSubmissionKeys(identity, 'new'), [identity])
-  const [topic, setTopic] = useState('')
-  const [goal, setGoal] = useState('')
-  const [prior, setPrior] = useState('')
-  const [minutes, setMinutes] = useState(20)
-  const [count, setCount] = useState(6)
-  const [source, setSource] = useState<CourseSourcePolicy>('topic')
-  const [scope, setScope] = useState<SourceScope | null>(null)
+  const [draft] = useState(() => loadCourseDraft(identity))
+  const [topic, setTopic] = useState(draft?.topic || '')
+  const [goal, setGoal] = useState(draft?.goal || '')
+  const [prior, setPrior] = useState(draft?.prior_knowledge || '')
+  const [minutes, setMinutes] = useState(draft?.daily_minutes ?? 20)
+  const [count, setCount] = useState(draft?.lesson_count ?? 6)
+  const [timezone, setTimezone] = useState(draft?.timezone || 'Asia/Shanghai')
+  const [source, setSource] = useState<CourseSourcePolicy>(draft?.source_policy || 'topic')
+  const [scope, setScope] = useState<SourceScope | null>(draft?.scope || null)
+  const [scopeVersions, setScopeVersions] = useState(draft?.document_versions || {})
+  const [uploading, setUploading] = useState(false)
   const catalog = useQuery({
     queryKey: [identity, 'documents'],
     queryFn: ({ signal }) => api.documents(signal),
@@ -50,12 +57,45 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
         : false,
     refetchIntervalInBackground: false,
   })
+  const changeScope = useCallback(
+    (next: SourceScope | null) => {
+      setScope(next)
+      setScopeVersions(
+        Object.fromEntries(
+          (next?.documents || []).flatMap((selected) => {
+            const doc = catalog.data?.items.find((item) => item.doc_id === selected.doc_id)
+            return doc ? [[selected.doc_id, documentSelectionVersion(doc)]] : []
+          }),
+        ),
+      )
+    },
+    [catalog.data],
+  )
+  useEffect(() => {
+    saveCourseDraft(identity, {
+      topic,
+      goal,
+      prior_knowledge: prior,
+      daily_minutes: minutes,
+      lesson_count: count,
+      timezone,
+      source_policy: source,
+      scope,
+      document_versions: scopeVersions,
+    })
+  }, [identity, topic, goal, prior, minutes, count, timezone, source, scope, scopeVersions])
   const readySelection =
     source === 'topic' ||
     (!catalog.error &&
+      !catalog.isFetching &&
       !!scope?.documents.length &&
       scope.documents.every((selected) =>
-        catalog.data?.items.some((doc) => doc.doc_id === selected.doc_id && doc.status === 'ready'),
+        catalog.data?.items.some(
+          (doc) =>
+            doc.doc_id === selected.doc_id &&
+            doc.status === 'ready' &&
+            scopeVersions[selected.doc_id] === documentSelectionVersion(doc),
+        ),
       ))
   const pending = operation.pending !== null
   async function submit(event: FormEvent) {
@@ -80,6 +120,12 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       operation.setError('请选择已经处理完成的资料，再创建课程。')
       return
     }
+    try {
+      new Intl.DateTimeFormat('zh-CN', { timeZone: timezone.trim() }).format()
+    } catch {
+      operation.setError('请填写有效的学习时区，例如 Asia/Shanghai。')
+      return
+    }
     const body: CourseCreate = {
       topic: topic.trim(),
       goal: goal.trim(),
@@ -88,6 +134,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       lesson_count: count,
       source_policy: source,
       scope: source === 'strict_docs' ? scope : null,
+      timezone: timezone.trim(),
     }
     const semantic = JSON.stringify(body)
     await operation.run(
@@ -99,6 +146,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       },
       (task) => {
         keyFor.settle('create', semantic)
+        clearCourseDraft(identity)
         client.setQueryData(
           courseKeys.task(identity, task.course_id, task.task_id, task.lesson_id),
           task,
@@ -115,7 +163,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
         我的课程
       </Link>
       <PageHeading
-        eyebrow="知学 AI · 从目标开始"
+        eyebrow="循课 · 从目标开始"
         title="开始一门课程"
         description="先准备学习纲要，再按你的节奏逐课学习。"
       />
@@ -185,6 +233,22 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                   />
                 </label>
               </div>
+              <label>
+                学习时区
+                <input
+                  required
+                  maxLength={100}
+                  list="xunke-timezones"
+                  value={timezone}
+                  onChange={(event) => setTimezone(event.target.value)}
+                />
+                <datalist id="xunke-timezones">
+                  {['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Taipei', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Seoul', 'UTC', 'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Berlin'].map((zone) => (
+                    <option value={zone} key={zone} />
+                  ))}
+                </datalist>
+                <small className="muted">按此时区安排每日复习，可直接选择常用时区。</small>
+              </label>
               <fieldset className="source-fieldset">
                 <legend>课程来源</legend>
                 <div className="source-choices">
@@ -218,7 +282,12 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
               </fieldset>
               {source === 'strict_docs' && (
                 <div className="course-source-picker">
-                  <StudyScopePicker value={scope} onChange={setScope} disabled={pending} />
+                  <StudyScopePicker
+                    value={scope}
+                    onChange={changeScope}
+                    initialVersions={scopeVersions}
+                    disabled={pending}
+                  />
                   {!!catalog.data?.items.some((doc) => doc.status !== 'ready') && (
                     <div className="course-processing-docs">
                       <p className="muted tiny">以下资料暂不能用于创建课程：</p>
@@ -232,17 +301,17 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                         ))}
                     </div>
                   )}
-                  <Link to="/knowledge" className="text-link">
-                    上传或管理资料
+                  <button type="button" className="text-button" onClick={() => setUploading(true)}>
+                    上传资料
                     <ArrowRight size={14} />
-                  </Link>
+                  </button>
                   <p className="tiny muted">资料不足的课时会标注缺口；补充资料后可创建新课程。</p>
                 </div>
               )}
             </fieldset>
             <ErrorNotice error={operation.error ? courseErrorMessage(operation.error) : null} />
             <div className="composer-footer">
-              <span className="tiny muted">默认 6 节 · 每天 20 分钟</span>
+              <span className="tiny muted">草稿保留在当前浏览器会话中</span>
               <button
                 className="button primary"
                 type="submit"
@@ -276,6 +345,21 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
           </p>
         </aside>
       </div>
+      {uploading && (
+        <Dialog title="上传课程资料" className="wide-dialog" onClose={() => setUploading(false)}>
+          <DocumentUpload
+            onUploaded={() => {
+              void client.invalidateQueries({ queryKey: [identity, 'documents'] })
+            }}
+          />
+          <p className="muted tiny">
+            上传和处理期间，学习目标与课程草稿都会保留。处理完成后返回选择资料。
+          </p>
+          <button type="button" className="button secondary" onClick={() => setUploading(false)}>
+            返回课程草稿
+          </button>
+        </Dialog>
+      )}
     </div>
   )
 }

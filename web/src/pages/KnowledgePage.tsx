@@ -57,7 +57,7 @@ export function KnowledgePage() {
   return (
     <div className="knowledge-page">
       <PageHeading
-        eyebrow="YOUR KNOWLEDGE, YOUR PACE"
+        eyebrow="资料收好，练习有据"
         title="我的资料"
         description="把学习内容收好，让每次练习有据可循。"
         action={

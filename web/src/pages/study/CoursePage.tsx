@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, BookOpen, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, PanelLeftOpen, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { CourseEvidenceDrawer } from '../../features/courses/CourseEvidenceDrawer'
+import { EvidenceNoticeBar } from '../../features/courses/EvidenceNoticeBar'
 import { CourseLesson } from '../../features/courses/CourseLesson'
 import { CourseOutline } from '../../features/courses/CourseOutline'
 import { CourseProgress } from '../../features/courses/CourseProgress'
@@ -45,6 +46,18 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   const operation = useCourseOperation()
   const keyFor = useMemo(() => createCourseSubmissionKeys(identity, courseId), [identity, courseId])
   const [evidence, setEvidence] = useState<{ sourceRef: string; lessonId?: string } | null>(null)
+  const [outlineCollapsed, setOutlineCollapsed] = useState(() => {
+    const saved = localStorage.getItem('xunke.outlineCollapsed')
+    if (saved !== null) return saved === '1'
+    return window.innerWidth < 1200
+  })
+  function toggleOutline() {
+    setOutlineCollapsed((current) => {
+      localStorage.setItem('xunke.outlineCollapsed', current ? '0' : '1')
+      return !current
+    })
+  }
+
   const [sourceHidden, setSourceHidden] = useState(false)
   const courseQuery = useQuery({
     queryKey: courseKeys.course(identity, courseId),
@@ -92,18 +105,42 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         : false,
     refetchIntervalInBackground: false,
   })
+  const reviewsQuery = useQuery({
+    queryKey: courseKeys.reviews(identity, courseId),
+    queryFn: ({ signal }) => coursesApi.reviews(courseId, signal),
+    enabled: !!lessons.length && !courseQuery.error && !revoked,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    refetchOnMount: 'always',
+    refetchInterval: (state) =>
+      state.state.data?.some((review) => review.status === 'generating')
+        ? 3000
+        : progressQuery.data?.practiced_lessons &&
+            !state.state.data?.some((review) =>
+              ['scheduled', 'generating', 'ready', 'failed'].includes(review.status),
+            )
+          ? 5000
+          : false,
+    refetchIntervalInBackground: false,
+  })
   const hideSource = useCallback(() => {
     setSourceHidden(true)
     setEvidence(null)
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
   }, [client, identity, courseId])
   useEffect(() => {
     if (
       !sourceHidden &&
-      [courseQuery.error, lessonQuery.error, progressQuery.error, operation.error].some(
-        courseSourceRevoked,
-      )
+      [
+        courseQuery.error,
+        lessonQuery.error,
+        progressQuery.error,
+        reviewsQuery.error,
+        operation.error,
+      ].some(courseSourceRevoked)
     )
       hideSource()
     if (operation.error instanceof ApiError && operation.error.status === 409) {
@@ -115,6 +152,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
     courseQuery.error,
     lessonQuery.error,
     progressQuery.error,
+    reviewsQuery.error,
     operation.error,
     sourceHidden,
     hideSource,
@@ -128,15 +166,20 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
       setParams({ lesson: course.resume_lesson_id }, { replace: true })
   }, [lessonId, course?.resume_lesson_id, revoked, courseQuery.error, setParams])
   useEffect(() => {
-    if (location.hash === '#course-practice' && lessonQuery.data?.status === 'ready')
+    if (
+      ['#course-practice', '#course-review'].includes(location.hash) &&
+      lessonQuery.data?.status === 'ready'
+    )
       document
-        .getElementById('course-practice')
+        .getElementById(location.hash.slice(1))
         ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [location.hash, lessonQuery.data?.lesson_id, lessonQuery.data?.status])
   function invalidate(affectedLesson?: string) {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
     if (affectedLesson)
       void client.invalidateQueries({
         queryKey: courseKeys.lesson(identity, courseId, affectedLesson),
@@ -250,7 +293,10 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
     if (action.lesson_id) {
       const selected = lessons.find((lesson) => lesson.lesson_id === action.lesson_id)
       if (selected && action.type === 'learn_lesson') selectLesson(selected)
-      else navigate(`${returnTo}${action.type === 'practice_lesson' ? '#course-practice' : ''}`)
+      else
+        navigate(
+          `${returnTo}${['practice_lesson', 'review_lesson'].includes(action.type) ? '#course-practice' : ''}`,
+        )
     } else
       document
         .getElementById('course-progress-stats')
@@ -311,7 +357,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         我的课程
       </Link>
       <PageHeading
-        eyebrow="知学 AI · 一课一步"
+        eyebrow="循课 · 一课一步"
         title={course.title}
         description={course.mission?.goal || '正在整理这门课程的学习目标。'}
         action={
@@ -335,15 +381,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
           查看学习进度
         </a>
       </div>
-      {!!course.warnings?.length && (
-        <div className="notice">
-          <div>
-            {course.warnings?.map((warning, index) => (
-              <p key={index}>{warning}</p>
-            ))}
-          </div>
-        </div>
-      )}
+      <EvidenceNoticeBar warnings={course.warnings || []} />
       <ErrorNotice
         error={operation.error ? courseErrorMessage(operation.error) : null}
         onRetry={() => invalidate(lessonId || undefined)}
@@ -376,15 +414,31 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         </div>
       )}
       {!!lessons.length && (
-        <div className="course-workspace">
-          <CourseOutline
-            course={course}
-            selectedLessonId={lessonId}
-            onSelect={selectLesson}
-            onEvidence={(sourceRef) => setEvidence({ sourceRef })}
-            onSave={saveOutline}
-            disabled={operation.pending !== null}
-          />
+        <div className={`course-workspace${outlineCollapsed ? ' outline-collapsed' : ''}`}>
+          {outlineCollapsed ? (
+            <button
+              type="button"
+              className="outline-rail"
+              onClick={toggleOutline}
+              aria-label="展开课程目录"
+              title="展开课程目录"
+            >
+              <PanelLeftOpen size={16} />
+              <span>课程目录</span>
+            </button>
+          ) : (
+            <div>
+              <CourseOutline
+                course={course}
+                selectedLessonId={lessonId}
+                onSelect={selectLesson}
+                onEvidence={(sourceRef) => setEvidence({ sourceRef })}
+                onSave={saveOutline}
+                disabled={operation.pending !== null}
+                onCollapse={toggleOutline}
+              />
+            </div>
+          )}
           <div className="course-main">
             {lessonId ? (
               lessonQuery.error ? (
@@ -398,9 +452,16 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
                 <Loading>正在读取这一课…</Loading>
               ) : (
                 <CourseLesson
-                  key={lessonQuery.data.lesson_id}
+                  key={`${lessonQuery.data.lesson_id}:${lessonQuery.data.content_version}`}
                   lesson={lessonQuery.data}
-                  weakPoints={progressQuery.error ? [] : progressQuery.data?.weak_points || []}
+                  pendingWeakPoints={
+                    progressQuery.error ? [] : progressQuery.data?.pending_weak_points || []
+                  }
+                  reviews={reviewsQuery.error ? [] : reviewsQuery.data || []}
+                  reviewsError={reviewsQuery.error}
+                  onReloadReviews={() => {
+                    void reviewsQuery.refetch()
+                  }}
                   onGenerate={() => generateLesson(lessonId)}
                   onEvidence={(sourceRef) => setEvidence({ sourceRef, lessonId })}
                   onNext={nextLesson ? () => selectLesson(nextLesson) : undefined}
@@ -454,6 +515,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
           <CourseProgress
             progress={progressQuery.data}
             lessons={lessons}
+            reviews={reviewsQuery.error ? [] : reviewsQuery.data || []}
             onAction={nextAction}
             onLesson={(id) => navigate(coursePath(courseId, id))}
           />

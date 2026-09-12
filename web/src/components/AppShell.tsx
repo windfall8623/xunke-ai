@@ -38,7 +38,7 @@ export function AppShell() {
         跳到主要内容
       </a>
       <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
-        <Link to="/" className="brand" aria-label="知学 AI 首页" onClick={() => setMenuOpen(false)}>
+        <Link to="/" className="brand" aria-label="循课首页" onClick={() => setMenuOpen(false)}>
           <Brand />
         </Link>
         <div className="sidebar-label">我的学习空间</div>
@@ -82,9 +82,9 @@ export function AppShell() {
           >
             {menuOpen ? <X /> : <Menu />}
           </button>
-          <Link to="/" className="mobile-brand" aria-label="知学 AI 首页">
-            <img src="/brand/zhixue-logo.svg" width={28} height={28} alt="" />
-            <span>知学 AI</span>
+          <Link to="/" className="mobile-brand" aria-label="循课首页">
+            <img src="/brand/xunke-logo.svg" width={28} height={28} alt="" />
+            <span>循课</span>
           </Link>
           <div className="breadcrumb">
             <span>学习空间</span>
@@ -104,9 +104,6 @@ export function AppShell() {
             </strong>
           </div>
           <div className="topbar-right">
-            <span className="quiet-tag">
-              <span className="small-dot" /> 学习，由你掌握
-            </span>
             {user ? (
               <Link to="/me" className="account-link">
                 <span className="avatar">
@@ -136,7 +133,7 @@ export function AppShell() {
           <Outlet />
         </main>
         <footer className="workspace-footer">
-          <span>知学 AI</span>
+          <span>循课</span>
           <span>让知识有来处，让进步看得见。</span>
         </footer>
       </div>

@@ -89,9 +89,9 @@ export function HomePage() {
           <div className="art-card">
             <BookOpen size={46} strokeWidth={1.4} />
             <span>
-              LEARN
+              每一步
               <br />
-              SOMETHING NEW
+              都有依据
             </span>
           </div>
           <div className="art-check">
