@@ -136,7 +136,10 @@ export async function installTestApi(
         }),
       })
     const session = () => ({ user: state.user, csrf_token: 'browser-csrf' })
-    if (path === '/auth/capabilities') return respond({ legacy_link_enabled: false })
+    if (path === '/auth/capabilities')
+      return respond({ legacy_link_enabled: false, email_registration_enabled: true })
+    if (path === '/auth/email-code')
+      return respond({ message: '验证码已发送', retry_after_seconds: 60, expires_in_seconds: 600 })
     if (path === '/auth/session')
       return state.authenticated ? respond(session()) : fail(401, '登录已失效')
     if (path === '/auth/login') {

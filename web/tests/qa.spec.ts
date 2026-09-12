@@ -86,7 +86,7 @@ test('recovers an uncertain submit with the same key across reload and explicitl
   await expect(page.getByText(/提交结果尚未确认/)).toBeVisible()
   await page.reload()
   await page.getByRole('button', { name: '重试确认提交' }).click()
-  await expect(page.getByText('回答服务暂不可用', { exact: true })).toBeVisible()
+  await expect(page.getByText('模型服务暂时不可达，请稍后重试。', { exact: true })).toBeVisible()
   expect(state.submissions).toHaveLength(2)
   expect(state.submissions[1]).toEqual(state.submissions[0])
   await page.getByRole('button', { name: '重试这个问题' }).click()

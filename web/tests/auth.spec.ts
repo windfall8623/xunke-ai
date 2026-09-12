@@ -7,7 +7,7 @@ test('expired session returns protected navigation to login then resumes the pag
   const state = await installTestApi(page, { guest: true })
   await page.goto('/knowledge')
   await expect(page).toHaveURL(/\/login$/)
-  await page.getByLabel('账号', { exact: true }).fill('xiaoyu')
+  await page.getByLabel('账号或邮箱', { exact: true }).fill('xiaoyu')
   await page.getByLabel('密码', { exact: true }).fill('a-strong-password')
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByRole('heading', { name: '我的资料', exact: true })).toBeVisible()
@@ -19,7 +19,9 @@ test('registration shows the recovery code until the user acknowledges it', asyn
   await installTestApi(page, { guest: true })
   await page.goto('/login')
   await page.getByRole('button', { name: '立即注册' }).click()
-  await page.getByLabel('账号', { exact: true }).fill('xiaoyu-new')
+  await page.getByLabel('邮箱', { exact: true }).fill('xiaoyu-new@example.test')
+  await page.getByRole('button', { name: '发送验证码', exact: true }).click()
+  await page.getByLabel('邮箱验证码', { exact: true }).fill('123456')
   await page.getByLabel('昵称', { exact: true }).fill('新同学')
   await page.getByLabel('密码', { exact: true }).fill('a-strong-password')
   await page.getByRole('button', { name: '注册账号', exact: true }).click()
@@ -73,7 +75,7 @@ test('enabled legacy migration redeems a code and shows recovery before resuming
   })
   await page.goto('/knowledge')
   await page.getByRole('button', { name: '迁移旧账号', exact: true }).click()
-  await page.getByLabel('账号', { exact: true }).fill('existing-learner')
+  await page.getByLabel('原账号', { exact: true }).fill('existing-learner')
   await page.getByLabel('一次性迁移码').fill('LEGACY-CODE-FOR-BROWSER-TEST')
   await page.getByLabel('密码', { exact: true }).fill('Strong-secret-357!')
   await page.getByRole('button', { name: '关联并设置网页账号' }).click()
@@ -83,6 +85,7 @@ test('enabled legacy migration redeems a code and shows recovery before resuming
       account: 'existing-learner',
       password: 'Strong-secret-357!',
       code: 'LEGACY-CODE-FOR-BROWSER-TEST',
+      verification_code: '',
     },
   ])
   await page.getByRole('button', { name: '我已保存，开始学习' }).click()
