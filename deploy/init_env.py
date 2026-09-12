@@ -37,6 +37,10 @@ def main():
             "JWT_SECRET",
             "EVAL_WORKER_TOKEN",
             "EMAIL_CODE_SECRET",
+            "REDIS_PASSWORD",
+            "REDIS_CACHE_PASSWORD",
+            "QDRANT_API_KEY",
+            "QDRANT_READ_ONLY_API_KEY",
         )
     }
     values["WEB_ORIGINS"] = json.dumps([args.web_origin], separators=(",", ":"))

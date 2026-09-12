@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import math
 import os
 import shutil
 import threading
@@ -25,9 +24,6 @@ from app.rag.contracts import (
     stable_hash,
 )
 from app.rag.errors import OwnerRequired, SourceUnavailable
-from app.rag.ingestion import load_canonical_document_bounded
-from app.rag.providers.lexical import LexicalIndex
-from app.rag.structure import chunk_document
 
 
 def projection_key(
@@ -58,13 +54,16 @@ class ArtifactStore:
         return path
 
     def put_json(self, key: str, payload: dict, *, immutable: bool = True) -> str:
-        path = self.resolve_key(key)
         encoded = json.dumps(
             payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")
+        return self.put_bytes(key, encoded, immutable=immutable)
+
+    def put_bytes(self, key: str, encoded: bytes, *, immutable: bool = True) -> str:
+        path = self.resolve_key(key)
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists() and immutable:
-            if json.loads(path.read_bytes()) != payload:
+            if path.read_bytes() != encoded:
                 raise SourceUnavailable(
                     "Immutable artifact key already has different content"
                 )
@@ -179,6 +178,11 @@ class OwnerIndexStore(ArtifactStore):
         except Exception:
             self._unlock()
             raise
+        from app.rag.providers.chroma_projection import ChromaProjectionStore
+
+        self.projection = ChromaProjectionStore(
+            self._client, io_lock=self._io_lock
+        )
 
     def _check_owner(self):
         if self._closed or self._pid != os.getpid():
@@ -223,273 +227,27 @@ class OwnerIndexStore(ArtifactStore):
             manifest.attempt_id,
         )
 
-    @staticmethod
-    def _collection_name(key: str) -> str:
-        return "rag_" + stable_hash(key)[:48]
-
-    def _collection(self, key: str):
-        self._check_owner()
-        return self._client.get_collection(
-            self._collection_name(key), embedding_function=None
-        )
-
     async def build(self, request: BuildRequest, embedding, budget=None) -> BuildResult:
+        """Return an unpublished candidate; caller performs SQL lease/CAS publication."""
         self._check_owner()
+        from app.rag import index_artifacts
+
         async with self._build_lock:
-            document = request.canonical or await asyncio.to_thread(
-                load_canonical_document_bounded, request.source
+            return await index_artifacts.build_index_artifacts(
+                self, self.projection, request, embedding, budget
             )
-            if (
-                request.profile.embedding_model != embedding.model
-                or request.profile.embedding_dimensions != embedding.dimensions
-            ):
-                raise SourceUnavailable(
-                    "Embedding adapter and index profile are incompatible"
-                )
-            key = projection_key(
-                document.owner_id,
-                document.namespace,
-                document.doc_id,
-                document.document_version_id,
-                document.parse_artifact_id,
-                request.index_build_id,
-                request.attempt_id,
-            )
-            manifest_path = self.resolve_key(key + "/manifest.json")
-            if manifest_path.exists():
-                prior = BuildResult.model_validate_json(manifest_path.read_bytes())
-                if prior.index_profile_hash != request.profile.profile_hash:
-                    raise SourceUnavailable(
-                        "Attempt already uses a different index profile"
-                    )
-                self._validate_build(prior)
-                return prior
-            nodes = chunk_document(
-                document, request.profile, request.index_build_id, request.attempt_id
-            )
-            children = [n for n in nodes if not n.is_parent]
-            if not children:
-                raise SourceUnavailable("No indexable source spans")
-            vectors = await embedding.embed_documents(
-                [n.embedding_text for n in children], budget=budget
-            )
-            if len(vectors) != len(children) or any(
-                len(v) != embedding.dimensions or any(not math.isfinite(x) for x in v)
-                for v in vectors
-            ):
-                raise SourceUnavailable(
-                    "Embedding vector count or dimensions do not match"
-                )
-            canonical_key = self.save_canonical(
-                document, request.canonical_artifact_key
-            )
-            intent = {
-                "owner_id": document.owner_id,
-                "namespace": document.namespace,
-                "doc_id": document.doc_id,
-                "document_version_id": document.document_version_id,
-                "parse_artifact_id": document.parse_artifact_id,
-                "index_build_id": request.index_build_id,
-                "attempt_id": request.attempt_id,
-                "projection_key": key,
-            }
-            self.put_json(key + "/attempt.json", intent)
-            with self._io_lock:
-                from llama_index.core.schema import (
-                    NodeRelationship,
-                    RelatedNodeInfo,
-                    TextNode,
-                )
-                from llama_index.core.storage.docstore import SimpleDocumentStore
-                from llama_index.vector_stores.chroma import ChromaVectorStore
-
-                name = self._collection_name(key)
-                existing = {c.name for c in self._client.list_collections()}
-                if name in existing:
-                    # Exact attempt retry only; no active pointer is changed.
-                    self._client.delete_collection(name)
-                collection = self._client.create_collection(
-                    name=name,
-                    embedding_function=None,
-                    # Small immutable collections never reach Chroma's default
-                    # 1000-vector sync threshold. A segment can then be evicted
-                    # before files exist, causing "Nothing found on disk" in
-                    # later reads from this same owner. Materialize at least one
-                    # complete batch before validating/publishing the build.
-                    configuration={
-                        "hnsw": {
-                            "space": "cosine",
-                            "batch_size": min(100, len(children)),
-                            "sync_threshold": min(100, len(children)),
-                        }
-                    },
-                    metadata={
-                        "projection_key": key,
-                        "owner_id": document.owner_id,
-                        "namespace": document.namespace,
-                        "doc_id": document.doc_id,
-                    },
-                )
-                vector_by_id = {n.node_id: v for n, v in zip(children, vectors)}
-                llama_nodes = []
-                for node in nodes:
-                    metadata = {
-                        "owner_id": document.owner_id,
-                        "namespace": document.namespace,
-                        "scope_doc_id": document.doc_id,
-                        "document_version_id": document.document_version_id,
-                        "parse_artifact_id": document.parse_artifact_id,
-                        "index_build_id": request.index_build_id,
-                        "attempt_id": request.attempt_id,
-                        "scope_node_id": node.node_id,
-                    }
-                    relationships = {
-                        NodeRelationship.SOURCE: RelatedNodeInfo(
-                            node_id=document.document_version_id
-                        )
-                    }
-                    if node.parent_id:
-                        relationships[NodeRelationship.PARENT] = RelatedNodeInfo(
-                            node_id=node.parent_id
-                        )
-                    llama_nodes.append(
-                        TextNode(
-                            id_=node.node_id,
-                            text=node.embedding_text,
-                            embedding=vector_by_id.get(node.node_id),
-                            metadata=metadata,
-                            excluded_embed_metadata_keys=list(metadata),
-                            excluded_llm_metadata_keys=list(metadata),
-                            relationships=relationships,
-                            start_char_idx=node.evidence.locator.start_char,
-                            end_char_idx=node.evidence.locator.end_char,
-                        )
-                    )
-                docstore = SimpleDocumentStore()
-                docstore.add_documents(llama_nodes)
-                docstore.persist(str(self.resolve_key(key + "/docstore.json")))
-                ChromaVectorStore(chroma_collection=collection).add(
-                    [n for n in llama_nodes if n.node_id in vector_by_id]
-                )
-                LexicalIndex(
-                    [{"id": n.node_id, "text": n.embedding_text} for n in children],
-                    tokenizer_version=request.profile.tokenizer_version,
-                ).persist(self.resolve_key(key + "/lexical.json"))
-                result = BuildResult(
-                    owner_id=document.owner_id,
-                    namespace=document.namespace,
-                    doc_id=document.doc_id,
-                    document_version_id=document.document_version_id,
-                    source_sha256=document.source_sha256,
-                    parse_artifact_id=document.parse_artifact_id,
-                    canonical_text_hash=document.canonical_text_hash,
-                    index_build_id=request.index_build_id,
-                    attempt_id=request.attempt_id,
-                    profile=request.profile,
-                    index_profile_hash=request.profile.profile_hash,
-                    node_count=len(children),
-                    embedding_dimensions=embedding.dimensions,
-                    projection_key=key,
-                    canonical_artifact_key=canonical_key,
-                    nodes=nodes,
-                    checksum=stable_hash([n.model_dump(mode="json") for n in nodes]),
-                    expected_document_revision=request.expected_document_revision,
-                    title=document.title,
-                )
-                self._validate_build(result)
-                self.put_json(key + "/manifest.json", result.model_dump(mode="json"))
-                return result
-
-    def _validate_build(self, result: BuildResult) -> None:
-        if (
-            result.projection_key != self._key(result)
-            or result.index_profile_hash != result.profile.profile_hash
-        ):
-            raise SourceUnavailable("Index manifest identity does not match")
-        if result.checksum != stable_hash(
-            [n.model_dump(mode="json") for n in result.nodes]
-        ):
-            raise SourceUnavailable("Index node checksum does not match")
-        document = self.load_canonical(result.canonical_artifact_key)
-        if document.canonical_text_hash != result.canonical_text_hash:
-            raise SourceUnavailable("Canonical and index versions do not match")
-        children = [n for n in result.nodes if not n.is_parent]
-        for node in result.nodes:
-            evidence = node.evidence
-            if (
-                document.text[evidence.locator.start_char : evidence.locator.end_char]
-                != evidence.excerpt
-            ):
-                raise SourceUnavailable("Index quote differs from canonical source")
-        collection = self._collection(result.projection_key)
-        stored = collection.get(include=["embeddings"])
-        if len(children) != result.node_count or set(stored["ids"]) != {
-            n.node_id for n in children
-        }:
-            raise SourceUnavailable("Index vector count or identity does not match")
-        if any(len(v) != result.embedding_dimensions for v in stored["embeddings"]):
-            raise SourceUnavailable("Index embedding dimensions do not match")
-        from llama_index.core.storage.docstore import SimpleDocumentStore
-
-        docstore = SimpleDocumentStore.from_dict(
-            json.loads(
-                self.resolve_key(result.projection_key + "/docstore.json").read_bytes()
-            )
-        )
-        for node in result.nodes:
-            restored = docstore.get_document(node.node_id)
-            if restored.text != node.embedding_text:
-                raise SourceUnavailable("Docstore text does not match source")
-        lexical = LexicalIndex.load(
-            self.resolve_key(result.projection_key + "/lexical.json")
-        )
-        if set(lexical.tokens) != {n.node_id for n in children}:
-            raise SourceUnavailable("Lexical projection identity does not match")
 
     def read_build(self, manifest: SourceManifest) -> BuildResult:
+        """查询热路径：身份与校验和检查；全量核验只属于构建/重放/修复。"""
+        from app.rag import index_artifacts
+
         self._check_owner()
-        key = self._key(manifest)
-        if manifest.projection_key and manifest.projection_key != key:
-            raise SourceUnavailable("Projection key does not match authorized manifest")
-        try:
-            result = BuildResult.model_validate_json(
-                self.resolve_key(key + "/manifest.json").read_bytes()
-            )
-            expected = (
-                manifest.owner_id,
-                manifest.namespace,
-                manifest.doc_id,
-                manifest.document_version_id,
-                manifest.parse_artifact_id,
-                manifest.index_build_id,
-                manifest.attempt_id,
-                manifest.canonical_text_hash,
-            )
-            actual = (
-                result.owner_id,
-                result.namespace,
-                result.doc_id,
-                result.document_version_id,
-                result.parse_artifact_id,
-                result.index_build_id,
-                result.attempt_id,
-                result.canonical_text_hash,
-            )
-            if expected != actual or (
-                manifest.index_profile_hash
-                and manifest.index_profile_hash != result.index_profile_hash
-            ):
-                raise SourceUnavailable(
-                    "Index manifest differs from the authorized source"
-                )
-            self._validate_build(result)
-            return result
-        except SourceUnavailable:
-            raise
-        except Exception as exc:
-            raise SourceUnavailable(
-                "Required index build is missing, corrupt, or awaiting rebuild"
-            ) from exc
+        return index_artifacts.read_manifest(self, manifest)
+
+    def search(self, request) -> list:
+        """向量检索经投影层执行；过滤器在 top-k 之前生效。"""
+        self._check_owner()
+        return self.projection.search(request)
 
     def read_docstore(self, manifest: SourceManifest):
         from llama_index.core.storage.docstore import SimpleDocumentStore
@@ -507,21 +265,23 @@ class OwnerIndexStore(ArtifactStore):
         key = self._key(manifest)
         if manifest.projection_key and manifest.projection_key != key:
             raise SourceUnavailable("Invalid cleanup projection key")
-        with self._io_lock:
-            name = self._collection_name(key)
-            if name in {c.name for c in self._client.list_collections()}:
-                self._client.delete_collection(name)
-            path = self.resolve_key(key)
-            projection_root = self.resolve_key("rag/projections")
-            if not path.is_relative_to(projection_root) or path == projection_root:
-                raise SourceUnavailable("Cleanup path is outside its attempt")
-            if path.exists():
-                shutil.rmtree(path)
+        from app.rag.index_artifacts import ref_from_manifest
+
+        ref = ref_from_manifest(manifest)
+        self.projection.delete_attempt_sync(ref)
+        path = self.resolve_key(key)
+        projection_root = self.resolve_key("rag/projections")
+        if not path.is_relative_to(projection_root) or path == projection_root:
+            raise SourceUnavailable("Cleanup path is outside its attempt")
+        if path.exists():
+            shutil.rmtree(path)
 
     def projection_exists(self, manifest) -> bool:
         self._check_owner()
+        from app.rag.providers.chroma_projection import collection_name_for
+
         key = self._key(manifest)
-        return self.resolve_key(key).exists() or self._collection_name(key) in {
+        return self.resolve_key(key).exists() or collection_name_for(key) in {
             c.name for c in self._client.list_collections()
         }
 
@@ -545,6 +305,11 @@ class OwnerIndexStore(ArtifactStore):
     def purge_document(
         self, *, owner_id: int, namespace: str, doc_id: str
     ) -> list[dict]:
+        if getattr(self, "registry_enabled", False):
+            from app.rag.projection_cleanup import purge_registered_document
+            return purge_registered_document(
+                self, owner_id=owner_id, namespace=namespace, doc_id=doc_id,
+            )
         from types import SimpleNamespace
 
         for intent in self.attempts_for_document(

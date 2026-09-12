@@ -49,36 +49,15 @@ def is_ready(settings: Settings) -> bool:
     return True
 
 
-def send_registration_email(
-    recipient: str,
-    code: str,
-    expires_in_seconds: int,
-    *,
-    settings: Settings | None = None,
-) -> None:
-    """Runs in a worker thread; neither SMTP responses nor message bodies are logged."""
-    settings = settings or get_settings()
-    if not is_ready(settings):
-        raise delivery_error()
+def _deliver(message: EmailMessage, settings: Settings, sender: str, recipient: str) -> None:
+    """Shared TLS-only SMTP delivery; connection details stay out of logs."""
+    context = ssl.create_default_context()
+    options = {
+        "host": settings.smtp_host.strip(),
+        "port": settings.smtp_port,
+        "timeout": settings.smtp_timeout_seconds,
+    }
     try:
-        sender = normalize_email(settings.smtp_from_email)
-        recipient = normalize_email(recipient)
-        message = EmailMessage()
-        message["Subject"] = "循课注册验证码"
-        message["From"] = formataddr((settings.smtp_from_name, sender))
-        message["To"] = recipient
-        message.set_content(
-            f"您的循课注册验证码是：{code}\n\n"
-            f"请在 {max(0, expires_in_seconds)} 秒内完成注册。"
-            "验证码仅用于该邮箱注册，请勿向他人提供。\n"
-            "重新发送后请使用最新验证码；若非本人操作，请忽略此邮件。\n"
-        )
-        context = ssl.create_default_context()
-        options = {
-            "host": settings.smtp_host.strip(),
-            "port": settings.smtp_port,
-            "timeout": settings.smtp_timeout_seconds,
-        }
         if settings.smtp_security.strip().lower() == "ssl":
             connection = smtplib.SMTP_SSL(**options, context=context)
         else:
@@ -91,10 +70,84 @@ def send_registration_email(
             smtp.login(settings.smtp_username, settings.smtp_password)
             refused = smtp.send_message(message, from_addr=sender, to_addrs=[recipient])
             if refused:
-                raise smtplib.SMTPException("registration delivery refused")
+                raise smtplib.SMTPException("email delivery refused")
     except (smtplib.SMTPException, OSError, ValueError) as exc:
         logger.warning(
             "email_delivery_failed",
             extra={"event": "email_delivery_failed", "error_type": type(exc).__name__},
         )
         raise delivery_error() from None
+
+
+def _send_code_email(
+    recipient: str,
+    code: str,
+    expires_in_seconds: int,
+    *,
+    subject: str,
+    body: str,
+    settings: Settings | None = None,
+) -> None:
+    """Runs in a worker thread; neither SMTP responses nor message bodies are logged."""
+    settings = settings or get_settings()
+    if not is_ready(settings):
+        raise delivery_error()
+    try:
+        sender = normalize_email(settings.smtp_from_email)
+        recipient = normalize_email(recipient)
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = formataddr((settings.smtp_from_name, sender))
+        message["To"] = recipient
+        message.set_content(body)
+        _deliver(message, settings, sender, recipient)
+    except (smtplib.SMTPException, OSError, ValueError) as exc:
+        logger.warning(
+            "email_delivery_failed",
+            extra={"event": "email_delivery_failed", "error_type": type(exc).__name__},
+        )
+        raise delivery_error() from None
+
+
+def send_registration_email(
+    recipient: str,
+    code: str,
+    expires_in_seconds: int,
+    *,
+    settings: Settings | None = None,
+) -> None:
+    _send_code_email(
+        recipient,
+        code,
+        expires_in_seconds,
+        subject="循课注册验证码",
+        body=(
+            f"您的循课注册验证码是：{code}\n\n"
+            f"请在 {max(0, expires_in_seconds)} 秒内完成注册。"
+            "验证码仅用于该邮箱注册，请勿向他人提供。\n"
+            "重新发送后请使用最新验证码；若非本人操作，请忽略此邮件。\n"
+        ),
+        settings=settings,
+    )
+
+
+def send_password_reset_email(
+    recipient: str,
+    code: str,
+    expires_in_seconds: int,
+    *,
+    settings: Settings | None = None,
+) -> None:
+    _send_code_email(
+        recipient,
+        code,
+        expires_in_seconds,
+        subject="循课密码重置验证码",
+        body=(
+            f"您的循课密码重置验证码是：{code}\n\n"
+            f"请在 {max(0, expires_in_seconds)} 秒内完成密码重置。"
+            "验证码仅用于重置该邮箱账号的密码，请勿向他人提供。\n"
+            "重新发送后请使用最新验证码；若非本人操作，请忽略此邮件。\n"
+        ),
+        settings=settings,
+    )

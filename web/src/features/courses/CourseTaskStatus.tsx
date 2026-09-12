@@ -8,23 +8,13 @@ import {
 import type { CourseTaskView } from '../../types/course'
 import { useCourseTask } from './useCourseTask'
 
+// 只映射任务阶段流里的真实公开阶段；generating 走按 kind 的兜底文案，
+// 不虚构百分比或预计完成时间。
 const stageLabels: Record<string, string> = {
   queued: '已排队，等待开始',
   pending: '已排队，等待开始',
-  resolving_scope: '正在确认资料范围',
-  preparing_sources: '正在读取课程资料',
-  preparing_course_sources: '正在读取课程资料',
-  generating_outline: '正在生成课程纲要',
-  generating_lesson: '正在生成本课内容',
-  saving_course: '正在保存课程内容',
+  starting: '正在准备生成',
   retrieving: '正在查找本课依据',
-  retrieval: '正在查找本课依据',
-  planning: '正在梳理学习目标',
-  validating: '正在检查内容',
-  validation: '正在检查内容',
-  repairing: '正在修正内容结构',
-  saving: '正在保存内容',
-  publishing: '正在保存内容',
 }
 
 export function CourseTaskStatus({
@@ -38,7 +28,7 @@ export function CourseTaskStatus({
   onRetry?: () => void
   disabled?: boolean
 }) {
-  const { task, query, cancel, cancelling, cancelError } = useCourseTask(courseId, initial)
+  const { task, query, cancel, cancelling, cancelError, settling } = useCourseTask(courseId, initial)
   if (!task) return null
   const running = courseTaskPending(task)
   const failed = task.status === 'failed' || task.status === 'cancelled'
@@ -63,6 +53,7 @@ export function CourseTaskStatus({
               ? courseTaskErrorMessage(task)
               : '正在读取已保存的内容…'}
       </p>
+      {settling && <p className="tiny muted">任务已结束，记录同步中</p>}
       <ErrorNotice
         error={query.error ? courseErrorMessage(query.error) : null}
         onRetry={() => {

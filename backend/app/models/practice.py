@@ -299,6 +299,7 @@ class PracticeTaskView(Contract):
     stage: str = Field(default="queued", max_length=64)
     error_code: LearningId | None = None
     error_message: str | None = Field(default=None, max_length=2000)
+    business_settled: bool = False
     result: PracticeView | PracticeAttemptView | None = None
     queue_ms: int | None = Field(default=None, ge=0)
     execution_ms: int | None = Field(default=None, ge=0)

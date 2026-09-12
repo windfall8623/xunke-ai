@@ -1,6 +1,6 @@
 """Owned fixed-source practice generation, immutable answers and completion."""
 
-from fastapi import APIRouter, Depends, Header, Response
+from fastapi import APIRouter, Depends, Header, Request, Response
 
 from app.core.auth import get_current_actor
 from app.models.common import ApiResponse
@@ -16,7 +16,7 @@ from app.models.practice import (
     ReviewPracticeBody,
 )
 from app.practice.contracts import PracticeSpec
-from app.services import practice_answer_service, practice_service
+from app.services import practice_answer_service, practice_service, task_event_stream
 
 router = APIRouter(prefix="/practice", tags=["practice"])
 
@@ -38,6 +38,19 @@ async def generate(
 async def task(task_id: str, actor=Depends(get_current_actor)):
     return ApiResponse.success(
         await practice_service.get_practice_task(actor.owner_id, task_id)
+    )
+
+
+@router.get("/tasks/{task_id}/events")
+async def task_events(
+    task_id: str,
+    request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    actor=Depends(get_current_actor),
+):
+    return await task_event_stream.task_events_endpoint(
+        request, actor=actor, kind="practice", task_id=task_id,
+        last_event_id=last_event_id,
     )
 
 

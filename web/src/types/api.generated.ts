@@ -119,6 +119,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/auth/password/reset': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Password Reset */
+    post: operations['password_reset_api_v1_auth_password_reset_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/auth/recover': {
     parameters: {
       query?: never
@@ -216,6 +233,26 @@ export interface paths {
     put?: never
     /** Cancel */
     post: operations['cancel_api_v1_courses_tasks__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/tasks/{task_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Task Events
+     * @description 课程/课文/助教任务阶段 SSE 流；覆盖三种任务 kind。
+     */
+    get: operations['task_events_api_v1_courses_tasks__task_id__events_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -1252,6 +1289,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/practice/tasks/{task_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Task Events */
+    get: operations['task_events_api_v1_practice_tasks__task_id__events_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/practice/{practice_id}': {
     parameters: {
       query?: never
@@ -1475,6 +1529,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/qa/tasks/{task_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Task Events
+     * @description 任务阶段 SSE 流；授权与快照一致读取见 task_event_stream。
+     */
+    get: operations['task_events_api_v1_qa_tasks__task_id__events_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/quiz/generate': {
     parameters: {
       query?: never
@@ -1537,6 +1611,23 @@ export interface paths {
     put?: never
     /** Cancel Task */
     post: operations['cancel_task_api_v1_quiz_task__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/quiz/task/{task_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Task Events */
+    get: operations['task_events_api_v1_quiz_task__task_id__events_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -1999,6 +2090,26 @@ export interface paths {
     }
     /** Wrong Questions */
     get: operations['wrong_questions_api_v1_study_wrong_questions_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/tasks/active': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Active
+     * @description 进行中任务、最近终态任务与处理中资料；跨页面通知的轮询数据源。
+     */
+    get: operations['active_api_v1_tasks_active_get']
     put?: never
     post?: never
     delete?: never
@@ -3370,6 +3481,22 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[TaskOverviewView] */
+    ApiResponse_TaskOverviewView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['TaskOverviewView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[TaskView] */
     ApiResponse_TaskView_: {
       /**
@@ -3947,6 +4074,11 @@ export interface components {
        */
       lesson_count: number
       /**
+       * Preload First Lesson
+       * @default true
+       */
+      preload_first_lesson: boolean
+      /**
        * Prior Knowledge
        * @default
        */
@@ -4314,6 +4446,11 @@ export interface components {
     }
     /** CourseTaskView */
     CourseTaskView: {
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
       /** Course Id */
       course_id: string
       /** Error Code */
@@ -4759,6 +4896,12 @@ export interface components {
     EmailCodeBody: {
       /** Email */
       email: string
+      /**
+       * Purpose
+       * @default register
+       * @enum {string}
+       */
+      purpose: 'register' | 'password_reset'
     }
     /** EmailCodeView */
     EmailCodeView: {
@@ -5353,6 +5496,18 @@ export interface components {
       current_password: string
       /** New Password */
       new_password: string
+    }
+    /**
+     * PasswordResetBody
+     * @description Recovery-code-free password reset via a password_reset email code.
+     */
+    PasswordResetBody: {
+      /** Account */
+      account: string
+      /** New Password */
+      new_password: string
+      /** Verification Code */
+      verification_code: string
     }
     /** PolicyArtifact */
     PolicyArtifact: {
@@ -5958,6 +6113,11 @@ export interface components {
     }
     /** PracticeTaskView */
     PracticeTaskView: {
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
       /** Error Code */
       error_code?: string | null
       /** Error Message */
@@ -6148,6 +6308,18 @@ export interface components {
       summary: string
       /** Title */
       title: string
+    }
+    /** ProcessingDocument */
+    ProcessingDocument: {
+      /** Doc Id */
+      doc_id: string
+      /** File Name */
+      file_name: string
+      /**
+       * Status
+       * @default processing
+       */
+      status: string
     }
     /** ProgressView */
     ProgressView: {
@@ -6598,6 +6770,11 @@ export interface components {
     /** QaTaskView */
     QaTaskView: {
       answer?: components['schemas']['QaAnswerView'] | null
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
       /** Error Code */
       error_code?: string | null
       /** Error Message */
@@ -8160,8 +8337,52 @@ export interface components {
       /** Space Id */
       space_id: string | null
     }
+    /** TaskOverviewItem */
+    TaskOverviewItem: {
+      /** Course Id */
+      course_id?: string | null
+      /** Course Title */
+      course_title?: string | null
+      /** Created At */
+      created_at: string
+      /** Doc Id */
+      doc_id?: string | null
+      /** Error Code */
+      error_code?: string | null
+      /** Kind */
+      kind: string
+      /** Lesson Id */
+      lesson_id?: string | null
+      /** Quiz Id */
+      quiz_id?: string | null
+      /**
+       * Stage
+       * @default queued
+       */
+      stage: string
+      /** Status */
+      status: string
+      /** Task Id */
+      task_id: string
+      /** Title */
+      title?: string | null
+      /** Updated At */
+      updated_at: string
+    }
+    /** TaskOverviewView */
+    TaskOverviewView: {
+      /** Documents */
+      documents?: components['schemas']['ProcessingDocument'][]
+      /** Tasks */
+      tasks?: components['schemas']['TaskOverviewItem'][]
+    }
     /** TaskView */
     TaskView: {
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
       /** Error Code */
       error_code?: string | null
       /** Error Message */
@@ -8654,6 +8875,39 @@ export interface operations {
       }
     }
   }
+  password_reset_api_v1_auth_password_reset_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PasswordResetBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_SessionView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   recover_api_v1_auth_recover_post: {
     parameters: {
       query?: never
@@ -8856,6 +9110,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  task_events_api_v1_courses_tasks__task_id__events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -11153,6 +11440,39 @@ export interface operations {
       }
     }
   }
+  task_events_api_v1_practice_tasks__task_id__events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   practice_api_v1_practice__practice_id__get: {
     parameters: {
       query?: never
@@ -11662,6 +11982,39 @@ export interface operations {
       }
     }
   }
+  task_events_api_v1_qa_tasks__task_id__events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   legacy_generate_api_v1_quiz_generate_post: {
     parameters: {
       query?: never
@@ -11781,6 +12134,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_TaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  task_events_api_v1_quiz_task__task_id__events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -12865,6 +13251,26 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  active_api_v1_tasks_active_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_TaskOverviewView_']
         }
       }
     }

@@ -9,6 +9,7 @@ export type CourseDraft = {
   daily_minutes: number
   lesson_count: number
   timezone: string
+  preload_first_lesson: boolean
   source_policy: CourseSourcePolicy
   scope: SourceScope | null
   document_versions: Record<string, string>
@@ -68,6 +69,7 @@ export function loadCourseDraft(identity: string | number): CourseDraft | null {
           ? draft.lesson_count
           : 6,
       timezone: shortText(draft.timezone, 100) || 'Asia/Shanghai',
+      preload_first_lesson: draft.preload_first_lesson !== false,
       source_policy: draft.source_policy === 'strict_docs' ? 'strict_docs' : 'topic',
       scope: documents.length ? { type: 'selected_documents', documents } : null,
       document_versions: Object.fromEntries(

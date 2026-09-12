@@ -30,6 +30,9 @@ async def readiness():
         "rag_owner": False,
         "eval_scorer": False,
     }
+    if settings.vector_backend == "qdrant":
+        del checks["rag_owner"]
+        checks.update({"rag_writer": False, "rag_generation": False, "vector_service": False})
     try:
         await fetch_one("SELECT 1 AS ok")
         checks["database"] = True
@@ -38,11 +41,19 @@ async def readiness():
             row["applied"] and row["checksum_matches"] for row in migrations
         )
         workers = await fetch_all(
-            "SELECT DISTINCT role FROM worker_heartbeats WHERE heartbeat_at>UTC_TIMESTAMP(6)-INTERVAL 90 SECOND"
+            "SELECT role,status_json FROM worker_heartbeats WHERE heartbeat_at>UTC_TIMESTAMP(6)-INTERVAL 90 SECOND"
         )
         for row in workers:
             if row["role"] in checks:
                 checks[row["role"]] = True
+        if settings.vector_backend == "qdrant":
+            from app.core.values import load
+            generators = [r for r in workers if r["role"] == "rag_generation"]
+            checks["rag_generation"] = len(generators) >= settings.qdrant_generation_workers
+            vector_workers = [r for r in workers if r["role"] in {"rag_writer", "rag_generation"}]
+            checks["vector_service"] = bool(vector_workers) and all(
+                load(r["status_json"], {}).get("vector_available") is True for r in vector_workers
+            )
     except Exception:
         pass
     try:
@@ -61,11 +72,15 @@ async def readiness():
         "images": resolve_image_config(settings).configured,
     }
     ready = all(checks.values())
+    # Redis 是可选依赖：只进入 optional_dependencies，不参与 ready 聚合判定。
+    from app.core.redis_client import redis_status
+
     return JSONResponse(
         status_code=200 if ready else 503,
         content={
             "status": "ready" if ready else "not_ready",
             "checks": checks,
             "capabilities": capabilities,
+            "optional_dependencies": {"redis": redis_status()},
         },
     )

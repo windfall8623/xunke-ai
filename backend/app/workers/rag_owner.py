@@ -251,6 +251,7 @@ class OwnerWorker:
         course_generator=None,
         course_tutor_generator=None,
         worker_id=None,
+        role=None,
     ):
         self.engine = engine
         self.report_generator = report_generator
@@ -258,11 +259,23 @@ class OwnerWorker:
         self.grading_provider = grading_provider
         self.course_generator = course_generator
         self.course_tutor_generator = course_tutor_generator
-        self.worker_id = worker_id or uid("owner")
+        from app.workers.roles import claim_kinds, effective_role
+        self.role = effective_role(get_settings(), role)
+        self.kinds = claim_kinds(self.role)
+        self.worker_id = worker_id or uid(self.role)
         self._serial = asyncio.Lock()
         self._next_course_review_reconcile = 0.0
+        self._next_event_purge = 0.0
 
     async def _worker_heartbeat(self):
+        if self.role != "owner":
+            available = await self.engine.store.projection.healthcheck()
+            await execute(
+                "INSERT INTO worker_heartbeats(worker_id,role,heartbeat_at,status_json) VALUES(%s,%s,UTC_TIMESTAMP(6),%s) "
+                "ON DUPLICATE KEY UPDATE heartbeat_at=UTC_TIMESTAMP(6),role=VALUES(role),status_json=VALUES(status_json)",
+                (self.worker_id, "rag_" + self.role, dump({"vector_backend": "qdrant", "vector_available": available})),
+            )
+            return
         await execute(
             "INSERT INTO worker_heartbeats(worker_id,role,heartbeat_at) VALUES(%s,'rag_owner',UTC_TIMESTAMP(6)) "
             "ON DUPLICATE KEY UPDATE heartbeat_at=UTC_TIMESTAMP(6),role='rag_owner'",
@@ -290,8 +303,17 @@ class OwnerWorker:
     async def run_once(self, *, task_id=None):
         """Return True when a durable job was claimed, even if it ends in failure."""
         async with self._serial:
+            from app.services import vector_projection_service as projections
+
+            if projections.enabled():
+                try:
+                    await projections.assert_not_maintenance()
+                except AppError as exc:
+                    if exc.code == "vector_maintenance":
+                        return False
+                    raise
             await self._worker_heartbeat()
-            if time.monotonic() >= self._next_course_review_reconcile:
+            if self.role != "generation" and time.monotonic() >= self._next_course_review_reconcile:
                 from app.services.course_review_service import reconcile_course_reviews
 
                 try:
@@ -299,10 +321,23 @@ class OwnerWorker:
                 except Exception:  # Scheduling is retried from the durable settlement events.
                     logger.exception("Course review scheduling will retry")
                 self._next_course_review_reconcile = time.monotonic() + 5
+            if self.role != "generation" and time.monotonic() >= self._next_event_purge:
+                from app.services import task_event_service
+
+                self._next_event_purge = time.monotonic() + 300
+                try:
+                    await task_event_service.purge_expired_events()
+                except Exception:  # noqa: BLE001 - 清理失败下一周期重试
+                    logger.exception("Task event purge will retry")
             await self.reconcile(task_id=task_id)
-            job = await job_service.claim_job(
-                self.worker_id, task_id=task_id, kinds=list(job_service.OPERATIONS)
-            )
+            try:
+                job = await job_service.claim_job(
+                    self.worker_id, task_id=task_id, kinds=self.kinds, maintain=self.role != "generation"
+                )
+            except AppError as exc:
+                if exc.code == "vector_maintenance":
+                    return False
+                raise
             if job is None:
                 await self.reconcile(task_id=task_id)
                 return False
@@ -340,6 +375,12 @@ class OwnerWorker:
                 raise
 
     async def _execute(self, job):
+        from app.services.vector_projection_service import execution_receipt
+
+        async with execution_receipt(job, self.worker_id):
+            await self._execute_managed(job)
+
+    async def _execute_managed(self, job):
         # The ContextVar propagates into the provider adapters and the managed
         # LangGraph tasks, so no production/evaluation charge can cross jobs.
         with execution(job):
@@ -874,21 +915,15 @@ class OwnerWorker:
 
     async def reconcile(self, *, task_id=None):
         """Finish terminal bookkeeping without reviving an expired or replaced lease."""
+        if self.role == "generation" and task_id is None:
+            return
         target = " AND task_id=%s" if task_id else ""
         args = (task_id,) if task_id else ()
-        await execute(
-            "UPDATE quiz_tasks SET status='cancelled',stage='cancelled',lease_token=NULL "
-            "WHERE cancel_requested=TRUE AND status IN ('pending','running')" + target,
-            args,
-        )
-        await execute(
-            "UPDATE quiz_tasks SET status='failed',stage='failed',error_code='deadline_exceeded',lease_token=NULL "
-            "WHERE ((status='pending' AND queued_expires_at<=UTC_TIMESTAMP(6)) OR "
-            "(status IN ('pending','running') AND deadline_at<=UTC_TIMESTAMP(6)) OR "
-            "(status='running' AND lease_expires_at<=UTC_TIMESTAMP(6) AND attempt>=max_attempts))"
-            + target,
-            args,
-        )
+        from app.services import task_event_service
+
+        # 收敛后的有界终态处理：逐行锁定取消/过期任务并追加公开事件。
+        async with transaction() as conn:
+            await job_service.finalize_terminal_rows(conn, task_id=task_id)
         rows = await fetch_all(
             "SELECT task_id FROM quiz_tasks WHERE status IN ('failed','cancelled') "
             "AND stage IN ('failed','cancelled')"
@@ -996,6 +1031,8 @@ class OwnerWorker:
                     (job["status"] + "_reconciled", job["task_id"]),
                     conn=conn,
                 )
+                # 调和完成后同事务写一次 settled 事件：business_settled 翻真。
+                await task_event_service.append_settled_event(conn, job)
 
     async def serve(self, stop_event=None, *, poll_seconds=2):
         stop_event = stop_event or asyncio.Event()
@@ -1008,12 +1045,18 @@ class OwnerWorker:
 
 
 async def _main(args):
+    from app.core.redis_client import close_redis, init_redis
     from app.workers.providers import build_runtime
 
     await init_pool()
+    # 通知客户端与 API 共享同一套 Redis 运行时；初始化失败只降级。
+    await init_redis()
     runtime = None
+    worker = None
     try:
-        runtime = build_runtime()
+        from app.workers.roles import effective_role
+        role = effective_role(get_settings(), args.role)
+        runtime = build_runtime(role=role)
         worker = OwnerWorker(
             runtime.engine,
             report_generator=runtime.report_generator,
@@ -1022,6 +1065,7 @@ async def _main(args):
             course_generator=runtime.course_generator,
             course_tutor_generator=runtime.course_tutor_generator,
             worker_id=args.worker_id,
+            role=role,
         )
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()
@@ -1033,8 +1077,11 @@ async def _main(args):
         else:
             await worker.serve(stop, poll_seconds=args.poll_seconds)
     finally:
+        if worker is not None:
+            await execute("DELETE FROM worker_heartbeats WHERE worker_id=%s", (worker.worker_id,))
         if runtime is not None:
             await runtime.close()
+        await close_redis()
         await close_mysql_pool()
 
 
@@ -1043,6 +1090,7 @@ def main():
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--task-id")
     parser.add_argument("--worker-id")
+    parser.add_argument("--role", choices=["owner", "writer", "generation"])
     parser.add_argument("--poll-seconds", type=float, default=2)
     args = parser.parse_args()
     if args.poll_seconds <= 0:

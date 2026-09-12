@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -51,6 +52,7 @@ class AuthCapabilitiesView(BaseModel):
 class EmailCodeBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     email: str = Field(min_length=3, max_length=100, pattern=EMAIL_PATTERN)
+    purpose: Literal["register", "password_reset"] = "register"
 
     @field_validator("email", mode="before")
     @classmethod
@@ -93,6 +95,22 @@ class RecoverBody(BaseModel):
     account: str = Field(min_length=3, max_length=100)
     recovery_code: str = Field(min_length=16, max_length=128)
     new_password: str = Field(min_length=10, max_length=128)
+
+
+class PasswordResetBody(BaseModel):
+    """Recovery-code-free password reset via a password_reset email code."""
+
+    model_config = ConfigDict(extra="forbid")
+    account: str = Field(min_length=3, max_length=100, pattern=EMAIL_PATTERN)
+    verification_code: str = Field(
+        min_length=6, max_length=6, pattern=r"^[0-9]{6}$", repr=False
+    )
+    new_password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("account", mode="before")
+    @classmethod
+    def normalize(cls, value):
+        return normalize_email(value)
 
 
 class PasswordBody(BaseModel):

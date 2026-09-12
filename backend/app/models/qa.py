@@ -79,6 +79,8 @@ class QaTaskView(Contract):
     stage: str = "queued"
     error_code: str | None = None
     error_message: str | None = None
+    # 任务关联业务记录是否同步完成；失败/取消后等待调和收尾才翻真。
+    business_settled: bool = False
     answer: QaAnswerView | None = None
     queue_ms: int | None = None
     execution_ms: int | None = None

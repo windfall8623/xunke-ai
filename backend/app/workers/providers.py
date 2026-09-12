@@ -163,12 +163,25 @@ class Runtime:
             for client in self.clients:
                 await client.aclose()
         finally:
-            self.engine.store.close()
+            if hasattr(self.engine.store, "aclose"):
+                await self.engine.store.aclose()
+            else:
+                self.engine.store.close()
 
 
-def build_runtime(settings=None) -> Runtime:
+def build_runtime(settings=None, *, role="owner") -> Runtime:
     settings = settings or get_settings()
-    store = OwnerIndexStore(settings.data_dir, process_role="rag_owner")
+    if settings.vector_backend == "qdrant":
+        from app.rag.remote_index_store import RemoteIndexStore
+
+        store = RemoteIndexStore(settings.data_dir, settings=settings, writable=role != "generation")
+    else:
+        if role == "generation":
+            raise ValueError("Generation replicas require Qdrant")
+        store = OwnerIndexStore(settings.data_dir, process_role="rag_owner")
+        store.registry_enabled = settings.vector_projection_registry_required
+        store.backend = "chroma"
+        store.target_revision = settings.vector_target_revision
     clients = []
     try:
         embedding = (
@@ -185,6 +198,44 @@ def build_runtime(settings=None) -> Runtime:
                 settings.dashscope_embedding_model, settings.embedding_dimensions
             )
         )
+        if settings.query_embedding_cache_enabled:
+            from redis.asyncio import Redis
+            from redis.backoff import NoBackoff
+            from redis.asyncio.retry import Retry
+            from app.rag.providers.query_embedding_cache import (
+                EmbeddingSignature, QueryCachedEmbedding,
+            )
+
+            cache_client = Redis(
+                host=settings.redis_cache_host,
+                port=settings.redis_cache_port,
+                db=settings.redis_cache_db,
+                password=settings.redis_cache_password,
+                ssl=settings.redis_cache_tls,
+                socket_connect_timeout=settings.redis_connect_timeout_ms / 1000,
+                socket_timeout=settings.redis_command_timeout_ms / 1000,
+                max_connections=settings.redis_max_connections,
+                retry=Retry(NoBackoff(), 0),
+                retry_on_timeout=False,
+                decode_responses=False,
+            )
+            embedding = QueryCachedEmbedding(
+                embedding,
+                client=cache_client,
+                signature=EmbeddingSignature(
+                    provider="openai-compatible-embedding",
+                    base_url=settings.dashscope_base_url,
+                    model=settings.dashscope_embedding_model,
+                    model_revision=settings.embedding_model_revision,
+                    dimensions=settings.embedding_dimensions,
+                    request_params={"encoding_format": "float"},
+                ),
+                hmac_secret=settings.redis_cache_password,
+                ttl_seconds=settings.query_embedding_cache_ttl_seconds,
+                operation_timeout_ms=settings.redis_operation_timeout_ms,
+                key_prefix=settings.redis_key_prefix,
+            )
+            clients.append(embedding)
         chat, llm_reranker, qa_generator, practice_provider = None, None, None, None
         grading_provider, course_generator, course_tutor_generator = None, None, None
         llm_config = resolve_llm_config(settings)

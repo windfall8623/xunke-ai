@@ -119,6 +119,7 @@ export const qaTask = {
   stage: 'queued',
   error_code: null,
   error_message: null,
+  business_settled: false,
   answer: null,
   queue_ms: null,
   execution_ms: null,

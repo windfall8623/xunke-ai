@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from fastapi import APIRouter, Depends, Header, Response
+from fastapi import APIRouter, Depends, Header, Request, Response
 
 from app.core.auth import get_current_actor
 from app.models.common import ApiResponse
@@ -16,7 +16,7 @@ from app.models.learning import (
 )
 from app.models.sources import PublicWebEvidence
 from app.rag.contracts import DocumentEvidence
-from app.services import job_service, learning_service, quiz_service
+from app.services import job_service, learning_service, quiz_service, task_event_stream
 
 router = APIRouter(prefix="/quiz", tags=["learning"])
 
@@ -67,6 +67,19 @@ async def cancel_task(task_id: str, actor=Depends(get_current_actor)):
     await job_service.get_task(actor.owner_id, task_id)
     await job_service.cancel_job(actor.owner_id, task_id)
     return ApiResponse.success(await job_service.get_task(actor.owner_id, task_id))
+
+
+@router.get("/task/{task_id}/events")
+async def task_events(
+    task_id: str,
+    request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    actor=Depends(get_current_actor),
+):
+    return await task_event_stream.task_events_endpoint(
+        request, actor=actor, kind="quiz", task_id=task_id,
+        last_event_id=last_event_id,
+    )
 
 
 @router.put(

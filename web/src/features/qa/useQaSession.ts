@@ -6,6 +6,8 @@ import { qaApi, qaKeys } from '../../services/qa'
 import { qaSubmissionKey } from '../../services/qaDrafts'
 import type { SourceScope } from '../../types/api'
 import type { QaMessageCreate, QaSessionList, QaTask } from '../../types/qa'
+import type { TaskEvent, TaskStreamState } from '../../types/taskEvent'
+import { useSettleWatch, useTaskEvents, type SettleWatch } from '../tasks/useTaskEvents'
 
 type Submission = { key: string; data: QaMessageCreate }
 export const activeTask = (task?: Pick<QaTask, 'status'> | null) =>
@@ -55,6 +57,8 @@ export function useQaSession(sessionId: string) {
   const controllers = useRef(new Set<AbortController>())
   const terminalIds = useRef(new Set<string>())
   const handledTerminals = useRef(new Set<string>())
+  const streamStateRef = useRef<TaskStreamState>('closed')
+  const settleStateRef = useRef<SettleWatch>({ taskId: null, active: false, expired: false })
   const queryKey = qaKeys.session(identity, sessionId)
   const messagesKey = qaKeys.messages(identity, sessionId)
   const sessionQuery = useQuery({
@@ -90,7 +94,16 @@ export function useQaSession(sessionId: string) {
     queryFn: ({ signal }) => qaApi.task(taskId!, signal),
     enabled: !!taskId && !hidden,
     initialData: taskId && localTask?.task_id === taskId ? localTask : undefined,
-    refetchInterval: (query) => (!query.state.error && activeTask(query.state.data) ? 1500 : false),
+    refetchInterval: (query) => {
+      if (query.state.error) return false
+      const current = query.state.data
+      const settle = settleStateRef.current
+      if (settle.active && !settle.expired)
+        return current && ['failed', 'cancelled'].includes(current.status) ? 2000 : false
+      if (!activeTask(current)) return false
+      // SSE 流存活时降为保险刷新，connecting/closed/polling 态保持原频率。
+      return streamStateRef.current === 'streaming' ? 30_000 : 1500
+    },
     refetchIntervalInBackground: false,
     staleTime: 0,
     gcTime: 0,
@@ -159,6 +172,34 @@ export function useQaSession(sessionId: string) {
       client.invalidateQueries({ queryKey: qaKeys.sessions(identity) }),
     ])
   }, [client, identity, sessionId])
+
+  const settle = useSettleWatch(task, refresh)
+  settleStateRef.current = settle
+  const streamTaskId = taskId ?? settle.taskId ?? undefined
+  const handleTaskEvent = (event: TaskEvent) => {
+    if (!streamTaskId || event.type === 'reset' || event.type === 'source_revoked') return
+    const { payload } = event
+    client.setQueryData<QaTask>(qaKeys.task(identity, sessionId, streamTaskId), (current) => {
+      if (!current || current.task_id !== streamTaskId) return current
+      return {
+        ...current,
+        status: payload.status as QaTask['status'],
+        stage: payload.stage || payload.status,
+        error_code: payload.error_code ?? current.error_code,
+        business_settled: payload.business_settled,
+      }
+    })
+    if (['completed', 'failed', 'cancelled'].includes(event.type))
+      void client.invalidateQueries({ queryKey: qaKeys.task(identity, sessionId, streamTaskId) })
+  }
+  const streamState = useTaskEvents({
+    path: streamTaskId ? `/qa/tasks/${streamTaskId}/events` : undefined,
+    taskId: streamTaskId,
+    enabled: !hidden && (!!taskId || settle.active),
+    onEvent: handleTaskEvent,
+    onResume: () => void refresh(),
+  })
+  streamStateRef.current = streamState
 
   useEffect(() => {
     live.current = true
@@ -349,6 +390,7 @@ export function useQaSession(sessionId: string) {
     submitting,
     submitError,
     busy,
+    settling: settle.active,
     ask,
     cancel,
     cancelling,

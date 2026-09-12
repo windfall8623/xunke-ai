@@ -30,6 +30,38 @@ async def _authorized(job, *, conn=None, lock=False):
     return course, lesson, scope
 
 
+async def _preload_first_lesson(conn, job, course, scope, units, lesson_ids, expected_revision):
+    """纲要发布后立即排队第一个可生成课时，缩短首次可学习内容的等待。
+
+    与 generate_lesson 走同一任务契约：认领时 _authorized 校验
+    active_task_id、expected_course_revision 与空内容；失败由 reconcile
+    落为 failed，用户可手动重试。
+    """
+    target = next(
+        (
+            lesson_id
+            for lesson_id, unit in zip(lesson_ids, units)
+            if unit["availability"] != "material_gap"
+        ),
+        None,
+    )
+    if target is None:
+        return
+    request = dict(course_id=course["course_id"], lesson_id=target,
+                   expected_course_revision=expected_revision,
+                   scope_fingerprint=scope.fingerprint, pipeline_id=get_settings().rag_pipeline_id)
+    lesson_task = await job_service.enqueue_job(
+        job["user_id"], "course_lesson", request,
+        f"course-preload:{course['course_id']}:{target}",
+        scope=scope.model_dump(mode="json"), conn=conn,
+    )
+    await execute(
+        "UPDATE learning_course_lessons SET generation_task_id=%s,active_task_id=%s,status='generating',"
+        "revision=revision+1,updated_at=%s WHERE lesson_id=%s AND owner_id=%s",
+        (lesson_task["task_id"], lesson_task["task_id"], now(), target, job["user_id"]), conn=conn,
+    )
+
+
 async def run_course(job, engine, generator, *, usage_loader):
     settings = get_settings()
     if not settings.course_enabled:
@@ -67,11 +99,14 @@ async def run_course(job, engine, generator, *, usage_loader):
         if saved_lesson is None:
             units = draft["payload"]["units"]
             metadata = {**draft, "payload": {k: v for k, v in draft["payload"].items() if k != "units"}}
+            lesson_ids = []
             for position, unit in enumerate(units):
+                lesson_id = uid("lesson")
+                lesson_ids.append(lesson_id)
                 await execute(
                     "INSERT INTO learning_course_lessons(lesson_id,course_id,owner_id,unit_ref,position,unit_json,status) "
                     "VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                    (uid("lesson"), course["course_id"], job["user_id"], unit["unit_ref"], position, dump(unit),
+                    (lesson_id, course["course_id"], job["user_id"], unit["unit_ref"], position, dump(unit),
                      "material_gap" if unit["availability"] == "material_gap" else "not_generated"), conn=conn,
                 )
             status = "partial" if draft["status"] == "insufficient_evidence" or any(u["availability"] == "material_gap" for u in units) else "ready"
@@ -81,6 +116,9 @@ async def run_course(job, engine, generator, *, usage_loader):
                 (dump(metadata), dump(generated["evidence"]), status, generated["skill_version"], generated["skill_hash"],
                  stamp, course["course_id"], job["user_id"]), conn=conn,
             )
+            if spec.preload_first_lesson:
+                await _preload_first_lesson(conn, job, course, scope, units, lesson_ids,
+                                            course["revision"] + 1)
         else:
             await execute(
                 "UPDATE learning_course_lessons SET content_json=%s,evidence_json=%s,status='ready',active_task_id=NULL,"

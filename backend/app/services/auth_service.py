@@ -219,6 +219,45 @@ async def recover(body):
     return {"recovery_code": next_code}
 
 
+async def reset_password_with_email_code(body):
+    """Recovery-code-free reset: an email code proves ownership of the account.
+
+    旧恢复码保持有效：它与密码是相互独立的凭证，邮箱重置不改变其价值。
+    """
+    encoded = await asyncio.to_thread(_passwords.hash, body.new_password)
+    async with transaction() as conn:
+        challenge, rejection = await email_verification.check_code(
+            body.account,
+            body.verification_code,
+            purpose=email_verification.PURPOSE_RESET,
+            conn=conn,
+        )
+        if rejection is not None:
+            raise rejection
+        identity = await fetch_one(
+            "SELECT * FROM auth_identities WHERE provider='password' AND app_scope='web' AND subject=%s FOR UPDATE",
+            (body.account,),
+            conn=conn,
+        )
+        if not identity or not identity["email_verified_at"]:
+            raise invalid_login()
+        await execute(
+            "UPDATE auth_identities SET password_hash=%s WHERE identity_id=%s",
+            (encoded, identity["identity_id"]),
+            conn=conn,
+        )
+        await execute(
+            "UPDATE auth_sessions SET revoked_at=UTC_TIMESTAMP(6) WHERE user_id=%s AND revoked_at IS NULL",
+            (identity["user_id"],),
+            conn=conn,
+        )
+        session, token = await issue_session(identity["user_id"], conn=conn)
+        await email_verification.consume_code(
+            challenge, purpose=email_verification.PURPOSE_RESET, conn=conn
+        )
+    return session, token
+
+
 async def change_password(user_id, body):
     async with transaction() as conn:
         identity = await fetch_one(

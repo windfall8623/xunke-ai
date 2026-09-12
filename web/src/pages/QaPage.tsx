@@ -348,6 +348,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
                     cancelling={qa.cancelling}
                     cancelError={qa.cancelError}
                     taskError={qa.taskQuery.error}
+                    settling={qa.settling}
                     onCancel={() => {
                       void qa.cancel()
                     }}

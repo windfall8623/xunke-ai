@@ -1,0 +1,309 @@
+{
+  "$defs": {
+    "ResetFrame": {
+      "additionalProperties": false,
+      "description": "控制帧：不带 seq 与 SSE id，前端清空旧预览并等待新快照。",
+      "properties": {
+        "execution_id": {
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "attempt_changed",
+            "cursor_expired",
+            "event_gap"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "reset",
+          "default": "reset",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "reason",
+        "execution_id"
+      ],
+      "title": "ResetFrame",
+      "type": "object"
+    },
+    "SnapshotEvent": {
+      "additionalProperties": false,
+      "description": "首连或 reset 后的授权快照；seq 为本快照高水位，可为 0。",
+      "properties": {
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "execution_id": {
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "occurred_at": {
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/TaskEventPayload"
+        },
+        "schema_version": {
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "snapshot",
+          "default": "snapshot",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "execution_id",
+        "seq",
+        "attempt",
+        "payload",
+        "occurred_at"
+      ],
+      "title": "SnapshotEvent",
+      "type": "object"
+    },
+    "SourceRevokedFrame": {
+      "additionalProperties": false,
+      "description": "控制帧：隐藏来源内容并停止订阅。",
+      "properties": {
+        "reason": {
+          "enum": [
+            "source_revoked",
+            "revision_conflict"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "source_revoked",
+          "default": "source_revoked",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "reason"
+      ],
+      "title": "SourceRevokedFrame",
+      "type": "object"
+    },
+    "TaskEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "execution_id": {
+          "title": "Execution Id",
+          "type": "string"
+        },
+        "occurred_at": {
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/TaskEventPayload"
+        },
+        "schema_version": {
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "phase",
+            "completed",
+            "failed",
+            "cancelled",
+            "settled"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "execution_id",
+        "seq",
+        "attempt",
+        "type",
+        "payload",
+        "occurred_at"
+      ],
+      "title": "TaskEvent",
+      "type": "object"
+    },
+    "TaskEventPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "business_settled": {
+          "default": false,
+          "title": "Business Settled",
+          "type": "boolean"
+        },
+        "content_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Version"
+        },
+        "course_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Course Id"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "lesson_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lesson Id"
+        },
+        "message_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message Id"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stage"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "TaskEventPayload",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/TaskEvent"
+    },
+    {
+      "$ref": "#/$defs/SnapshotEvent"
+    },
+    {
+      "$ref": "#/$defs/ResetFrame"
+    },
+    {
+      "$ref": "#/$defs/SourceRevokedFrame"
+    }
+  ],
+  "description": "SSE data 帧的公开联合类型：持久事件 / 快照 / 控制帧。",
+  "title": "TaskStreamFrame"
+}

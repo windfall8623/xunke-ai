@@ -11,13 +11,15 @@ from app.models.auth import (
     EmailCodeView,
     LoginBody,
     PasswordBody,
+    PasswordResetBody,
     RecoverBody,
     RegisterBody,
     SessionView,
+    normalize_email,
 )
 from app.models.common import ApiResponse
 from app.services import auth_service as service
-from app.services import email_verification
+from app.services import email_verification, rate_limit_service
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -37,9 +39,10 @@ def cookie(response, token):
 
 async def preflight(request, scope, account):
     verify_origin(request)
-    await service.rate_limit(
-        scope, account, request.client.host if request.client else "unknown"
-    )
+    ip = request.client.host if request.client else "unknown"
+    # Redis 快速门槛（可选）：拒绝时不触达 SQL；放行继续执行原 SQL 硬限制。
+    await rate_limit_service.enforce_auth_burst(account, ip)
+    await service.rate_limit(scope, account, ip)
 
 
 @router.get("/capabilities", response_model=ApiResponse[AuthCapabilitiesView])
@@ -60,9 +63,24 @@ async def capabilities(response: Response):
 async def email_code(body: EmailCodeBody, request: Request, response: Response):
     verify_origin(request)
     response.headers["Cache-Control"] = "no-store"
-    result = await email_verification.send_code(
-        body.email, request.client.host if request.client else "unknown"
-    )
+    ip = request.client.host if request.client else "unknown"
+    # 顺序固定：Origin 与功能开关/邮箱校验 → Redis 短窗 → SQL 冷却、配额与发送。
+    email_verification.require_available()
+    try:
+        email = normalize_email(body.email)
+    except ValueError:
+        raise AppError(400, "invalid_email", "请输入有效的邮箱地址") from None
+    await rate_limit_service.enforce_email_burst(email, ip)
+    if body.purpose == email_verification.PURPOSE_RESET:
+        # 重置码只发给已存在的已验证账号；口径与登录一致，不细化失败原因。
+        identity = await fetch_one(
+            "SELECT email_verified_at FROM auth_identities "
+            "WHERE provider='password' AND app_scope='web' AND subject=%s",
+            (email,),
+        )
+        if not identity or not identity["email_verified_at"]:
+            raise AppError(401, "invalid_credentials", "账号或凭证无效")
+    result = await email_verification.send_code(email, ip, purpose=body.purpose)
     return ApiResponse.success(result)
 
 
@@ -110,6 +128,14 @@ async def logout(
 async def recover(body: RecoverBody, request: Request):
     await preflight(request, "recover", body.account)
     return ApiResponse.success(await service.recover(body))
+
+
+@router.post("/password/reset", response_model=ApiResponse[SessionView])
+async def password_reset(body: PasswordResetBody, request: Request, response: Response):
+    await preflight(request, "password_reset", body.account)
+    result, token = await service.reset_password_with_email_code(body)
+    cookie(response, token)
+    return ApiResponse.success(result)
 
 
 @router.post("/change-password", response_model=ApiResponse[dict])

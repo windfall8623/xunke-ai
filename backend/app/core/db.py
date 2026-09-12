@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import aiomysql
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+_AFTER_COMMIT_BUDGET_SECONDS = 0.2
 
 _pool: aiomysql.Pool | None = None
 SCHEMA_STATEMENTS = [
@@ -78,12 +85,51 @@ def require_pool() -> aiomysql.Pool:
 async def transaction():
     async with require_pool().acquire() as conn:
         await conn.begin()
+        registry: dict[str, Callable[[], Awaitable[None]]] = {}
+        conn._xunke_after_commit = registry
+        committed = False
         try:
             yield conn
             await conn.commit()
+            committed = True
         except BaseException:
             await conn.rollback()
             raise
+        finally:
+            conn._xunke_after_commit = None
+            callbacks = [cb for cb in registry.values() if callable(cb)] if committed else []
+    # 固定顺序：SQL 提交成功并释放连接后，才有界执行提交后通知。
+    # 所有回调共享一次总预算；超时/通知失败不能反转已经提交的业务结果。
+    deadline = asyncio.get_running_loop().time() + _AFTER_COMMIT_BUDGET_SECONDS
+    for callback in callbacks:
+        remaining = deadline - asyncio.get_running_loop().time()
+        if remaining <= 0:
+            logger.warning("after_commit_callback_timeout")
+            break
+        try:
+            # wait_for 隔离回调自己的取消；调用方任务的取消仍正常传播。
+            await asyncio.wait_for(callback(), timeout=remaining)
+        except asyncio.CancelledError:
+            if asyncio.current_task().cancelling():
+                raise
+            logger.warning("after_commit_callback_cancelled")
+        except asyncio.TimeoutError:
+            logger.warning("after_commit_callback_timeout")
+            break
+        except Exception:  # noqa: BLE001 - best-effort by contract
+            logger.warning("after_commit_callback_failed")
+
+
+def register_after_commit(conn, key: str, callback: Callable[[], Awaitable[None]]) -> None:
+    """把提交后回调绑定到本次 transaction 的连接生命周期上。
+
+    传入不受事务管理的连接（如自建连接或已退出事务的连接）时拒绝注册。
+    相同 key 的回调被覆盖，用于合并同任务通知。
+    """
+    registry = getattr(conn, "_xunke_after_commit", None)
+    if registry is None:
+        raise ValueError("after-commit callbacks require an active transaction connection")
+    registry[key] = callback
 
 
 async def _query(sql, args=(), *, conn=None, mode="all"):

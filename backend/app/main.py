@@ -25,11 +25,14 @@ from app.api.v1.routes import (
     quiz,
     report,
     study,
+    tasks,
     user,
 )
 from app.core.config import get_settings
 from app.core.db import close_mysql_pool, init_mysql, init_pool
 from app.core.errors import AppError
+from app.core.redis_client import close_redis, init_redis
+from app.services import task_event_notifier
 from app.core.exceptions import (
     AuthenticationError,
     ContentFilterError,
@@ -51,7 +54,12 @@ async def lifespan(app: FastAPI):
         await init_mysql()
     else:
         await init_pool()
+    # 可选 Redis：初始化失败按降级处理，不中止 SQL 服务；配置错误在此明确报错。
+    await init_redis()
+    await task_event_notifier.start_listener()
     yield
+    await task_event_notifier.stop_listener()
+    await close_redis()
     await close_mysql_pool()
     logger.info("app_shutting_down")
 
@@ -76,6 +84,7 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(quiz.router, prefix="/api/v1")
 app.include_router(report.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
 app.include_router(user.router, prefix="/api/v1")
 app.include_router(knowledge.router, prefix="/api/v1")
 app.include_router(knowledge.eval_router, prefix="/api/v1")
@@ -116,6 +125,10 @@ async def response_headers(request: Request, call_next):
 
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError):
+    headers = None
+    retry_after = getattr(exc, "retry_after_seconds", None)
+    if retry_after is not None and int(retry_after) > 0:
+        headers = {"Retry-After": str(int(retry_after))}
     return JSONResponse(
         status_code=exc.status,
         content={
@@ -124,6 +137,7 @@ async def app_error_handler(request: Request, exc: AppError):
             "message": exc.message,
             "data": None,
         },
+        headers=headers,
     )
 
 

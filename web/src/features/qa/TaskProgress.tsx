@@ -4,22 +4,13 @@ import { providerErrorMessage } from '../../services/providerErrors'
 import type { QaTask } from '../../types/qa'
 import { activeTask } from './useQaSession'
 
+// 只映射任务阶段流里的真实公开阶段；不虚构百分比或预计完成时间。
 const stages: Record<string, string> = {
   pending: '正在排队',
   queued: '正在排队',
-  resolving_scope: '正在核验资料范围',
-  rewriting: '正在理解追问',
-  rewrite: '正在理解追问',
-  query_rewrite: '正在理解追问',
+  starting: '正在准备回答',
   retrieving: '正在检索资料',
-  retrieval: '正在检索资料',
-  reranking: '正在筛选依据',
-  rerank: '正在筛选依据',
   generating: '正在生成回答',
-  generation: '正在生成回答',
-  answering: '正在生成回答',
-  validating: '正在核验回答',
-  validation: '正在核验回答',
   completed: '回答完成',
 }
 
@@ -46,6 +37,7 @@ export function TaskProgress({
   cancelling,
   cancelError,
   taskError,
+  settling = false,
   onCancel,
   onRefresh,
   onRetry,
@@ -54,6 +46,8 @@ export function TaskProgress({
   cancelling: boolean
   cancelError: unknown
   taskError: unknown
+  /** 失败/取消后业务记录尚未确认同步；超时后仍展示，等待用户手动重试。 */
+  settling?: boolean
   onCancel: () => void
   onRefresh: () => void
   onRetry?: () => void
@@ -69,7 +63,11 @@ export function TaskProgress({
             ? qaFailureLabel(task.error_code, task.error_message)
             : stages[task?.stage || 'queued'] || '正在准备回答'}
       </p>
-      {running && <p className="tiny muted">进度已保存，重新打开此会话可继续查看。</p>}
+      {running ? (
+        <p className="tiny muted">进度已保存，重新打开此会话可继续查看。</p>
+      ) : (
+        settling && <p className="tiny muted">任务已结束，记录同步中</p>
+      )}
       <ErrorNotice error={taskError} onRetry={onRefresh} />
       <ErrorNotice error={cancelError} />
       <div className="button-row">

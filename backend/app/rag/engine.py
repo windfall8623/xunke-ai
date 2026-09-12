@@ -30,9 +30,27 @@ class RagEngine:
         self.reauthorize, self.web_provider = reauthorize, web_provider
         self.legacy_baseline = legacy_baseline
         self.qa_generator = qa_generator
+        # 不可变 build 的内容寻址复用（键含完整投影身份与校验和）。
+        # 授权永不缓存：每次业务边界仍然重新检查。
+        self._build_cache: dict[tuple, object] = {}
         self.retriever = HybridRetriever(
-            store, embedding, reranker=reranker, llm_reranker=llm_reranker
+            store, embedding, reranker=reranker, llm_reranker=llm_reranker,
+            build_cache=self._build_cache,
         )
+
+    def _read_build(self, manifest):
+        key = (
+            manifest.projection_key,
+            manifest.canonical_text_hash,
+            manifest.index_profile_hash,
+        )
+        cached = self._build_cache.get(key)
+        if cached is None:
+            cached = self.store.read_build(manifest)
+            if len(self._build_cache) >= 8:
+                self._build_cache.pop(next(iter(self._build_cache)))
+            self._build_cache[key] = cached
+        return cached
 
     def configure_legacy_baseline(
         self,
@@ -72,7 +90,7 @@ class RagEngine:
             nodes = [
                 n
                 for manifest in scope.documents
-                for n in self.store.read_build(manifest).nodes
+                for n in self._read_build(manifest).nodes
             ]
             result.evidence = expand_parent_context(
                 result.evidence, scope, config.context_token_budget, nodes
@@ -93,7 +111,7 @@ class RagEngine:
             )
             if source is None:
                 raise ScopeRevoked("Document is outside the selected scope")
-            built = self.store.read_build(source)
+            built = self._read_build(source)
             node = next(
                 (n for n in built.nodes if n.node_id == evidence.chunk_id), None
             )
@@ -157,7 +175,7 @@ class RagEngine:
         catalog = {}
         if coverage_plan is None:
             for source in scope.documents:
-                built = self.store.read_build(source)
+                built = self._read_build(source)
                 catalog[source.doc_id] = self.store.load_canonical(
                     built.canonical_artifact_key
                 ).sections

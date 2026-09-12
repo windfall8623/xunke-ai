@@ -15,6 +15,18 @@ export function setCsrfToken(token: string | null) {
   csrfToken = token
 }
 
+/** 会话版本快照：登录、登出与会话失效都会递增，供流式请求识别迟到响应。 */
+export function getSessionRevision() {
+  return sessionRevision
+}
+
+/** 401 的统一登出语义：仅当请求发起后会话版本未变时才清理凭证并广播，旧请求不登出新账号。 */
+export function expireSessionIfCurrent(requestSession: number) {
+  if (requestSession !== sessionRevision) return
+  setCsrfToken(null)
+  window.dispatchEvent(new Event('session-expired'))
+}
+
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   data?: unknown
@@ -58,11 +70,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (!response.ok || body.code !== 0) {
       if (
         (response.status === 401 || body.code === 4010) &&
-        requestSession === sessionRevision &&
-        !/^\/auth\/(session|login|register|recover|bind|capabilities|email-code)$/.test(path)
+        !/^\/auth\/(session|login|register|recover|bind|capabilities|email-code|password\/reset)$/.test(path)
       ) {
-        setCsrfToken(null)
-        window.dispatchEvent(new Event('session-expired'))
+        expireSessionIfCurrent(requestSession)
       }
       throw new ApiError(
         body.message || '请求失败，请稍后重试',
@@ -103,9 +113,8 @@ export async function requestDownload(path: string, fallbackFilename: string) {
         error_code?: string
         message?: string
       }
-      if (response.status === 401 && requestSession === sessionRevision) {
-        setCsrfToken(null)
-        window.dispatchEvent(new Event('session-expired'))
+      if (response.status === 401) {
+        expireSessionIfCurrent(requestSession)
       }
       throw new ApiError(
         body.message || '导出失败，请刷新后重试',

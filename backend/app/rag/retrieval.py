@@ -22,9 +22,20 @@ def rrf_merge(
 
 
 class HybridRetriever:
-    def __init__(self, store, embedding, *, reranker=None, llm_reranker=None):
+    def __init__(self, store, embedding, *, reranker=None, llm_reranker=None, build_cache=None):
         self.store, self.embedding, self.reranker = store, embedding, reranker
         self.llm_reranker = llm_reranker
+        self._build_cache = build_cache if build_cache is not None else {}
+
+    def read_build(self, manifest):
+        key = (manifest.projection_key, manifest.canonical_text_hash, manifest.index_profile_hash)
+        cached = self._build_cache.get(key)
+        if cached is None:
+            cached = self.store.read_build(manifest)
+            if len(self._build_cache) >= 8:
+                self._build_cache.pop(next(iter(self._build_cache)))
+            self._build_cache[key] = cached
+        return cached
 
     async def rerank_candidates(self, query, candidates, config, *, budget=None):
         from app.rag.providers.reranker import rerank
@@ -49,7 +60,7 @@ class HybridRetriever:
         from app.rag.providers.llamaindex_retriever import LlamaIndexRetriever
         from app.rag.scope import evidence_in_scope
 
-        builds = [self.store.read_build(source) for source in scope.documents]
+        builds = [self.read_build(source) for source in scope.documents]
         if any(
             b.profile.profile_id != config.index_profile_id
             or (

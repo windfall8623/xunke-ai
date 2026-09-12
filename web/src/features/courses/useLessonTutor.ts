@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useIdentityKey } from '../../app/AuthProvider'
 import {
   askTutor,
@@ -24,6 +24,8 @@ import type {
   CourseTutorCreate,
   CourseTutorTurnView,
 } from '../../types/course'
+import type { TaskEvent, TaskStreamState } from '../../types/taskEvent'
+import { useSettleWatch, useTaskEvents, type SettleWatch } from '../tasks/useTaskEvents'
 import { useCourseOperation } from './useCourseOperation'
 
 export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => void) {
@@ -37,6 +39,9 @@ export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => vo
   )
   const turnsKey = courseTutorKeys.turns(identity, courseId, lessonId, version)
   const checksKey = courseTutorKeys.checks(identity, courseId, lessonId, version)
+  const streamStateRef = useRef<TaskStreamState>('closed')
+  const settleStateRef = useRef<SettleWatch>({ taskId: null, active: false, expired: false })
+  const lastActiveTaskId = useRef('')
   function assertCurrent<
     T extends { course_id: string; lesson_id: string; content_version: number },
   >(value: T): T {
@@ -57,8 +62,13 @@ export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => vo
     gcTime: 0,
     retry: false,
     refetchOnMount: 'always',
-    refetchInterval: (state) =>
-      state.state.data?.some((turn) => courseTaskPending(turn.task)) ? 2500 : false,
+    refetchInterval: (state) => {
+      const settle = settleStateRef.current
+      if (settle.active && !settle.expired) return 2000
+      if (!state.state.data?.some((turn) => courseTaskPending(turn.task))) return false
+      // SSE 流存活时降为保险刷新，connecting/closed/polling 态保持原频率。
+      return streamStateRef.current === 'streaming' ? 30_000 : 2500
+    },
     refetchIntervalInBackground: false,
   })
   const checksQuery = useQuery({
@@ -81,6 +91,57 @@ export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => vo
   const attempts = inaccessible || checksQuery.error ? [] : checksQuery.data || []
   const activeTurn = turns.find((turn) => courseTaskPending(turn.task))
   const busy = operation.pending !== null || !!activeTurn
+  useEffect(() => {
+    if (activeTurn) lastActiveTaskId.current = activeTurn.task.task_id
+  }, [activeTurn])
+  // 刚结束的助教任务也要继续观察调和收尾；activeTurn 消失后按最后活动任务回溯。
+  const watchedTask =
+    activeTurn?.task ??
+    turns.find(
+      (turn) => turn.task.task_id === (settleStateRef.current.taskId || lastActiveTaskId.current),
+    )?.task
+  const settle = useSettleWatch(watchedTask, () => {
+    void client.invalidateQueries({ queryKey: turnsKey })
+    void client.invalidateQueries({ queryKey: checksKey })
+  })
+  settleStateRef.current = settle
+  const streamTaskId = activeTurn?.task.task_id ?? settle.taskId ?? undefined
+  const handleTaskEvent = (event: TaskEvent) => {
+    if (!streamTaskId || event.type === 'reset' || event.type === 'source_revoked') return
+    const { payload } = event
+    client.setQueryData<CourseTutorTurnView[]>(turnsKey, (current) =>
+      (current || []).map((turn) =>
+        turn.task.task_id === streamTaskId
+          ? {
+              ...turn,
+              task: {
+                ...turn.task,
+                status: payload.status as CourseTutorTurnView['task']['status'],
+                stage: payload.stage || payload.status,
+                error_code: payload.error_code ?? turn.task.error_code,
+                business_settled: payload.business_settled,
+              },
+            }
+          : turn,
+      ),
+    )
+    // 助教不能只刷任务本身：终态后同时刷新 turns 与自测记录。
+    if (['completed', 'failed', 'cancelled'].includes(event.type)) {
+      void client.invalidateQueries({ queryKey: turnsKey })
+      void client.invalidateQueries({ queryKey: checksKey })
+    }
+  }
+  const streamState = useTaskEvents({
+    path: streamTaskId ? `/courses/tasks/${streamTaskId}/events` : undefined,
+    taskId: streamTaskId,
+    enabled: !inaccessible && lesson.status === 'ready' && (!!activeTurn || settle.active),
+    onEvent: handleTaskEvent,
+    onResume: () => {
+      void client.invalidateQueries({ queryKey: turnsKey })
+      void client.invalidateQueries({ queryKey: checksKey })
+    },
+  })
+  streamStateRef.current = streamState
   useEffect(() => {
     if ([query.error, checksQuery.error, operation.error].some(courseSourceRevoked)) onUnavailable()
     if (
@@ -193,6 +254,7 @@ export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => vo
     inaccessible,
     pending: operation.pending,
     error: operation.error,
+    settling: settle.active,
     ask,
     retry,
     cancel,

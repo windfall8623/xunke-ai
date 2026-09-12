@@ -112,6 +112,7 @@ class TaskView(BaseModel):
     stage: str = "queued"
     error_code: str | None = None
     error_message: str | None = None
+    business_settled: bool = False
     result: QuizView | None = None
 
 

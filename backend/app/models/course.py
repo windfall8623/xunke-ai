@@ -21,6 +21,8 @@ class CourseCreate(Contract):
     daily_minutes: int = Field(default=20, ge=5, le=120)
     timezone: IanaTimezone = "Asia/Shanghai"
     lesson_count: int = Field(default=6, ge=1, le=10)
+    # 纲要发布后立即排队第一个可生成课时；开始生成即固定纲要标题。
+    preload_first_lesson: bool = True
     source_policy: TeachSourcePolicy = "topic"
     scope: RequestedScope | None = None
 
@@ -45,6 +47,8 @@ class CourseTaskView(Contract):
     stage: str = "queued"
     error_code: str | None = None
     error_message: str | None = None
+    # 任务关联业务记录是否同步完成；不等于课程展示状态。
+    business_settled: bool = False
 
 
 class CourseLessonSummary(TeachUnit):

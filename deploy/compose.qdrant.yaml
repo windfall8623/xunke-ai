@@ -1,0 +1,107 @@
+# 服务化向量部署。放在 compose.yaml、compose.local.yaml（可选）、Redis/cache 覆盖之后。
+# 首次切换前先执行 022 SQL 迁移，再按 migrate_vectors.py 完成 copy/verify/switch-check。
+# 回退时保留此服务、密钥及卷供清理已登记副本；VECTOR_BACKEND=chroma 并缩容 generation=0。
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?Set an independent QDRANT_API_KEY}
+      QDRANT__SERVICE__READ_ONLY_API_KEY: ${QDRANT_READ_ONLY_API_KEY:?Set a distinct QDRANT_READ_ONLY_API_KEY}
+      QDRANT__TELEMETRY_DISABLED: "true"
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - qdrant_snapshots:/qdrant/snapshots
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    # 仅内网 6333；generation 的只读 key 在 Qdrant 服务端强制执行。
+
+  api:
+    environment: &vector-state
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-qdrant}
+      VECTOR_TARGET_REVISION: ${VECTOR_TARGET_REVISION:-qdrant-v1}
+      VECTOR_PROJECTION_REGISTRY_REQUIRED: "true"
+      QDRANT_GENERATION_WORKERS: ${QDRANT_GENERATION_WORKERS:-2}
+    # 不注入 Qdrant 读/写 key。就绪状态来自 writer/generation 的实时心跳。
+
+  rag-owner:
+    command: ["python", "-m", "app.workers.rag_owner", "--role", "writer", "--worker-id", "compose-rag-writer"]
+    environment: &qdrant-worker-env
+      <<: *vector-state
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION_PREFIX: ${QDRANT_COLLECTION_PREFIX:-xunke_dense}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:?Set QDRANT_API_KEY}
+      QDRANT_READ_ONLY_API_KEY: ${QDRANT_READ_ONLY_API_KEY:?Set QDRANT_READ_ONLY_API_KEY}
+      QDRANT_SEARCH_TIMEOUT_SECONDS: ${QDRANT_SEARCH_TIMEOUT_SECONDS:-5}
+      QDRANT_WRITE_TIMEOUT_SECONDS: ${QDRANT_WRITE_TIMEOUT_SECONDS:-30}
+      QDRANT_RPC_CONCURRENCY: ${QDRANT_RPC_CONCURRENCY:-4}
+      QDRANT_BATCH_SIZE: ${QDRANT_BATCH_SIZE:-128}
+      QDRANT_MAX_REQUEST_BYTES: ${QDRANT_MAX_REQUEST_BYTES:-2097152}
+      QDRANT_VECTOR_ON_DISK: ${QDRANT_VECTOR_ON_DISK:-true}
+      QDRANT_HNSW_M: ${QDRANT_HNSW_M:-16}
+      QDRANT_HNSW_EF_CONSTRUCT: ${QDRANT_HNSW_EF_CONSTRUCT:-128}
+      QDRANT_HNSW_EF_SEARCH: ${QDRANT_HNSW_EF_SEARCH:-64}
+      REDIS_ENABLED: ${REDIS_ENABLED:-false}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_TLS: ${REDIS_TLS:-false}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-xunke:production:v1}
+      REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-100}
+      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-100}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-200}
+      REDIS_MAX_CONNECTIONS: ${REDIS_MAX_CONNECTIONS:-16}
+      TASK_EVENTS_ENABLED: ${TASK_EVENTS_ENABLED:-false}
+      QUERY_EMBEDDING_CACHE_ENABLED: ${QUERY_EMBEDDING_CACHE_ENABLED:-false}
+      QUERY_EMBEDDING_CACHE_TTL_SECONDS: ${QUERY_EMBEDDING_CACHE_TTL_SECONDS:-86400}
+      EMBEDDING_MODEL_REVISION: ${EMBEDDING_MODEL_REVISION:-}
+      REDIS_CACHE_HOST: ${REDIS_CACHE_HOST:-redis-cache}
+      REDIS_CACHE_PORT: ${REDIS_CACHE_PORT:-6379}
+      REDIS_CACHE_DB: ${REDIS_CACHE_DB:-0}
+      REDIS_CACHE_PASSWORD: ${REDIS_CACHE_PASSWORD:-}
+      REDIS_CACHE_TLS: ${REDIS_CACHE_TLS:-false}
+    depends_on:
+      qdrant:
+        condition: service_started
+    stop_grace_period: 660s
+
+  rag-generation:
+    profiles: !override []
+    command: ["python", "-m", "app.workers.rag_owner", "--role", "generation"]
+    environment:
+      <<: *qdrant-worker-env
+      RAG_WORKER_ROLE: generation
+      # 显式覆写继承项；不能把写 key 带入只读生成容器。
+      QDRANT_API_KEY: ""
+    volumes: !override
+      - app_data:/app/data
+      - type: tmpfs
+        target: /app/data/chroma
+        tmpfs:
+          size: 65536
+          mode: 0
+    deploy:
+      replicas: ${QDRANT_GENERATION_WORKERS:-2}
+      update_config:
+        order: stop-first
+    depends_on:
+      qdrant:
+        condition: service_started
+
+  vector-migrate:
+    profiles: [tools]
+    restart: "no"
+    command: ["python", "-m", "scripts.migrate_vectors", "plan"]
+    environment:
+      <<: *qdrant-worker-env
+      RAG_WORKER_ROLE: writer
+    deploy:
+      replicas: 1
+
+volumes:
+  qdrant_data:
+  qdrant_snapshots:

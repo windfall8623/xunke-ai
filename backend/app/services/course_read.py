@@ -5,6 +5,7 @@ from app.core.errors import AppError, not_found
 from app.core.values import iso, load, now
 from app.models.sources import PublicResolvedScope
 from app.models.learning import CourseReturnContext
+from app.models.task_event import business_settled_from
 from app.rag.contracts import DocumentEvidence, ResolvedScope
 from app.rag.errors import ScopeRevoked, SourceUnavailable
 from app.rag.scope import evidence_in_scope
@@ -96,6 +97,7 @@ async def task_view(owner, task_id, course_id, lesson_id=None, *, conn=None):
     }
     return dict(
         **task, course_id=course_id, lesson_id=lesson_id,
+        business_settled=business_settled_from(task["status"], task["stage"]),
         error_message=errors.get(task["error_code"].lower(), "生成未完成，请稍后重试") if task["error_code"] else None,
     )
 
@@ -134,10 +136,10 @@ async def course_view(row):
             read_at=iso(lesson["read_at"]), last_opened_at=iso(lesson["last_opened_at"]),
         ))
     task = await task_view(row["owner_id"], row["outline_task_id"], row["course_id"])
-    available = [l for l in lessons if l["status"] != "material_gap"]
-    opened = sorted([l for l in available if l["last_opened_at"]], key=lambda l: l["last_opened_at"], reverse=True)
-    resume = next((l["lesson_id"] for l in opened if not l["read_at"]), None)
-    resume = resume or next((l["lesson_id"] for l in available if not l["read_at"]), None)
+    available = [lesson for lesson in lessons if lesson["status"] != "material_gap"]
+    opened = sorted([lesson for lesson in available if lesson["last_opened_at"]], key=lambda lesson: lesson["last_opened_at"], reverse=True)
+    resume = next((lesson["lesson_id"] for lesson in opened if not lesson["read_at"]), None)
+    resume = resume or next((lesson["lesson_id"] for lesson in available if not lesson["read_at"]), None)
     resume = resume or (opened[0]["lesson_id"] if opened else None)
     # Recheck after reading potentially large derived content.
     await authorize_course(row)
@@ -149,7 +151,7 @@ async def course_view(row):
         lessons=summaries, sources=outline.get("sources", []), latest_task=task,
         active_task=task if task and task["status"] not in TERMINAL else None,
         resume_lesson_id=resume,
-        outline_editable=bool(payload) and not any(l["generation_task_id"] for l in lessons),
+        outline_editable=bool(payload) and not any(lesson["generation_task_id"] for lesson in lessons),
         warnings=outline.get("warnings", []) + outline.get("assumptions", []),
         created_at=iso(row["created_at"]), updated_at=iso(row["updated_at"]),
     )

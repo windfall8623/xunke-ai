@@ -6,6 +6,7 @@ from app.core.db import fetch_all, fetch_one
 from app.core.errors import AppError, not_found
 from app.core.values import digest, dump, iso, load, now
 from app.models.sources import PublicResolvedScope
+from app.models.task_event import business_settled_from
 from app.qa.contracts import ChatAnswerArtifact
 from app.rag.contracts import ResolvedScope, Usage
 from app.rag.errors import ScopeRevoked, SourceUnavailable
@@ -272,6 +273,7 @@ async def get_task(owner, task_id):
         stage=row["stage"],
         error_code=row["error_code"],
         error_message=row["error_message"],
+        business_settled=business_settled_from(row["status"], row["stage"]),
         answer=answer,
         queue_ms=queue_ms,
         execution_ms=execution_ms,

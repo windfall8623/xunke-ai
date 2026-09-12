@@ -125,6 +125,23 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "Run migrations separately; MYSQL_AUTO_INIT must be false in production"
                 )
+            if self.redis_enabled and len(self.redis_password) < 32:
+                raise ValueError(
+                    "Production requires an independent REDIS_PASSWORD of at least 32 characters"
+                )
+        if self.redis_enabled and not self.redis_password:
+            raise ValueError("REDIS_ENABLED requires REDIS_PASSWORD")
+        if self.vector_backend == "qdrant" and not self.vector_projection_registry_required:
+            raise ValueError("Qdrant requires VECTOR_PROJECTION_REGISTRY_REQUIRED=true")
+        if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", self.vector_target_revision):
+            raise ValueError("VECTOR_TARGET_REVISION must be a short storage revision")
+        if self.query_embedding_cache_enabled and not self.redis_cache_password:
+            raise ValueError("Query embedding cache requires an independent REDIS_CACHE_PASSWORD")
+        if self.query_embedding_cache_enabled and (
+            self.redis_cache_password == self.redis_password
+            or self.app_env == "production" and len(self.redis_cache_password) < 32
+        ):
+            raise ValueError("Query cache needs a distinct password of at least 32 characters in production")
         return self
 
     # Chat generation: choose one provider explicitly. Existing deployments that
@@ -208,6 +225,67 @@ class Settings(BaseSettings):
     mysql_pool_minsize: int = 1
     mysql_pool_maxsize: int = 10
     mysql_auto_init: bool = True
+
+    # Redis（可选）：共享短窗限流与任务事件通知的加速组件。
+    # 关闭或故障时全部功能退回原 SQL 路径；启用必须提供独立密码。
+    redis_enabled: bool = False
+    redis_host: str = "redis"
+    redis_port: int = Field(default=6379, ge=1, le=65535)
+    redis_db: int = Field(default=0, ge=0, le=15)
+    redis_password: str = Field(default="", repr=False)
+    redis_tls: bool = False
+    redis_key_prefix: str = "xunke:development:v1"
+    redis_connect_timeout_ms: int = Field(default=100, ge=10, le=5000)
+    redis_command_timeout_ms: int = Field(default=100, ge=10, le=5000)
+    redis_operation_timeout_ms: int = Field(default=200, ge=20, le=10000)
+    redis_max_connections: int = Field(default=16, ge=1, le=256)
+
+    # Redis 共享突发门槛：只统计进入后续 SQL 检查的请求，SQL 硬限制始终执行。
+    redis_rate_limit_enabled: bool = False
+    auth_burst_window_seconds: int = Field(default=60, ge=1, le=3600)
+    auth_burst_max_per_ip: int = Field(default=20, ge=1)
+    auth_burst_max_per_account: int = Field(default=10, ge=1)
+    email_burst_window_seconds: int = Field(default=60, ge=1, le=3600)
+    email_burst_max_per_ip: int = Field(default=10, ge=1)
+    email_burst_max_per_account: int = Field(default=3, ge=1)
+
+    # 任务阶段 SSE：默认关闭；打开后端点仍要求业务授权，通知丢失可补读。
+    task_events_enabled: bool = False
+    task_event_retention_hours: int = Field(default=24, ge=1)
+    task_event_sync_seconds: int = Field(default=15, ge=1, le=120)
+    task_event_max_connection_seconds: int = Field(default=900, ge=30, le=3600)
+
+    # 向量后端选择：chroma（默认轻量）或 qdrant（服务化共享检索）。
+    vector_backend: Literal["chroma", "qdrant"] = "chroma"
+    vector_target_revision: str = "legacy-v1"
+    vector_projection_registry_required: bool = False
+    rag_worker_role: Literal["owner", "writer", "generation"] = "owner"
+    qdrant_generation_workers: int = Field(default=2, ge=1, le=8)
+
+    # Qdrant 单节点：读写双 key 分离；API 与 eval-scorer 不持有向量库凭据。
+    qdrant_url: str = "http://qdrant:6333"
+    qdrant_collection_prefix: str = "xunke_dense"
+    qdrant_api_key: str = Field(default="", repr=False)
+    qdrant_read_only_api_key: str = Field(default="", repr=False)
+    qdrant_search_timeout_seconds: float = Field(default=5, gt=0, allow_inf_nan=False)
+    qdrant_write_timeout_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
+    qdrant_rpc_concurrency: int = Field(default=4, ge=1, le=64)
+    qdrant_batch_size: int = Field(default=128, ge=1, le=1024)
+    qdrant_max_request_bytes: int = Field(default=2097152, ge=65536)
+    qdrant_vector_on_disk: bool = True
+    qdrant_hnsw_m: int = Field(default=16, ge=4, le=64)
+    qdrant_hnsw_ef_construct: int = Field(default=128, ge=16, le=1000)
+    qdrant_hnsw_ef_search: int = Field(default=64, ge=16, le=1000)
+
+    # Query-only cache, isolated from the noeviction rate-limit instance.
+    query_embedding_cache_enabled: bool = False
+    query_embedding_cache_ttl_seconds: int = Field(default=86400, ge=1, le=604800)
+    embedding_model_revision: str = ""
+    redis_cache_host: str = "redis-cache"
+    redis_cache_port: int = Field(default=6379, ge=1, le=65535)
+    redis_cache_db: int = Field(default=0, ge=0, le=15)
+    redis_cache_password: str = Field(default="", repr=False)
+    redis_cache_tls: bool = False
 
     # Log
     log_level: str = "INFO"

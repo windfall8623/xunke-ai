@@ -11,6 +11,7 @@ import type { AuthSession } from '../types/api'
 
 export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register' | 'recover' | 'bind'>('login')
+  const [recoverMethod, setRecoverMethod] = useState<'code' | 'email'>('code')
   const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [nickname, setNickname] = useState('')
@@ -41,15 +42,20 @@ export function LoginPage() {
   const legacyLinkEnabled =
     capabilities.isSuccess && capabilities.data?.legacy_link_enabled === true
   const emailRegistration: boolean = mode === 'register'
+  const emailVerificationMode =
+    mode === 'register' || mode === 'bind' || (mode === 'recover' && recoverMethod === 'email')
+  // 账号本身是邮箱的模式；bind 的原账号是用户名，保持文本输入。
+  const usesEmailAccount =
+    mode === 'register' || (mode === 'recover' && recoverMethod === 'email')
   const emailRegistrationEnabled =
     capabilities.isSuccess && capabilities.data?.email_registration_enabled === true
   const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - clock) / 1000))
   const coolingDown = cooldownSeconds > 0
   useEffect(() => {
-    if (!emailRegistration || !coolingDown) return
+    if (!emailVerificationMode || !coolingDown) return
     const timer = window.setInterval(() => setClock(Date.now()), 1000)
     return () => window.clearInterval(timer)
-  }, [emailRegistration, coolingDown])
+  }, [emailVerificationMode, coolingDown])
   useEffect(
     () => () => {
       emailCodeGeneration.current++
@@ -78,6 +84,7 @@ export function LoginPage() {
   const switchMode = (next: typeof mode) => {
     if (pending) return
     setMode(next)
+    setRecoverMethod('code')
     setError(null)
     setNotice('')
     setPassword('')
@@ -85,10 +92,18 @@ export function LoginPage() {
     setMigrationCode('')
     resetEmailVerification()
   }
+  const switchRecoverMethod = (next: 'code' | 'email') => {
+    if (pending || next === recoverMethod) return
+    setRecoverMethod(next)
+    setError(null)
+    setNotice('')
+    setRecovery('')
+    resetEmailVerification()
+  }
   async function sendEmailCode() {
     if (
       pending ||
-      !emailRegistration ||
+      !emailVerificationMode ||
       !emailRegistrationEnabled ||
       (mode === 'bind' && !legacyLinkEnabled) ||
       activeEmailRequest.current !== null
@@ -110,7 +125,10 @@ export function LoginPage() {
     setEmailCodeError(null)
     setError(null)
     try {
-      const result = await api.sendEmailCode({ email })
+      const result = await api.sendEmailCode({
+        email,
+        purpose: mode === 'recover' ? 'password_reset' : 'register',
+      })
       if (generation !== emailCodeGeneration.current) return
       const received = Date.now()
       const retryAt = received + result.retry_after_seconds * 1000
@@ -133,15 +151,24 @@ export function LoginPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (pending || sendingCode) return
-    if (emailRegistration && !emailRegistrationEnabled) {
-      setError(new Error('邮箱注册暂未开放，已有账号仍可登录或使用恢复码找回密码。'))
+    // 邮箱能力开关只拦截真正要发送验证码的路径；bind 沿用旧行为不检查。
+    const emailGateActive =
+      mode === 'register' || (mode === 'recover' && recoverMethod === 'email')
+    if (emailGateActive && !emailRegistrationEnabled) {
+      setError(
+        new Error(
+          mode === 'recover'
+            ? '邮箱验证码找回暂未开放，可使用恢复码找回密码。'
+            : '邮箱注册暂未开放，已有账号仍可登录或使用恢复码找回密码。',
+        ),
+      )
       return
     }
     if (mode === 'bind' && !legacyLinkEnabled) {
       setError(new Error('旧账号关联当前未启用，请返回登录。'))
       return
     }
-    if (emailRegistration && !/^[0-9]{6}$/.test(verificationCode)) {
+    if (emailGateActive && !/^[0-9]{6}$/.test(verificationCode)) {
       setError(new Error('请输入邮箱收到的 6 位数字验证码。'))
       return
     }
@@ -149,7 +176,17 @@ export function LoginPage() {
     setError(null)
     setNotice('')
     try {
-      if (mode === 'recover') {
+      if (mode === 'recover' && recoverMethod === 'email') {
+        const result = await api.resetPasswordWithEmailCode({
+          account: account.trim().toLowerCase(),
+          verification_code: verificationCode,
+          new_password: password,
+        })
+        setPassword('')
+        resetEmailVerification()
+        await auth.acceptSession(result)
+        navigate(destination, { replace: true })
+      } else if (mode === 'recover') {
         const result = await api.recover({
           account: account.trim(),
           recovery_code: recovery.trim(),
@@ -241,6 +278,9 @@ export function LoginPage() {
               <h1>保存你的恢复码</h1>
               <p>忘记密码时，用账号和此恢复码找回。恢复码只在此展示一次，请保存在安全的位置。</p>
               <code className="recovery-code">{receipt.recovery_code}</code>
+              <p className="tiny muted">
+                如果不小心没有保存，之后仍可在登录页使用「邮箱验证码找回密码」。
+              </p>
               <button
                 className="button primary full-width"
                 onClick={async () => {
@@ -274,8 +314,30 @@ export function LoginPage() {
                     ? '验证邮箱并创建账号，保存每一次练习与进步。'
                     : mode === 'bind'
                       ? '用原账号的一次性迁移码和已验证邮箱设置网页账号，保留已有学习记录和积分。'
-                      : '使用注册时保存的恢复码设置新密码。'}
+                      : recoverMethod === 'email'
+                        ? '通过注册邮箱收到的验证码直接设置新密码。'
+                        : '使用注册时保存的恢复码设置新密码。'}
               </p>
+              {mode === 'recover' && (
+                <div className="auth-recover-methods" role="group" aria-label="找回方式">
+                  <button
+                    type="button"
+                    className={`method-toggle ${recoverMethod === 'code' ? 'selected' : ''}`}
+                    disabled={pending}
+                    onClick={() => switchRecoverMethod('code')}
+                  >
+                    用恢复码找回
+                  </button>
+                  <button
+                    type="button"
+                    className={`method-toggle ${recoverMethod === 'email' ? 'selected' : ''}`}
+                    disabled={pending}
+                    onClick={() => switchRecoverMethod('email')}
+                  >
+                    用邮箱验证码找回
+                  </button>
+                </div>
+              )}
               {auth.status === 'expired' && (
                 <div className="notice warning">
                   登录已失效，请重新登录。你的学习进度已经保存在账号中。
@@ -310,13 +372,19 @@ export function LoginPage() {
               )}
               <form onSubmit={submit} className="stack-form">
                 <label>
-                  {emailRegistration ? '邮箱' : mode === 'bind' ? '原账号' : '账号或邮箱'}
+                  {mode === 'bind'
+                    ? '原账号'
+                    : usesEmailAccount
+                      ? mode === 'recover'
+                        ? '注册邮箱'
+                        : '邮箱'
+                      : '账号或邮箱'}
                   <input
                     ref={accountInput}
                     name="account"
-                    type={emailRegistration ? 'email' : 'text'}
-                    inputMode={emailRegistration ? 'email' : undefined}
-                    autoComplete={emailRegistration ? 'email' : 'username'}
+                    type={usesEmailAccount ? 'email' : 'text'}
+                    inputMode={usesEmailAccount ? 'email' : undefined}
+                    autoComplete={usesEmailAccount ? 'email' : 'username'}
                     autoCapitalize="none"
                     spellCheck={false}
                     value={account}
@@ -332,10 +400,10 @@ export function LoginPage() {
                     minLength={3}
                     maxLength={100}
                     placeholder={
-                      emailRegistration
-                        ? 'name@example.com'
-                        : mode === 'bind'
-                          ? '输入原微信账号'
+                      mode === 'bind'
+                        ? '输入原微信账号'
+                        : usesEmailAccount
+                          ? 'name@example.com'
                           : '输入原账号或邮箱'
                     }
                   />
@@ -354,7 +422,7 @@ export function LoginPage() {
                     />
                   </label>
                 )}
-                {mode === 'recover' && (
+                {mode === 'recover' && recoverMethod === 'code' && (
                   <label>
                     恢复码
                     <input
@@ -398,7 +466,7 @@ export function LoginPage() {
                     placeholder={mode === 'login' ? '输入密码' : '至少 10 个字符'}
                   />
                 </label>
-                {emailRegistration && (
+                {emailVerificationMode && (
                   <div className="auth-email-verification">
                     <label htmlFor={verificationId}>邮箱验证码</label>
                     <div className="auth-email-code-row">
@@ -447,7 +515,8 @@ export function LoginPage() {
                       </button>
                     </div>
                     <p id={`${verificationId}-help`} className="tiny muted">
-                      重发后请使用最新验证码，并在有效期内完成注册。
+                      重发后请使用最新验证码，并在有效期内完成
+                      {mode === 'recover' ? '密码重置' : '注册'}。
                     </p>
                     {emailCodeNotice && (
                       <div className="notice success" role="status">
@@ -473,7 +542,8 @@ export function LoginPage() {
                   disabled={
                     pending ||
                     sendingCode ||
-                    (emailRegistration && !emailRegistrationEnabled) ||
+                    ((mode === 'register' || (mode === 'recover' && recoverMethod === 'email')) &&
+                      !emailRegistrationEnabled) ||
                     (mode === 'bind' && !legacyLinkEnabled)
                   }
                 >

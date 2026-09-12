@@ -2952,6 +2952,43 @@
         "title": "ApiResponse[StudyWrongQuestionList]",
         "type": "object"
       },
+      "ApiResponse_TaskOverviewView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskOverviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[TaskOverviewView]",
+        "type": "object"
+      },
       "ApiResponse_TaskView_": {
         "properties": {
           "code": {
@@ -4370,6 +4407,11 @@
             "title": "Lesson Count",
             "type": "integer"
           },
+          "preload_first_lesson": {
+            "default": true,
+            "title": "Preload First Lesson",
+            "type": "boolean"
+          },
           "prior_knowledge": {
             "default": "",
             "maxLength": 1000,
@@ -5475,6 +5517,11 @@
       "CourseTaskView": {
         "additionalProperties": false,
         "properties": {
+          "business_settled": {
+            "default": false,
+            "title": "Business Settled",
+            "type": "boolean"
+          },
           "course_id": {
             "title": "Course Id",
             "type": "string"
@@ -6836,6 +6883,15 @@
             "minLength": 3,
             "pattern": "^[a-z0-9_+.-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
             "title": "Email",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "register",
+            "enum": [
+              "register",
+              "password_reset"
+            ],
+            "title": "Purpose",
             "type": "string"
           }
         },
@@ -8313,6 +8369,39 @@
           "new_password"
         ],
         "title": "PasswordBody",
+        "type": "object"
+      },
+      "PasswordResetBody": {
+        "additionalProperties": false,
+        "description": "Recovery-code-free password reset via a password_reset email code.",
+        "properties": {
+          "account": {
+            "maxLength": 100,
+            "minLength": 3,
+            "pattern": "^[a-z0-9_+.-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            "title": "Account",
+            "type": "string"
+          },
+          "new_password": {
+            "maxLength": 128,
+            "minLength": 10,
+            "title": "New Password",
+            "type": "string"
+          },
+          "verification_code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "title": "Verification Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "verification_code",
+          "new_password"
+        ],
+        "title": "PasswordResetBody",
         "type": "object"
       },
       "PolicyArtifact": {
@@ -9931,6 +10020,11 @@
       "PracticeTaskView": {
         "additionalProperties": false,
         "properties": {
+          "business_settled": {
+            "default": false,
+            "title": "Business Settled",
+            "type": "boolean"
+          },
           "error_code": {
             "anyOf": [
               {
@@ -10372,6 +10466,30 @@
           "revision"
         ],
         "title": "PracticeView",
+        "type": "object"
+      },
+      "ProcessingDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "status": {
+            "default": "processing",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doc_id",
+          "file_name"
+        ],
+        "title": "ProcessingDocument",
         "type": "object"
       },
       "ProgressView": {
@@ -11507,6 +11625,11 @@
                 "type": "null"
               }
             ]
+          },
+          "business_settled": {
+            "default": false,
+            "title": "Business Settled",
+            "type": "boolean"
           },
           "error_code": {
             "anyOf": [
@@ -15970,8 +16093,150 @@
         "title": "StudyWrongQuestionView",
         "type": "object"
       },
+      "TaskOverviewItem": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "course_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Title"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "doc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc Id"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Id"
+          },
+          "quiz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Id"
+          },
+          "stage": {
+            "default": "queued",
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "kind",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TaskOverviewItem",
+        "type": "object"
+      },
+      "TaskOverviewView": {
+        "additionalProperties": false,
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessingDocument"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskOverviewItem"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "title": "TaskOverviewView",
+        "type": "object"
+      },
       "TaskView": {
         "properties": {
+          "business_settled": {
+            "default": false,
+            "title": "Business Settled",
+            "type": "boolean"
+          },
           "error_code": {
             "anyOf": [
               {
@@ -16936,6 +17201,47 @@
         ]
       }
     },
+    "/api/v1/auth/password/reset": {
+      "post": {
+        "operationId": "password_reset_api_v1_auth_password_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_SessionView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Password Reset",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/auth/recover": {
       "post": {
         "operationId": "recover_api_v1_auth_recover_post",
@@ -17226,6 +17532,63 @@
           }
         },
         "summary": "Cancel",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/tasks/{task_id}/events": {
+      "get": {
+        "description": "课程/课文/助教任务阶段 SSE 流；覆盖三种任务 kind。",
+        "operationId": "task_events_api_v1_courses_tasks__task_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Events",
         "tags": [
           "courses"
         ]
@@ -20913,6 +21276,62 @@
         ]
       }
     },
+    "/api/v1/practice/tasks/{task_id}/events": {
+      "get": {
+        "operationId": "task_events_api_v1_practice_tasks__task_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Events",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
     "/api/v1/practice/{practice_id}": {
       "get": {
         "operationId": "practice_api_v1_practice__practice_id__get",
@@ -21709,6 +22128,63 @@
         ]
       }
     },
+    "/api/v1/qa/tasks/{task_id}/events": {
+      "get": {
+        "description": "任务阶段 SSE 流；授权与快照一致读取见 task_event_stream。",
+        "operationId": "task_events_api_v1_qa_tasks__task_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Events",
+        "tags": [
+          "knowledge-qa"
+        ]
+      }
+    },
     "/api/v1/quiz/generate": {
       "post": {
         "operationId": "legacy_generate_api_v1_quiz_generate_post",
@@ -21896,6 +22372,62 @@
           }
         },
         "summary": "Cancel Task",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
+    "/api/v1/quiz/task/{task_id}/events": {
+      "get": {
+        "operationId": "task_events_api_v1_quiz_task__task_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Events",
         "tags": [
           "learning"
         ]
@@ -23793,6 +24325,28 @@
         "summary": "Wrong Questions",
         "tags": [
           "study"
+        ]
+      }
+    },
+    "/api/v1/tasks/active": {
+      "get": {
+        "description": "进行中任务、最近终态任务与处理中资料；跨页面通知的轮询数据源。",
+        "operationId": "active_api_v1_tasks_active_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TaskOverviewView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Active",
+        "tags": [
+          "tasks"
         ]
       }
     },

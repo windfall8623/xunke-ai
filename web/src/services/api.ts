@@ -32,6 +32,10 @@ export const api = {
   ) => request<AuthSession>('/auth/bind', { method: 'POST', data }),
   recover: (data: ApiSchemas['RecoverBody']) =>
     request<{ recovery_code?: string }>('/auth/recover', { method: 'POST', data }),
+  resetPasswordWithEmailCode: (data: ApiSchemas['PasswordResetBody']) =>
+    request<AuthSession>('/auth/password/reset', { method: 'POST', data }),
+  taskOverview: (signal?: AbortSignal) =>
+    request<ApiSchemas['TaskOverviewView']>('/tasks/active', { signal }),
   logout: () => request<null>('/auth/logout', { method: 'POST' }),
   changePassword: (data: ApiSchemas['PasswordBody']) =>
     request<null>('/auth/change-password', { method: 'POST', data }),

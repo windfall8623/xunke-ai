@@ -208,6 +208,28 @@ services:
       EVAL_CONTROL_OUTAGE_SECONDS: ${EVAL_CONTROL_OUTAGE_SECONDS:-60}
     command: ["python", "-m", "rag_eval.worker", "--worker-id", "compose-eval-scorer"]
 
+  # These definitions stay inactive in lightweight mode; compose.qdrant.yaml
+  # supplies the remote backend and activates generation replicas.
+  rag-generation:
+    <<: *backend
+    profiles: [qdrant]
+    command: ["python", "-m", "app.workers.rag_owner", "--role", "generation"]
+    healthcheck:
+      disable: true
+    stop_grace_period: 660s
+    volumes: *api-volumes
+
+  vector-migrate:
+    <<: *backend
+    profiles: [tools]
+    restart: "no"
+    command: ["python", "-m", "scripts.migrate_vectors", "plan"]
+    healthcheck:
+      disable: true
+    volumes:
+      - app_data:/app/data
+      - chroma_data:/app/data/chroma
+
   web:
     image: xunke-ai:${IMAGE_TAG:-local}
     build:

@@ -3856,3 +3856,138 @@ label {
     overflow-wrap: anywhere;
   }
 }
+
+/* 跨页面任务通知 toast */
+.task-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 90;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.task-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink);
+  font-size: var(--text-md);
+  overflow-wrap: anywhere;
+
+  &.success {
+    border-color: var(--primary-border);
+    > svg:first-child {
+      color: var(--success);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+
+  &.error {
+    border-color: #ecc8c5;
+    > svg:first-child {
+      color: var(--danger);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+}
+
+.task-toast-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+
+  .text-button {
+    justify-self: start;
+  }
+}
+
+.task-toast-close {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+@media (max-width: 767px) {
+  .task-toasts {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-toasts {
+    transition: none;
+  }
+}
+
+/* 找回密码方式切换 */
+.auth-recover-methods {
+  display: flex;
+  gap: 8px;
+}
+
+.method-toggle {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &.selected {
+    border-color: var(--primary-border);
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    font-weight: 600;
+  }
+}
+
+/* 建课表单：立即准备第一课复选框 */
+label.check-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    margin-top: 3px;
+    accent-color: var(--primary);
+  }
+
+  span {
+    display: grid;
+    gap: 4px;
+    font-size: var(--text-md);
+    color: var(--ink);
+  }
+
+  small {
+    line-height: 1.6;
+  }
+}

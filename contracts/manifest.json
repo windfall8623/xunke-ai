@@ -69,8 +69,9 @@
     "StudyUnitView.schema.json": "c7fedaf5df647486ab01e55218a3b030a7c431ded5fa1abe36150ce279d5d7e1",
     "StudyWrongQuestionList.schema.json": "93b8d4213fc079e04d3b542b90210b0b71ccfc5026f61d4c1955646112ecad91",
     "StudyWrongQuestionView.schema.json": "4cafff6bddae7e2785f3b09fc0c5c689fc09a9a1294ee8a63003b4caf2b17c89",
+    "TaskEvent.schema.json": "57646e618875c7e6d79c59903030a240301436033a58b0a023d1b74d31ac1410",
     "WebEvidence.schema.json": "b49473859ac844c797e1f5c75be54741918379e44857989f9a12fd924e1a7e2c",
-    "openapi.json": "c80a473be69041e37bceda06a22dc553ed0b55759dbc3b100b24a392e1aeff6d"
+    "openapi.json": "737cadad9fe3c3d67c27fa9d59492e6c3826e30a2cb7dcef095f7aa37fed353c"
   },
   "schema_version": "1"
 }

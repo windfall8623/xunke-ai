@@ -1,4 +1,8 @@
-"""LlamaIndex Chroma adapter returning only project Evidence contracts."""
+"""LlamaIndex Chroma adapter returning only project Evidence contracts.
+
+检索经 VectorProjectionStore 抽象执行（过滤在 top-k 之前生效），
+不再直接访问底层 Chroma collection；分数由子类按 metric 换算。
+"""
 
 from __future__ import annotations
 
@@ -15,12 +19,23 @@ class LlamaIndexRetriever:
     def __init__(self, store, embedding):
         self.store, self.embedding = store, embedding
 
+    def _score(self, raw_score: float, score_version="chroma-cosine-distance-v1") -> float:
+        # 与 llama-index Chroma 适配器一致：similarity = exp(-cosine_distance)。
+        import math
+
+        # Keep the established score scale when Qdrant returns cosine similarity.
+        distance = 1.0 - raw_score if score_version.startswith("qdrant-") else raw_score
+        return math.exp(-distance)
+
     async def retrieve_evidence(
         self, query: str, scope: ResolvedScope, config: PipelineConfig, *, budget=None
     ) -> RetrievalResult:
         logging.getLogger("llama_index.vector_stores.chroma.base").setLevel(
             logging.WARNING
         )
+        from app.rag.index_artifacts import ref_from_manifest
+        from app.rag.vector_store import VectorSearch
+
         builds = []
         for manifest in scope.documents:
             built = self.store.read_build(manifest)
@@ -43,7 +58,14 @@ class LlamaIndexRetriever:
             )
         if not builds:
             return RetrievalResult(status="empty")
-        vector = await self.embedding.embed_query(query, budget=budget)
+        if hasattr(self.embedding, "cached_embed_query"):
+            vector = await self.embedding.cached_embed_query(
+                query, owner_id=scope.owner_id, namespace=scope.namespace,
+                mode="production" if scope.namespace == "production" else "evaluation",
+                budget=budget,
+            )
+        else:
+            vector = await self.embedding.embed_query(query, budget=budget)
         candidates = []
         try:
             for manifest, built in builds:
@@ -54,35 +76,28 @@ class LlamaIndexRetriever:
                 }
                 if not by_id:
                     continue
-                # Chroma applies this whitelist before n_results, never after global top-k.
-                where = {
-                    "$and": [
-                        {"owner_id": scope.owner_id},
-                        {"namespace": scope.namespace},
-                        {"scope_doc_id": manifest.doc_id},
-                        {"document_version_id": manifest.document_version_id},
-                        {"parse_artifact_id": manifest.parse_artifact_id},
-                        {"index_build_id": manifest.index_build_id},
-                        {"attempt_id": manifest.attempt_id},
-                        {"scope_node_id": {"$in": sorted(by_id)}},
-                    ]
-                }
-                result = self._query(
-                    self.store._collection(built.projection_key),
-                    vector,
-                    min(config.dense_top_k, len(by_id)),
-                    where,
+                # 投影层在 top-k 之前应用白名单过滤，绝不先全库 top-k 再过滤。
+                hits = await self.store.search(
+                    VectorSearch(
+                        query_vector=vector,
+                        ref=ref_from_manifest(manifest),
+                        allowed_node_ids=frozenset(by_id),
+                        top_k=min(config.dense_top_k, len(by_id)),
+                        deadline_seconds=budget.remaining_seconds if budget else None,
+                    )
                 )
-                for identity, score in result:
-                    if identity not in by_id:
+                for hit in hits:
+                    if hit.node_id not in by_id:
                         raise SourceUnavailable(
                             "Retriever returned an unauthorized source"
                         )
                     candidates.append(
-                        by_id[identity].evidence.model_copy(
+                        by_id[hit.node_id].evidence.model_copy(
                             update={
-                                "score": score,
-                                "retrieval_scores": {"dense": score},
+                                "score": self._score(hit.raw_score, hit.score_version),
+                                "retrieval_scores": {
+                                    "dense": self._score(hit.raw_score, hit.score_version)
+                                },
                             }
                         )
                     )
@@ -100,13 +115,3 @@ class LlamaIndexRetriever:
             effective_config={"retriever": self.provider_name},
             usage=budget.snapshot() if budget else {},
         )
-
-    def _query(self, collection, vector, limit, where):
-        from llama_index.core.vector_stores.types import VectorStoreQuery
-        from llama_index.vector_stores.chroma import ChromaVectorStore
-
-        result = ChromaVectorStore(chroma_collection=collection).query(
-            VectorStoreQuery(query_embedding=vector, similarity_top_k=limit),
-            where=where,
-        )
-        return list(zip(result.ids, result.similarities))

@@ -9,3 +9,5 @@ python-docx>=1.1,<2
 httpx>=0.27,<1
 tiktoken>=0.9,<1
 pydantic>=2.11,<3
+# 可选 Qdrant 服务化后端（VECTOR_BACKEND=qdrant 时使用）。
+qdrant-client==1.19.0

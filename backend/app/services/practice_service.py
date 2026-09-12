@@ -795,6 +795,8 @@ async def _task_practice_id(conn, owner_id, job):
 
 
 async def get_practice_task(owner_id: int, task_id: str) -> PracticeTaskView:
+    from app.models.task_event import business_settled_from
+
     async with transaction() as conn:
         job = await owned_practice_task(owner_id, task_id, conn=conn, lock=True)
         practice_id = await _task_practice_id(conn, owner_id, job)
@@ -822,6 +824,7 @@ async def get_practice_task(owner_id: int, task_id: str) -> PracticeTaskView:
             stage=job["stage"] if job["stage"] in _PUBLIC_STAGES else job["status"],
             error_code=code,
             error_message="任务未完成，请查看错误原因后重试" if code else None,
+            business_settled=business_settled_from(job["status"], job["stage"]),
             result=result,
         )
 

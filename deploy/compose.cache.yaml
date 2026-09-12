@@ -1,0 +1,37 @@
+# 可选查询向量缓存；独立 allkeys-lru 实例，不与限流 noeviction 实例共享内存。
+# 配合 compose.redis.yaml；使用 Qdrant 时将 compose.qdrant.yaml 放在最后。
+services:
+  redis-cache:
+    image: redis:8.2-alpine
+    restart: unless-stopped
+    user: "999:999"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    environment:
+      REDIS_PASSWORD: ${REDIS_CACHE_PASSWORD:?Set an independent REDIS_CACHE_PASSWORD}
+      REDIS_MAXMEMORY_POLICY: allkeys-lru
+    entrypoint: ["/bin/sh", "/usr/local/share/xunke/redis-entrypoint.sh"]
+    command: []
+    volumes:
+      - ./redis-entrypoint.sh:/usr/local/share/xunke/redis-entrypoint.sh:ro
+    tmpfs:
+      - /run/xunke-redis:size=1m,mode=0700,uid=999,gid=999
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  rag-owner:
+    environment:
+      QUERY_EMBEDDING_CACHE_ENABLED: ${QUERY_EMBEDDING_CACHE_ENABLED:-false}
+      QUERY_EMBEDDING_CACHE_TTL_SECONDS: ${QUERY_EMBEDDING_CACHE_TTL_SECONDS:-86400}
+      EMBEDDING_MODEL_REVISION: ${EMBEDDING_MODEL_REVISION:-}
+      REDIS_CACHE_HOST: ${REDIS_CACHE_HOST:-redis-cache}
+      REDIS_CACHE_PORT: ${REDIS_CACHE_PORT:-6379}
+      REDIS_CACHE_DB: ${REDIS_CACHE_DB:-0}
+      REDIS_CACHE_PASSWORD: ${REDIS_CACHE_PASSWORD:?Set REDIS_CACHE_PASSWORD}
+      REDIS_CACHE_TLS: ${REDIS_CACHE_TLS:-false}

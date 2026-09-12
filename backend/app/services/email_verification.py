@@ -1,4 +1,8 @@
-"""Registration-only email challenges and durable, atomic send budgets."""
+"""Email challenges and durable, atomic send budgets.
+
+register 与 password_reset 两个用途共享发送配额，但 challenge 行按
+(email_hash, purpose) 隔离，验证码互不可用。
+"""
 
 from __future__ import annotations
 
@@ -20,9 +24,12 @@ from app.services import mail_transport
 
 logger = logging.getLogger(__name__)
 PURPOSE = "register"
+PURPOSE_RESET = "password_reset"
+PURPOSES = frozenset({PURPOSE, PURPOSE_RESET})
 CODE_LIFETIME_SECONDS = 600
 MAX_VERIFICATION_ATTEMPTS = 5
 SEND_MESSAGE = "如该邮箱可用于注册，验证码将发送至邮箱，请检查收件箱和垃圾邮件"
+RESET_MESSAGE = "如该邮箱可用于找回密码，验证码将发送至邮箱，请检查收件箱和垃圾邮件"
 
 
 def is_available(settings: Settings | None = None) -> bool:
@@ -51,9 +58,9 @@ def rate_limited() -> AppError:
     return AppError(429, "rate_limited", "请求过于频繁，请稍后再试")
 
 
-def _code_hash(email: str, generation: str, code: str, settings: Settings) -> str:
+def _code_hash(email: str, purpose: str, generation: str, code: str, settings: Settings) -> str:
     # NUL separators make all components unambiguous; low-entropy codes need HMAC.
-    value = "\0".join((email, PURPOSE, generation, code))
+    value = "\0".join((email, purpose, generation, code))
     return hmac.new(
         settings.email_code_secret.encode("utf-8"),
         value.encode("utf-8"),
@@ -161,7 +168,7 @@ async def _reserve_quotas(email: str, ip: str, settings: Settings, *, conn):
     return True, False
 
 
-async def _reserve_send(email, ip, generation, code_hash, settings):
+async def _reserve_send(email, ip, generation, code_hash, settings, *, purpose):
     email_hash = digest(email)
     rejection = None
     warn = False
@@ -173,12 +180,12 @@ async def _reserve_send(email, ip, generation, code_hash, settings):
             "(email_hash,purpose,generation,code_hash,status,attempts,expires_at) "
             "VALUES(%s,%s,'','','failed',0,%s) "
             "ON DUPLICATE KEY UPDATE email_hash=email_hash",
-            (email_hash, PURPOSE, now()),
+            (email_hash, purpose, now()),
             conn=conn,
         )
         challenge = await fetch_one(
             "SELECT * FROM auth_email_challenges WHERE email_hash=%s AND purpose=%s FOR UPDATE",
-            (email_hash, PURPOSE),
+            (email_hash, purpose),
             conn=conn,
         )
         at = now()
@@ -218,7 +225,7 @@ async def _reserve_send(email, ip, generation, code_hash, settings):
                         expires_at,
                         requested_at,
                         email_hash,
-                        PURPOSE,
+                        purpose,
                     ),
                     conn=conn,
                 )
@@ -234,17 +241,23 @@ async def _reserve_send(email, ip, generation, code_hash, settings):
     return expires_at, requested_at
 
 
-async def _finish_delivery(email_hash: str, generation: str, status: str):
+async def _finish_delivery(email_hash: str, purpose: str, generation: str, status: str):
     return await execute(
         "UPDATE auth_email_challenges SET status=%s "
         "WHERE email_hash=%s AND purpose=%s AND generation=%s AND status='pending'",
-        (status, email_hash, PURPOSE, generation),
+        (status, email_hash, purpose, generation),
     )
 
 
 async def send_code(
-    email: str, ip: str, *, transport: Callable[..., None] | None = None
+    email: str,
+    ip: str,
+    *,
+    purpose: str = PURPOSE,
+    transport: Callable[..., None] | None = None,
 ) -> dict:
+    if purpose not in PURPOSES:
+        raise ValueError(f"unsupported email code purpose: {purpose}")
     settings = require_available()
     try:
         email = normalize_email(email)
@@ -253,13 +266,24 @@ async def send_code(
     generation = secrets.token_hex(32)
     code = f"{secrets.randbelow(1_000_000):06d}"
     expires_at, requested_at = await _reserve_send(
-        email, ip, generation, _code_hash(email, generation, code, settings), settings
+        email,
+        ip,
+        generation,
+        _code_hash(email, purpose, generation, code, settings),
+        settings,
+        purpose=purpose,
     )
     email_hash = digest(email)
     failed = False
     try:
+        if transport is None:
+            transport = (
+                mail_transport.send_password_reset_email
+                if purpose == PURPOSE_RESET
+                else mail_transport.send_registration_email
+            )
         await asyncio.to_thread(
-            transport or mail_transport.send_registration_email,
+            transport,
             email,
             code,
             max(0, math.ceil((expires_at - now()).total_seconds())),
@@ -278,12 +302,12 @@ async def send_code(
     if failed:
         # Leave the exception handler before writing state, so a DB failure
         # cannot accidentally chain a raw error from an injected transport.
-        await _finish_delivery(email_hash, generation, "failed")
+        await _finish_delivery(email_hash, purpose, generation, "failed")
         raise mail_transport.delivery_error() from None
-    await _finish_delivery(email_hash, generation, "sent")
+    await _finish_delivery(email_hash, purpose, generation, "sent")
     at = now()
     return {
-        "message": SEND_MESSAGE,
+        "message": RESET_MESSAGE if purpose == PURPOSE_RESET else SEND_MESSAGE,
         "retry_after_seconds": max(
             0,
             math.ceil(
@@ -295,13 +319,15 @@ async def send_code(
     }
 
 
-async def check_registration_code(email: str, code: str, *, conn):
+async def check_code(email: str, code: str, *, purpose: str = PURPOSE, conn):
     """Hold the challenge lock and return errors so failed attempts can commit."""
+    if purpose not in PURPOSES:
+        raise ValueError(f"unsupported email code purpose: {purpose}")
     settings = require_available()
     email = normalize_email(email)
     challenge = await fetch_one(
         "SELECT * FROM auth_email_challenges WHERE email_hash=%s AND purpose=%s FOR UPDATE",
-        (digest(email), PURPOSE),
+        (digest(email), purpose),
         conn=conn,
     )
     if not challenge or challenge["expires_at"] <= now():
@@ -312,12 +338,12 @@ async def check_registration_code(email: str, code: str, *, conn):
         return None, registration_unavailable()
     if not hmac.compare_digest(
         challenge["code_hash"],
-        _code_hash(email, challenge["generation"], code, settings),
+        _code_hash(email, purpose, challenge["generation"], code, settings),
     ):
         attempts = challenge["attempts"] + 1
         await execute(
             "UPDATE auth_email_challenges SET attempts=%s WHERE email_hash=%s AND purpose=%s",
-            (attempts, challenge["email_hash"], PURPOSE),
+            (attempts, challenge["email_hash"], purpose),
             conn=conn,
         )
         error = (
@@ -329,12 +355,20 @@ async def check_registration_code(email: str, code: str, *, conn):
     return challenge, None
 
 
-async def consume_registration_code(challenge, *, conn):
+async def consume_code(challenge, *, purpose: str = PURPOSE, conn):
     changed = await execute(
         "UPDATE auth_email_challenges SET status='consumed',consumed_at=%s "
         "WHERE email_hash=%s AND purpose=%s AND generation=%s AND status='sent'",
-        (now(), challenge["email_hash"], PURPOSE, challenge["generation"]),
+        (now(), challenge["email_hash"], purpose, challenge["generation"]),
         conn=conn,
     )
     if changed != 1:
         raise registration_unavailable()
+
+
+async def check_registration_code(email: str, code: str, *, conn):
+    return await check_code(email, code, purpose=PURPOSE, conn=conn)
+
+
+async def consume_registration_code(challenge, *, conn):
+    await consume_code(challenge, purpose=PURPOSE, conn=conn)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.core.auth import get_current_actor
 from app.models.common import ApiResponse
@@ -14,7 +14,7 @@ from app.models.qa import (
     QaTaskView,
 )
 from app.rag.contracts import DocumentEvidence
-from app.services import qa_read, qa_service
+from app.services import qa_read, qa_service, task_event_stream
 
 router = APIRouter(prefix="/qa", tags=["knowledge-qa"])
 
@@ -80,6 +80,23 @@ async def create_message(
 @router.get("/tasks/{task_id}", response_model=ApiResponse[QaTaskView])
 async def task(task_id: str, actor=Depends(get_current_actor)):
     return ApiResponse.success(await qa_read.get_task(actor.owner_id, task_id))
+
+
+@router.get("/tasks/{task_id}/events")
+async def task_events(
+    task_id: str,
+    request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    actor=Depends(get_current_actor),
+):
+    """任务阶段 SSE 流；授权与快照一致读取见 task_event_stream。"""
+    return await task_event_stream.task_events_endpoint(
+        request,
+        actor=actor,
+        kind="qa",
+        task_id=task_id,
+        last_event_id=last_event_id,
+    )
 
 
 @router.post("/tasks/{task_id}/cancel", response_model=ApiResponse[QaTaskView])

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.core.auth import get_current_actor
 from app.models.common import ApiResponse
@@ -7,7 +7,7 @@ from app.models.course import (
     CourseOutlineUpdate, CourseProgressView, CourseQuizCreate, CourseQuizLinkView,
     CourseReadUpdate, CourseTaskView, CourseView,
 )
-from app.services import course_progress, course_quiz_service, course_read, course_service
+from app.services import course_progress, course_quiz_service, course_read, course_service, task_event_stream
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -25,6 +25,23 @@ async def list_courses(page: int = Query(1, ge=1), page_size: int = Query(20, ge
 @router.get("/tasks/{task_id}", response_model=ApiResponse[CourseTaskView])
 async def task(task_id: str, actor=Depends(get_current_actor)):
     return ApiResponse.success(await course_read.get_task(actor.owner_id, task_id))
+
+
+@router.get("/tasks/{task_id}/events")
+async def task_events(
+    task_id: str,
+    request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    actor=Depends(get_current_actor),
+):
+    """课程/课文/助教任务阶段 SSE 流；覆盖三种任务 kind。"""
+    return await task_event_stream.task_events_endpoint(
+        request,
+        actor=actor,
+        kind="course",
+        task_id=task_id,
+        last_event_id=last_event_id,
+    )
 
 
 @router.post("/tasks/{task_id}/cancel", response_model=ApiResponse[CourseTaskView])

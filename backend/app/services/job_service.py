@@ -6,7 +6,7 @@ from datetime import timedelta
 from pymysql import IntegrityError
 
 from app.core.config import get_settings
-from app.core.db import execute, fetch_one, transaction
+from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict, not_found
 from app.core.values import digest, dump, load, now, uid
 
@@ -130,27 +130,88 @@ async def enqueue_job(
         if replay:
             return replay
         raise
-    return decode(
+    job = decode(
         await fetch_one(
             "SELECT * FROM quiz_tasks WHERE task_id=%s", (task_id,), conn=conn
         )
     )
+    # 幂等重放不重复写事件；只有真正新增的任务写 queued。
+    from app.services import task_event_service
+
+    await task_event_service.append_task_event(
+        conn, job, "phase", task_event_service.event_payload(job, status="queued")
+    )
+    return job
 
 
-async def claim_job(worker_id, *, task_id=None, kinds=None):
+_TERMINAL_BATCH = 100
+
+
+async def finalize_terminal_rows(conn, *, task_id=None, limit=_TERMINAL_BATCH):
+    """有界终态收敛：逐行锁定已取消/超时的任务，改状态并追加公开事件。
+
+    取代原 claim_job 与 OwnerWorker.reconcile 中的两条批量 UPDATE，
+    保证所有终态路径都经过同一份事件写入。返回提交后待通知的信号。
+    """
+    filters = (
+        "status IN ('pending','running') AND (cancel_requested=TRUE "
+        "OR (status='pending' AND queued_expires_at<=UTC_TIMESTAMP(6)) "
+        "OR deadline_at<=UTC_TIMESTAMP(6) "
+        "OR (status='running' AND lease_expires_at<=UTC_TIMESTAMP(6) AND attempt>=max_attempts))"
+    )
+    params: list = []
+    if task_id:
+        filters += " AND task_id=%s"
+        params.append(task_id)
+    rows = await fetch_all(
+        "SELECT task_id FROM quiz_tasks WHERE "
+        + filters
+        + " ORDER BY priority,created_at LIMIT %s FOR UPDATE SKIP LOCKED",
+        (*params, limit),
+        conn=conn,
+    )
+    from app.services import task_event_service
+
+    signals = []
+    for item in rows:
+        locked = await fetch_one(
+            "SELECT * FROM quiz_tasks WHERE task_id=%s FOR UPDATE",
+            (item["task_id"],),
+            conn=conn,
+        )
+        if not locked or locked["status"] not in ("pending", "running"):
+            continue
+        if locked["cancel_requested"]:
+            status, code = "cancelled", None
+        else:
+            status, code = "failed", "deadline_exceeded"
+        await execute(
+            "UPDATE quiz_tasks SET status=%s,stage=%s,error_code=%s,lease_token=NULL,lease_expires_at=NULL "
+            "WHERE task_id=%s",
+            (status, status, code, locked["task_id"]),
+            conn=conn,
+        )
+        job = decode(locked)
+        signal = await task_event_service.append_task_event(
+            conn,
+            job,
+            status,
+            task_event_service.event_payload(job, status=status, error_code=code),
+        )
+        if signal:
+            signals.append(signal)
+    return signals
+
+
+async def claim_job(worker_id, *, task_id=None, kinds=None, maintain=True):
     s = get_settings()
     async with transaction() as conn:
-        await execute(
-            "UPDATE quiz_tasks SET status='cancelled',stage='cancelled',lease_token=NULL WHERE cancel_requested=TRUE AND status IN ('pending','running')",
-            conn=conn,
-        )
-        await execute(
-            """UPDATE quiz_tasks SET status='failed',stage='failed',error_code='deadline_exceeded',lease_token=NULL
-                         WHERE (status='pending' AND queued_expires_at<=UTC_TIMESTAMP(6)) OR
-                         (status IN ('pending','running') AND deadline_at<=UTC_TIMESTAMP(6)) OR
-                         (status='running' AND lease_expires_at<=UTC_TIMESTAMP(6) AND attempt>=max_attempts)""",
-            conn=conn,
-        )
+        from app.services import vector_projection_service
+
+        if vector_projection_service.enabled():
+            await vector_projection_service.assert_not_maintenance(conn=conn)
+        if maintain:
+            await finalize_terminal_rows(conn, task_id=task_id)
         filters = "status IN ('pending','running') AND cancel_requested=FALSE AND attempt<max_attempts AND (status='pending' OR lease_expires_at<=UTC_TIMESTAMP(6))"
         params = []
         if task_id:
@@ -188,13 +249,22 @@ async def claim_job(worker_id, *, task_id=None, kinds=None):
             ),
             conn=conn,
         )
-        return decode(
+        job = decode(
             await fetch_one(
                 "SELECT * FROM quiz_tasks WHERE task_id=%s",
                 (row["task_id"],),
                 conn=conn,
             )
         )
+        from app.services import task_event_service
+
+        await task_event_service.append_task_event(
+            conn,
+            job,
+            "phase",
+            task_event_service.event_payload(job, status="running", stage="starting"),
+        )
+        return job
 
 
 async def locked_job(job, conn):
@@ -219,6 +289,7 @@ async def locked_job(job, conn):
 async def heartbeat(job, stage=None):
     async with transaction() as conn:
         row = await locked_job(job, conn)
+        next_stage = stage or row["stage"]
         await execute(
             "UPDATE quiz_tasks SET lease_expires_at=%s,stage=%s WHERE task_id=%s",
             (
@@ -226,11 +297,23 @@ async def heartbeat(job, stage=None):
                     row["deadline_at"],
                     now() + timedelta(seconds=get_settings().job_lease_seconds),
                 ),
-                stage or row["stage"],
+                next_stage,
                 job["task_id"],
             ),
             conn=conn,
         )
+        # 相同阶段的纯续租不新增事件；只有真实阶段变化才写公开 phase。
+        if stage and stage != row["stage"]:
+            from app.services import task_event_service
+
+            current = dict(job)
+            current["attempt"] = row["attempt"]
+            await task_event_service.append_task_event(
+                conn,
+                current,
+                "phase",
+                task_event_service.event_payload(current, status=row["status"], stage=stage),
+            )
 
 
 async def complete_job(job, result, *, publisher=None):
@@ -245,6 +328,16 @@ async def complete_job(job, result, *, publisher=None):
         )
         if count != 1:
             raise conflict("stale_lease", "任务执行权已失效")
+        from app.services import task_event_service
+
+        final = dict(job)
+        final["attempt"] = current["attempt"]
+        await task_event_service.append_task_event(
+            conn,
+            final,
+            "completed",
+            task_event_service.event_payload(final, status="completed"),
+        )
 
 
 async def fail_job(job, code, *, retryable=False):
@@ -262,6 +355,25 @@ async def fail_job(job, code, *, retryable=False):
             (status, status, code, "任务未完成，请查看错误原因后重试", job["task_id"]),
             conn=conn,
         )
+        from app.services import task_event_service
+
+        final = dict(job)
+        final["attempt"] = row["attempt"]
+        if status == "pending":
+            # 可重试失败：回到队列，发 pending/queued 阶段事件。
+            await task_event_service.append_task_event(
+                conn,
+                final,
+                "phase",
+                task_event_service.event_payload(final, status="pending", stage="queued"),
+            )
+        else:
+            await task_event_service.append_task_event(
+                conn,
+                final,
+                "failed",
+                task_event_service.event_payload(final, status="failed", error_code=code),
+            )
 
 
 async def cancel_job(owner, task_id, *, conn=None):
@@ -269,7 +381,7 @@ async def cancel_job(owner, task_id, *, conn=None):
         async with transaction() as tx:
             return await cancel_job(owner, task_id, conn=tx)
     row = await fetch_one(
-        "SELECT status FROM quiz_tasks WHERE task_id=%s AND user_id=%s FOR UPDATE",
+        "SELECT * FROM quiz_tasks WHERE task_id=%s AND user_id=%s FOR UPDATE",
         (task_id, owner),
         conn=conn,
     )
@@ -281,9 +393,19 @@ async def cancel_job(owner, task_id, *, conn=None):
             (task_id,),
             conn=conn,
         )
+        from app.services import task_event_service
+
+        job = decode(row)
+        await task_event_service.append_task_event(
+            conn,
+            job,
+            "cancelled",
+            task_event_service.event_payload(job, status="cancelled"),
+        )
 
 
 async def get_task(owner, task_id):
+    from app.models.task_event import business_settled_from
     from app.services import course_quiz_service
 
     row = await fetch_one(
@@ -294,7 +416,7 @@ async def get_task(owner, task_id):
         raise not_found()
     result = decode(row)
     await course_quiz_service.authorize_job(owner, result, require_active=False)
-    return {
+    view = {
         key: result.get(key)
         for key in (
             "task_id",
@@ -306,3 +428,5 @@ async def get_task(owner, task_id):
             "result",
         )
     }
+    view["business_settled"] = business_settled_from(result["status"], result["stage"])
+    return view

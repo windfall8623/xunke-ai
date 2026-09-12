@@ -369,6 +369,10 @@ async def publish_build(job, result):
             result.document_version_id,
         ) != (row["user_id"], row["doc_id"], row["namespace"], request["version_id"]):
             raise ScopeRevoked()
+        from app.services import vector_projection_service
+
+        if vector_projection_service.enabled():
+            await vector_projection_service.publish_candidate(result, conn)
         await execute(
             "UPDATE kb_index_builds SET status='ready',parse_artifact_id=%s,canonical_artifact_key=%s,index_profile_hash=%s,manifest_json=%s,published_attempt_id=%s,node_count=%s,lease_token=%s WHERE build_id=%s AND status='building'",
             (
@@ -524,6 +528,10 @@ async def reauthorize_scope(scope, *, conn=None):
             source.canonical_artifact_key,
         ):
             raise ScopeRevoked("来源版本不匹配")
+        from app.services import vector_projection_service
+
+        if vector_projection_service.enabled():
+            await vector_projection_service.require_ready(source, conn=conn)
     return scope
 
 
@@ -833,6 +841,10 @@ async def cleanup_document(owner, doc_id, store):
     )
     if not row or row["deleted_at"] is None:
         raise conflict("source_not_revoked", "只能清理已撤销的资料")
+    from app.services import vector_projection_service
+
+    if vector_projection_service.enabled():
+        await vector_projection_service.assert_document_drained(owner, doc_id)
     from app.services.qa_service import purge_document
     from app.services.learning_cleanup_service import purge_document as purge_learning
     from app.services.course_service import purge_document as purge_courses
@@ -843,6 +855,9 @@ async def cleanup_document(owner, doc_id, store):
     remaining = store.purge_document(
         owner_id=owner, namespace=row["namespace"], doc_id=doc_id
     )
+    import inspect
+    if inspect.isawaitable(remaining):
+        remaining = await remaining
     if remaining:
         raise conflict("cleanup_pending", "资料清理仍有残留")
     versions = await fetch_all(

@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../app/AuthProvider'
 import { Brand } from './Brand'
+import { TaskNotifications } from './TaskNotifications'
 import { ErrorNotice, safeImageUrl } from './ui'
 
 export function AppShell() {
@@ -145,6 +146,7 @@ export function AppShell() {
           </NavLink>
         ))}
       </nav>
+      <TaskNotifications />
     </div>
   )
 }

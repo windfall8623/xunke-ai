@@ -18,6 +18,7 @@ def outputs():
     from app.models import sources, study
     from app.models.eval_contracts import DatasetManifest, EvalSample
     from app.models.evaluation import MetricValue
+    from app.models.task_event import TaskStreamFrame
     from app.practice.contracts import GradeArtifact, PracticeArtifact, PracticeSpec
     from app.qa.contracts import ChatAnswerArtifact
     from app.teaching.contracts import CourseDraft, LessonDraft
@@ -61,6 +62,8 @@ def outputs():
             ).json_schema(),
             "PracticeGenerationEvalArtifact.schema.json": PracticeGenerationEvalArtifact.model_json_schema(),
             "AnswerGradingEvalArtifact.schema.json": AnswerGradingEvalArtifact.model_json_schema(),
+            # 任务阶段 SSE 帧：持久事件/快照/控制帧的公开联合 schema。
+            "TaskEvent.schema.json": TypeAdapter(TaskStreamFrame).json_schema(),
         }
     )
     learning_names = (

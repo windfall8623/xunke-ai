@@ -38,6 +38,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
   const [minutes, setMinutes] = useState(draft?.daily_minutes ?? 20)
   const [count, setCount] = useState(draft?.lesson_count ?? 6)
   const [timezone, setTimezone] = useState(draft?.timezone || 'Asia/Shanghai')
+  const [preload, setPreload] = useState(draft?.preload_first_lesson ?? true)
   const [source, setSource] = useState<CourseSourcePolicy>(draft?.source_policy || 'topic')
   const [scope, setScope] = useState<SourceScope | null>(draft?.scope || null)
   const [scopeVersions, setScopeVersions] = useState(draft?.document_versions || {})
@@ -79,11 +80,12 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       daily_minutes: minutes,
       lesson_count: count,
       timezone,
+      preload_first_lesson: preload,
       source_policy: source,
       scope,
       document_versions: scopeVersions,
     })
-  }, [identity, topic, goal, prior, minutes, count, timezone, source, scope, scopeVersions])
+  }, [identity, topic, goal, prior, minutes, count, timezone, preload, source, scope, scopeVersions])
   const readySelection =
     source === 'topic' ||
     (!catalog.error &&
@@ -132,6 +134,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       prior_knowledge: prior.trim(),
       daily_minutes: minutes,
       lesson_count: count,
+      preload_first_lesson: preload,
       source_policy: source,
       scope: source === 'strict_docs' ? scope : null,
       timezone: timezone.trim(),
@@ -249,6 +252,19 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                 </datalist>
                 <small className="muted">按此时区安排每日复习，可直接选择常用时区。</small>
               </label>
+              <label className="check-option">
+                <input
+                  type="checkbox"
+                  checked={preload}
+                  onChange={(event) => setPreload(event.target.checked)}
+                />
+                <span>
+                  创建后立即准备第一课内容
+                  <small className="muted">
+                    纲要生成后马上开始第一课，进入课程即可阅读；勾选后标题在开始生成时固定，想先调整标题请取消勾选。
+                  </small>
+                </span>
+              </label>
               <fieldset className="source-fieldset">
                 <legend>课程来源</legend>
                 <div className="source-choices">
@@ -329,11 +345,11 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
           <ol>
             <li>
               <strong>先看纲要</strong>
-              <p>查看每课目标，开课前可调整标题。</p>
+              <p>查看每课目标；勾选立即准备时，第一课会自动开始生成。</p>
             </li>
             <li>
               <strong>逐课学习</strong>
-              <p>点击课时准备内容，随时回来接着读。</p>
+              <p>第一课就绪即可阅读，其余课时点击准备，随时回来接着读。</p>
             </li>
             <li>
               <strong>用 3 题检验理解</strong>

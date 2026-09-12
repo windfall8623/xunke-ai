@@ -9,6 +9,10 @@ services:
     environment: *local-environment
   migrate:
     environment: *local-environment
+  rag-generation:
+    environment: *local-environment
+  vector-migrate:
+    environment: *local-environment
   web:
     ports: !override
       - "127.0.0.1:18080:8080"

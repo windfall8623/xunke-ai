@@ -1,0 +1,69 @@
+# Redis 增量覆盖：与 compose.yaml（及可选 compose.local.yaml）一起使用。
+#   docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml -f deploy/compose.redis.yaml <命令>
+# 约束：
+#   - Redis 只在 Compose 内网提供；不映射宿主机端口，API 经 control-network 共享命名空间访问 redis:6379。
+#   - 一期只做短窗限流与提交后通知：关闭 RDB/AOF，不挂持久卷；重启后短窗可重建，硬限制与事件仍在 SQL。
+#   - REDIS_ENABLED / REDIS_RATE_LIMIT_ENABLED 默认关闭；启用前确认 deploy/.env 已配置独立随机 REDIS_PASSWORD（至少 32 字符）。
+services:
+  redis:
+    image: redis:8.2-alpine
+    restart: unless-stopped
+    user: "999:999"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+    # 密码写入 tmpfs 受限运行配置后启动；不进入命令行参数、镜像层或日志。
+    entrypoint: ["/bin/sh", "/usr/local/share/xunke/redis-entrypoint.sh"]
+    command: []
+    volumes:
+      - ./redis-entrypoint.sh:/usr/local/share/xunke/redis-entrypoint.sh:ro
+    tmpfs:
+      - /run/xunke-redis:size=1m,mode=0700,uid=999,gid=999
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  api:
+    environment:
+      REDIS_ENABLED: ${REDIS_ENABLED:-false}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+      REDIS_TLS: ${REDIS_TLS:-false}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-xunke:development:v1}
+      REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-100}
+      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-100}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-200}
+      REDIS_MAX_CONNECTIONS: ${REDIS_MAX_CONNECTIONS:-16}
+      REDIS_RATE_LIMIT_ENABLED: ${REDIS_RATE_LIMIT_ENABLED:-false}
+      AUTH_BURST_WINDOW_SECONDS: ${AUTH_BURST_WINDOW_SECONDS:-60}
+      AUTH_BURST_MAX_PER_IP: ${AUTH_BURST_MAX_PER_IP:-20}
+      AUTH_BURST_MAX_PER_ACCOUNT: ${AUTH_BURST_MAX_PER_ACCOUNT:-10}
+      EMAIL_BURST_WINDOW_SECONDS: ${EMAIL_BURST_WINDOW_SECONDS:-60}
+      EMAIL_BURST_MAX_PER_IP: ${EMAIL_BURST_MAX_PER_IP:-10}
+      EMAIL_BURST_MAX_PER_ACCOUNT: ${EMAIL_BURST_MAX_PER_ACCOUNT:-3}
+      TASK_EVENTS_ENABLED: ${TASK_EVENTS_ENABLED:-false}
+      TASK_EVENT_RETENTION_HOURS: ${TASK_EVENT_RETENTION_HOURS:-24}
+      TASK_EVENT_SYNC_SECONDS: ${TASK_EVENT_SYNC_SECONDS:-15}
+      TASK_EVENT_MAX_CONNECTION_SECONDS: ${TASK_EVENT_MAX_CONNECTION_SECONDS:-900}
+
+  rag-owner:
+    environment:
+      REDIS_ENABLED: ${REDIS_ENABLED:-false}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+      REDIS_TLS: ${REDIS_TLS:-false}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-xunke:development:v1}
+      REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-100}
+      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-100}
+      REDIS_OPERATION_TIMEOUT_MS: ${REDIS_OPERATION_TIMEOUT_MS:-200}
+      REDIS_MAX_CONNECTIONS: ${REDIS_MAX_CONNECTIONS:-16}
