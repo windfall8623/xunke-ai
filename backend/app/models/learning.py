@@ -79,6 +79,14 @@ class CompletionReceipt(BaseModel):
     report_status: str
 
 
+class CourseReturnContext(BaseModel):
+    course_id: str
+    lesson_id: str
+    link_id: str
+    kind: Literal["initial", "review", "scheduled_review"]
+    content_version: int
+
+
 class QuizView(BaseModel):
     quiz_id: str
     title: str
@@ -94,6 +102,7 @@ class QuizView(BaseModel):
     images_status: str
     report_status: str
     created_at: str
+    course_context: CourseReturnContext | None = None
 
 
 class TaskView(BaseModel):

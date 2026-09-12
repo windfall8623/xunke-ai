@@ -812,6 +812,43 @@
         "title": "ApiResponse[CourseQuizLinkView]",
         "type": "object"
       },
+      "ApiResponse_CourseSelfCheckView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseSelfCheckView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseSelfCheckView]",
+        "type": "object"
+      },
       "ApiResponse_CourseTaskView_": {
         "properties": {
           "code": {
@@ -847,6 +884,80 @@
           }
         },
         "title": "ApiResponse[CourseTaskView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseTodayView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTodayView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseTodayView]",
+        "type": "object"
+      },
+      "ApiResponse_CourseTutorTurnView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTutorTurnView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[CourseTutorTurnView]",
         "type": "object"
       },
       "ApiResponse_CourseView_": {
@@ -1106,6 +1217,43 @@
           }
         },
         "title": "ApiResponse[DocumentView]",
+        "type": "object"
+      },
+      "ApiResponse_EmailCodeView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmailCodeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[EmailCodeView]",
         "type": "object"
       },
       "ApiResponse_FeedbackList_": {
@@ -2999,6 +3147,129 @@
         "title": "ApiResponse[dict]",
         "type": "object"
       },
+      "ApiResponse_list_CourseReviewView__": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseReviewView"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[list[CourseReviewView]]",
+        "type": "object"
+      },
+      "ApiResponse_list_CourseSelfCheckView__": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseSelfCheckView"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[list[CourseSelfCheckView]]",
+        "type": "object"
+      },
+      "ApiResponse_list_CourseTutorTurnView__": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CourseTutorTurnView"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[list[CourseTutorTurnView]]",
+        "type": "object"
+      },
       "ArtifactQuestion": {
         "additionalProperties": false,
         "properties": {
@@ -3271,6 +3542,21 @@
       },
       "AuthCapabilitiesView": {
         "properties": {
+          "email_code_cooldown_seconds": {
+            "default": 60,
+            "title": "Email Code Cooldown Seconds",
+            "type": "integer"
+          },
+          "email_registration_enabled": {
+            "default": false,
+            "title": "Email Registration Enabled",
+            "type": "boolean"
+          },
+          "email_verification_required": {
+            "default": true,
+            "title": "Email Verification Required",
+            "type": "boolean"
+          },
           "legacy_link_enabled": {
             "default": false,
             "title": "Legacy Link Enabled",
@@ -3299,7 +3585,7 @@
           "account": {
             "maxLength": 100,
             "minLength": 3,
-            "pattern": "^[A-Za-z0-9_@.+-]+$",
+            "pattern": "^[a-z0-9_+.-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
             "title": "Account",
             "type": "string"
           },
@@ -3321,11 +3607,19 @@
             "minLength": 10,
             "title": "Password",
             "type": "string"
+          },
+          "verification_code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "title": "Verification Code",
+            "type": "string"
           }
         },
         "required": [
           "account",
           "password",
+          "verification_code",
           "code"
         ],
         "title": "BindBody",
@@ -4101,6 +4395,13 @@
             "title": "Source Policy",
             "type": "string"
           },
+          "timezone": {
+            "default": "Asia/Shanghai",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          },
           "topic": {
             "maxLength": 2000,
             "minLength": 1,
@@ -4674,6 +4975,13 @@
           "next_action": {
             "$ref": "#/components/schemas/CourseNextAction"
           },
+          "pending_weak_points": {
+            "items": {
+              "$ref": "#/components/schemas/CourseWeakPoint"
+            },
+            "title": "Pending Weak Points",
+            "type": "array"
+          },
           "practiced_lessons": {
             "title": "Practiced Lessons",
             "type": "integer"
@@ -4764,7 +5072,8 @@
           "kind": {
             "enum": [
               "initial",
-              "review"
+              "review",
+              "scheduled_review"
             ],
             "title": "Kind",
             "type": "string"
@@ -4823,6 +5132,44 @@
         "title": "CourseReadUpdate",
         "type": "object"
       },
+      "CourseReturnContext": {
+        "properties": {
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "initial",
+              "review",
+              "scheduled_review"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "lesson_id",
+          "link_id",
+          "kind",
+          "content_version"
+        ],
+        "title": "CourseReturnContext",
+        "type": "object"
+      },
       "CourseReviewRun": {
         "additionalProperties": false,
         "properties": {
@@ -4847,6 +5194,15 @@
           },
           "created_at": {
             "title": "Created At",
+            "type": "string"
+          },
+          "kind": {
+            "default": "review",
+            "enum": [
+              "review",
+              "scheduled_review"
+            ],
+            "title": "Kind",
             "type": "string"
           },
           "lesson_id": {
@@ -4889,6 +5245,233 @@
         "title": "CourseReviewRun",
         "type": "object"
       },
+      "CourseReviewStart": {
+        "additionalProperties": false,
+        "properties": {
+          "early": {
+            "default": false,
+            "title": "Early",
+            "type": "boolean"
+          },
+          "expected_content_version": {
+            "minimum": 1.0,
+            "title": "Expected Content Version",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "review_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Review Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_id",
+          "expected_revision",
+          "expected_content_version"
+        ],
+        "title": "CourseReviewStart",
+        "type": "object"
+      },
+      "CourseReviewView": {
+        "additionalProperties": false,
+        "properties": {
+          "active_link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Link Id"
+          },
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "due_at": {
+            "title": "Due At",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "review_id": {
+            "title": "Review Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schedule_seq": {
+            "title": "Schedule Seq",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "scheduled",
+              "generating",
+              "ready",
+              "failed",
+              "completed",
+              "superseded",
+              "source_revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_id",
+          "course_id",
+          "lesson_id",
+          "content_version",
+          "schedule_seq",
+          "due_at",
+          "timezone",
+          "status",
+          "revision",
+          "reason"
+        ],
+        "title": "CourseReviewView",
+        "type": "object"
+      },
+      "CourseSelfCheckCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              }
+            ],
+            "title": "Answer"
+          },
+          "check_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Check Ref",
+            "type": "string"
+          },
+          "expected_content_version": {
+            "minimum": 1.0,
+            "title": "Expected Content Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_content_version",
+          "check_ref",
+          "answer"
+        ],
+        "title": "CourseSelfCheckCreate",
+        "type": "object"
+      },
+      "CourseSelfCheckView": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              }
+            ],
+            "title": "Answer"
+          },
+          "attempt_id": {
+            "title": "Attempt Id",
+            "type": "string"
+          },
+          "check_ref": {
+            "title": "Check Ref",
+            "type": "string"
+          },
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "latest_tutor_turn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseTutorTurnView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "saved_at": {
+            "title": "Saved At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempt_id",
+          "course_id",
+          "lesson_id",
+          "content_version",
+          "check_ref",
+          "answer",
+          "saved_at"
+        ],
+        "title": "CourseSelfCheckView",
+        "type": "object"
+      },
       "CourseTaskView": {
         "additionalProperties": false,
         "properties": {
@@ -4921,7 +5504,8 @@
           "kind": {
             "enum": [
               "course_outline",
-              "course_lesson"
+              "course_lesson",
+              "course_tutor"
             ],
             "title": "Kind",
             "type": "string"
@@ -4965,6 +5549,333 @@
           "status"
         ],
         "title": "CourseTaskView",
+        "type": "object"
+      },
+      "CourseTodayItem": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "estimated_minutes": {
+            "minimum": 1.0,
+            "title": "Estimated Minutes",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "continue_quiz",
+              "course_review",
+              "study_review",
+              "learn_lesson",
+              "practice_lesson",
+              "review_lesson"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Id"
+          },
+          "link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Id"
+          },
+          "quiz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "review_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Id"
+          },
+          "review_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Task Id"
+          },
+          "space_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Space Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "estimated_minutes",
+          "reason"
+        ],
+        "title": "CourseTodayItem",
+        "type": "object"
+      },
+      "CourseTodayView": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CourseTodayItem"
+            },
+            "maxItems": 3,
+            "title": "Items",
+            "type": "array"
+          },
+          "local_date": {
+            "title": "Local Date",
+            "type": "string"
+          },
+          "minutes_budget": {
+            "maximum": 120.0,
+            "minimum": 5.0,
+            "title": "Minutes Budget",
+            "type": "integer"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "local_date",
+          "timezone",
+          "minutes_budget"
+        ],
+        "title": "CourseTodayView",
+        "type": "object"
+      },
+      "CourseTutorCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "block_index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Index"
+          },
+          "check_attempt_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Attempt Id"
+          },
+          "expected_content_version": {
+            "minimum": 1.0,
+            "title": "Expected Content Version",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "explain",
+            "enum": [
+              "explain",
+              "example",
+              "hint",
+              "check"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "question": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_content_version"
+        ],
+        "title": "CourseTutorCreate",
+        "type": "object"
+      },
+      "CourseTutorTurnView": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "block_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Index"
+          },
+          "check_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Attempt Id"
+          },
+          "content_version": {
+            "title": "Content Version",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "explain",
+              "example",
+              "hint",
+              "check"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/TeachSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "task": {
+            "$ref": "#/components/schemas/CourseTaskView"
+          },
+          "turn_id": {
+            "title": "Turn Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "turn_id",
+          "course_id",
+          "lesson_id",
+          "content_version",
+          "mode",
+          "question",
+          "task",
+          "created_at"
+        ],
+        "title": "CourseTutorTurnView",
         "type": "object"
       },
       "CourseView": {
@@ -5915,6 +6826,46 @@
           "document_revision"
         ],
         "title": "DocumentView",
+        "type": "object"
+      },
+      "EmailCodeBody": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 100,
+            "minLength": 3,
+            "pattern": "^[a-z0-9_+.-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "EmailCodeBody",
+        "type": "object"
+      },
+      "EmailCodeView": {
+        "properties": {
+          "expires_in_seconds": {
+            "title": "Expires In Seconds",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retry_after_seconds": {
+            "title": "Retry After Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "message",
+          "retry_after_seconds",
+          "expires_in_seconds"
+        ],
+        "title": "EmailCodeView",
         "type": "object"
       },
       "EvalSample": {
@@ -11168,6 +12119,16 @@
             "title": "Answer Records",
             "type": "array"
           },
+          "course_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CourseReturnContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -11335,7 +12296,7 @@
           "account": {
             "maxLength": 100,
             "minLength": 3,
-            "pattern": "^[A-Za-z0-9_@.+-]+$",
+            "pattern": "^[a-z0-9_+.-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
             "title": "Account",
             "type": "string"
           },
@@ -11351,11 +12312,19 @@
             "minLength": 10,
             "title": "Password",
             "type": "string"
+          },
+          "verification_code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "title": "Verification Code",
+            "type": "string"
           }
         },
         "required": [
           "account",
-          "password"
+          "password",
+          "verification_code"
         ],
         "title": "RegisterBody",
         "type": "object"
@@ -15735,7 +16704,7 @@
     }
   },
   "info": {
-    "title": "知学 AI",
+    "title": "循课",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",
@@ -15838,6 +16807,47 @@
           }
         },
         "summary": "Change Password",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/email-code": {
+      "post": {
+        "operationId": "email_code_api_v1_auth_email_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_EmailCodeView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Email Code",
         "tags": [
           "authentication"
         ]
@@ -16216,6 +17226,63 @@
           }
         },
         "summary": "Cancel",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/today": {
+      "get": {
+        "operationId": "today_api_v1_courses_today_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "timezone",
+            "required": false,
+            "schema": {
+              "default": "Asia/Shanghai",
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Timezone",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minutes_budget",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 120,
+              "minimum": 5,
+              "title": "Minutes Budget",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTodayView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Today",
         "tags": [
           "courses"
         ]
@@ -16630,6 +17697,480 @@
         ]
       }
     },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/review-jobs": {
+      "post": {
+        "operationId": "start_review_api_v1_courses__course_id__lessons__lesson_id__review_jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseReviewStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseQuizLinkView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Review",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/self-check-attempts": {
+      "get": {
+        "operationId": "list_check_attempts_api_v1_courses__course_id__lessons__lesson_id__self_check_attempts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "content_version",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Content Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_CourseSelfCheckView__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Check Attempts",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "save_check_attempt_api_v1_courses__course_id__lessons__lesson_id__self_check_attempts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseSelfCheckCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseSelfCheckView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Check Attempt",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/tutor-turns": {
+      "get": {
+        "operationId": "list_turns_api_v1_courses__course_id__lessons__lesson_id__tutor_turns_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "content_version",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Content Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_CourseTutorTurnView__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Turns",
+        "tags": [
+          "courses"
+        ]
+      },
+      "post": {
+        "operationId": "create_turn_api_v1_courses__course_id__lessons__lesson_id__tutor_turns_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseTutorCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTutorTurnView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Turn",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/tutor-turns/{turn_id}/evidence/{source_ref}": {
+      "get": {
+        "operationId": "turn_evidence_api_v1_courses__course_id__lessons__lesson_id__tutor_turns__turn_id__evidence__source_ref__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source_ref",
+            "required": true,
+            "schema": {
+              "title": "Source Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseEvidenceView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Turn Evidence",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/lessons/{lesson_id}/tutor-turns/{turn_id}/retry": {
+      "post": {
+        "operationId": "retry_turn_api_v1_courses__course_id__lessons__lesson_id__tutor_turns__turn_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_CourseTutorTurnView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Turn",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v1/courses/{course_id}/outline": {
       "patch": {
         "operationId": "edit_api_v1_courses__course_id__outline_patch",
@@ -16772,6 +18313,48 @@
           }
         },
         "summary": "Progress",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_id}/reviews": {
+      "get": {
+        "operationId": "list_reviews_api_v1_courses__course_id__reviews_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_list_CourseReviewView__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Reviews",
         "tags": [
           "courses"
         ]

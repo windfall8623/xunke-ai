@@ -1,6 +1,6 @@
 """Course checks reuse the existing quiz queue, answers and settlement service."""
 
-from app.core.db import execute, fetch_all, transaction
+from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict, not_found
 from app.core.values import digest, dump, iso, load, uid
 from app.models.course import CourseQuizCreate, CourseQuizLinkView
@@ -74,6 +74,11 @@ def _check_lesson(lesson, body):
         raise conflict("revision_conflict", "课时内容版本已变化，请刷新后重试")
 
 
+def _check_course(course):
+    if course["status"] not in {"ready", "partial"}:
+        raise conflict("course_not_ready", "课程当前不可学习，请刷新课程状态")
+
+
 def _initial_spec(course, lesson):
     unit = load(lesson["unit_json"], {})
     payload = load(lesson["content_json"], {}).get("payload") or {}
@@ -105,6 +110,74 @@ def _initial_spec(course, lesson):
         if course["source_policy"] == "strict_docs"
         else None,
     )
+
+
+def _scheduled_spec(course, lesson):
+    spec = _initial_spec(course, lesson)
+    prefix = "这是课时到期后的一轮新检查，请重新设计三题，检查理解与应用。\n"
+    return spec.model_copy(update={"user_input": prefix + spec.user_input[:2000 - len(prefix)]})
+
+
+async def authorize_job(owner, job, *, conn=None, require_active=True):
+    """Fence course quiz generation with its real lesson/version and batch.
+
+    Ordinary quiz jobs have no course link and retain their existing contract.
+    Terminal history remains readable after a new lesson version, but an active
+    task can never publish against an obsolete lesson or superseded review.
+    """
+    if job.get("kind") != "quiz":
+        return None
+    if job.get("user_id") != owner or job.get("mode") != "production":
+        raise not_found()
+    link = await fetch_one(
+        "SELECT * FROM learning_course_quiz_links WHERE task_id=%s AND owner_id=%s",
+        (job["task_id"], owner), conn=conn,
+    )
+    if link is None:
+        return None
+    if conn is None:
+        async with transaction() as tx:
+            return await authorize_job(owner, job, conn=tx, require_active=require_active)
+    course = await course_read.owned_course(owner, link["course_id"], conn=conn, lock=True)
+    lesson = await course_read.owned_lesson(
+        owner, link["course_id"], link["lesson_id"], conn=conn, lock=True,
+    )
+    scope = await course_read.authorize_course(course, conn=conn)
+    if not job.get("request") or not job.get("scope"):
+        raise AppError(404, "source_revoked", "课程练习来源已失效")
+    spec, context = quiz_service.parse_quiz_request(job["request"])
+    if (
+        context is not None or ResolvedScope.model_validate(job["scope"]) != scope
+        or spec.source_policy != course["source_policy"]
+    ):
+        raise not_found()
+    active = require_active or job["status"] in {"pending", "running"}
+    if active:
+        _check_course(course)
+        if lesson["status"] != "ready" or not lesson["content_json"]:
+            raise conflict("course_lesson_not_ready", "课时当前不可练习")
+        if lesson["content_version"] != link["content_version"]:
+            raise conflict("revision_conflict", "课时内容版本已变化，请刷新后重试")
+        if link["kind"] in {"initial", "scheduled_review"}:
+            expected = (
+                _initial_spec(course, lesson) if link["kind"] == "initial"
+                else _scheduled_spec(course, lesson)
+            )
+            if spec != expected:
+                raise conflict("revision_conflict", "课时练习范围已变化，请刷新后重试")
+        if link["kind"] == "scheduled_review":
+            review = await fetch_one(
+                "SELECT review_id,status,is_current FROM learning_course_reviews "
+                "WHERE owner_id=%s AND course_id=%s AND lesson_id=%s "
+                "AND content_version=%s AND active_link_id=%s FOR UPDATE",
+                (owner, link["course_id"], link["lesson_id"], link["content_version"], link["link_id"]),
+                conn=conn,
+            )
+            if review is None or review["is_current"] != 1 or review["status"] not in {
+                "generating", "ready", "failed",
+            }:
+                raise conflict("course_review_changed", "这次复习已被替代，请刷新课程")
+    return link
 
 
 def _reusable_link(rows, body):
@@ -155,6 +228,8 @@ async def create_quiz(actor, course_id, lesson_id, body: CourseQuizCreate, key):
     course = await course_read.owned_course(owner, course_id)
     lesson = await course_read.owned_lesson(owner, course_id, lesson_id)
     scope = await course_read.authorize_course(course)
+    _check_course(course)
+    _check_lesson(lesson, body)
     request_hash = digest(dump({
         "operation": "course.lesson.quiz",
         "course_id": course_id,
@@ -195,6 +270,7 @@ async def create_quiz(actor, course_id, lesson_id, body: CourseQuizCreate, key):
             )
             _check_lesson(current_lesson, body)
             current_scope = await course_read.authorize_course(current_course, conn=conn)
+            _check_course(current_course)
             # A current locking read sees links committed while this request
             # waited for the lesson lock, even under REPEATABLE READ.
             rows = await _link_rows(owner, course_id, lesson_id, conn=conn, lock=True)

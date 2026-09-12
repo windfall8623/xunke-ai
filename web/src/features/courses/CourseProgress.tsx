@@ -1,12 +1,18 @@
-import { ArrowRight, BookOpen, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarClock, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StatusBadge, formatDate } from '../../components/ui'
 import { coursePath, withCourseReturn } from '../../services/courseNavigation'
-import type { CourseLessonSummary, CourseNextAction, CourseProgressView } from '../../types/course'
+import { courseReviewTime } from '../../services/courses'
+import type {
+  CourseLessonSummary,
+  CourseNextAction,
+  CourseProgressView,
+  CourseReviewView,
+} from '../../types/course'
 
 const actionLabels: Record<CourseNextAction['type'], string> = {
   continue_quiz: '继续练习',
-  review_lesson: '回看这节课',
+  review_lesson: '查看待补练',
   learn_lesson: '进入下一课',
   practice_lesson: '进入本课练习',
   view_summary: '回看学习记录',
@@ -15,11 +21,13 @@ const actionLabels: Record<CourseNextAction['type'], string> = {
 export function CourseProgress({
   progress,
   lessons,
+  reviews = [],
   onAction,
   onLesson,
 }: {
   progress: CourseProgressView
   lessons: CourseLessonSummary[]
+  reviews?: CourseReviewView[]
   onAction: (action: CourseNextAction) => void
   onLesson: (lessonId: string) => void
 }) {
@@ -33,6 +41,16 @@ export function CourseProgress({
           other.lesson_id === point.lesson_id && other.knowledge_point === point.knowledge_point,
       ) === index,
   )
+  const pending = (progress.pending_weak_points || []).filter(
+    (point, index, points) =>
+      points.findIndex(
+        (other) =>
+          other.lesson_id === point.lesson_id && other.knowledge_point === point.knowledge_point,
+      ) === index,
+  )
+  const scheduled = reviews
+    .filter((review) => ['scheduled', 'generating', 'ready', 'failed'].includes(review.status))
+    .sort((a, b) => a.due_at.localeCompare(b.due_at))
   return (
     <section id="course-progress" className="card course-progress" aria-label="课程学习进度">
       <div className="section-line">
@@ -70,12 +88,12 @@ export function CourseProgress({
           </p>
         </div>
         <div>
-          <span>错题补练</span>
+          <span>补练与复习</span>
           <strong>
             {reviewRuns.length}
             <small> 次</small>
           </strong>
-          <p>各次记录单独保留</p>
+          <p>各次记录单独保留，不覆盖首次成绩</p>
         </div>
       </div>
       {progress.total_lessons > progress.available_lessons && (
@@ -99,14 +117,17 @@ export function CourseProgress({
           <ArrowRight size={16} />
         </button>
       </div>
-      {!!observed.length && (
-        <div className="course-weak-points">
-          <h3>
-            <Target size={17} />
-            本次练习需要回看的知识点
-          </h3>
+      <div className="course-weak-points">
+        <h3>
+          <Target size={17} />
+          待补练
+        </h3>
+        <p className="tiny muted">根据尚未完成后续补练的错题批次显示；补练完成后保留历史作答。</p>
+        {!pending.length ? (
+          <p className="muted">目前没有待补练的错题批次，可以继续学习或按建议复习。</p>
+        ) : (
           <div className="tag-list">
-            {observed.map((point) => (
+            {pending.map((point) => (
               <button
                 type="button"
                 className="tag peach"
@@ -117,17 +138,67 @@ export function CourseProgress({
               </button>
             ))}
           </div>
+        )}
+      </div>
+      {!!observed.length && (
+        <details className="course-history-errors">
+          <summary>历史错题涉及的知识点（{observed.length}）</summary>
+          <p className="tiny muted">
+            保留过去每次检查发现的问题；待补练清空不代表这些知识点已长期掌握。
+          </p>
+          <div className="tag-list">
+            {observed.map((point) => (
+              <button
+                type="button"
+                className="tag"
+                key={`${point.lesson_id}:${point.knowledge_point}`}
+                onClick={() => onLesson(point.lesson_id)}
+              >
+                {point.knowledge_point || titleFor(point.lesson_id)}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+      {!!scheduled.length && (
+        <div className="course-progress-reviews">
+          <h3>
+            <CalendarClock size={17} />
+            下次复习建议
+          </h3>
+          <p className="tiny muted">
+            按课时安排再次检查。当前三题结果用于建议次日复习，不代表独立掌握。
+          </p>
+          {scheduled.map((review) => (
+            <div className="course-quiz-row" key={review.review_id}>
+              <div>
+                <strong>{titleFor(review.lesson_id)}</strong>
+                <p className="tiny muted">
+                  {courseReviewTime(review)} · {review.timezone}
+                </p>
+                <p className="tiny muted">{review.reason}</p>
+              </div>
+              <Link
+                className="text-link"
+                to={`${coursePath(progress.course_id, review.lesson_id)}#course-review`}
+              >
+                {['generating', 'ready'].includes(review.status) ? '继续复习' : '查看安排'}
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          ))}
         </div>
       )}
       {!!reviewRuns.length && (
         <div className="course-review-runs">
-          <h3>错题补练记录</h3>
-          <p className="muted tiny">补练覆盖错题，不覆盖首次检查的成绩。</p>
+          <h3>补练与复习记录</h3>
+          <p className="muted tiny">错题补练和课时复习分别记录，均不覆盖首次检查的成绩。</p>
           <div className="course-table-scroll">
             <table>
               <thead>
                 <tr>
                   <th scope="col">课时</th>
+                  <th scope="col">类型</th>
                   <th scope="col">作答情况</th>
                   <th scope="col">状态</th>
                   <th scope="col">时间</th>
@@ -138,6 +209,7 @@ export function CourseProgress({
                 {reviewRuns.map((run) => (
                   <tr key={run.link_id}>
                     <td>{titleFor(run.lesson_id)}</td>
+                    <td>{run.kind === 'scheduled_review' ? '课时复习' : '错题补练'}</td>
                     <td>
                       {run.answered ? `答对 ${run.correct} / 已答 ${run.answered} 题` : '尚未作答'}
                       <small className="muted"> · 共 {run.total} 题</small>

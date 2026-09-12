@@ -2,7 +2,7 @@
 
 import httpx
 
-from app.rag.errors import ProviderRateLimited, ProviderTimeout
+from app.rag.errors import ProviderRateLimited, ProviderTimeout, ProviderUnavailable
 
 
 def provider_failure(error: BaseException):
@@ -16,6 +16,12 @@ def provider_failure(error: BaseException):
         (httpx.TimeoutException, anthropic.APITimeoutError, openai.APITimeoutError),
     ):
         return ProviderTimeout("Model service response timed out")
+    # SDK timeout errors also inherit APIConnectionError; classify them first.
+    if isinstance(
+        error,
+        (httpx.NetworkError, anthropic.APIConnectionError, openai.APIConnectionError),
+    ):
+        return ProviderUnavailable("Model service is temporarily unreachable")
     if isinstance(
         error, (httpx.HTTPStatusError, anthropic.APIStatusError, openai.APIStatusError)
     ):

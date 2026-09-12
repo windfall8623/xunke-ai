@@ -508,6 +508,10 @@ async def _legacy_history(owner_id, row):
             **view,
             "title": detail["title"],
             "source_status": "active",
+            "status": quiz["status"],
+            "completed_at": reviews.timestamp(quiz["settled_at"])
+            if quiz["status"] == "settled" and quiz["settled_at"] is not None
+            else None,
             "question_count": len(detail["questions"]),
             "attempted_count": len(answers),
             "confirmed_count": len(answers),

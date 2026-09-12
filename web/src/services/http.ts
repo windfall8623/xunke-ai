@@ -59,7 +59,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       if (
         (response.status === 401 || body.code === 4010) &&
         requestSession === sessionRevision &&
-        !/^\/auth\/(session|login|register|recover|bind|capabilities)$/.test(path)
+        !/^\/auth\/(session|login|register|recover|bind|capabilities|email-code)$/.test(path)
       ) {
         setCsrfToken(null)
         window.dispatchEvent(new Event('session-expired'))

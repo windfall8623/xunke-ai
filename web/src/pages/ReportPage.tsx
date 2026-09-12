@@ -9,20 +9,30 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading, StatusBadge } from '../components/ui'
 import { api } from '../services/api'
 import { providerErrorMessage } from '../services/providerErrors'
-import { safeCourseReturn, withCourseReturn } from '../services/courseNavigation'
+import { courseReturnPath, withCourseReturn } from '../services/courseNavigation'
 
 export function ReportPage() {
   const { quizId = '' } = useParams()
-  const [params] = useSearchParams()
-  const courseReturn = safeCourseReturn(params.get('returnTo'))
   const identity = useIdentityKey()
+  return <ReportWorkspace key={`${identity}:${quizId}`} quizId={quizId} identity={identity} />
+}
+
+function ReportWorkspace({ quizId, identity }: { quizId: string; identity: string | number }) {
+  const [params] = useSearchParams()
   const key = useRef(crypto.randomUUID())
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const navigate = useNavigate()
   const report = useQuery({
     queryKey: [identity, 'report', quizId],
@@ -36,7 +46,14 @@ export function ReportPage() {
   const quiz = useQuery({
     queryKey: [identity, 'quiz', quizId],
     queryFn: ({ signal }) => api.quiz(quizId, signal),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
   })
+  const courseReturn = !quiz.error
+    ? courseReturnPath(quiz.data?.course_context, params.get('returnTo'))
+    : null
   const retry = useMutation({
     mutationFn: () => api.retryReport(quizId),
     onSuccess: () => {
@@ -49,8 +66,19 @@ export function ReportPage() {
         { review_of_quiz_id: quizId, question_count: 3, difficulty: 'mixed' },
         key.current,
       ),
-    onSuccess: (result) => navigate(`/tasks/${encodeURIComponent(result.task_id)}`),
+    onSuccess: (result) => {
+      if (mounted.current) navigate(`/tasks/${encodeURIComponent(result.task_id)}`)
+    },
   })
+  if (quiz.error)
+    return (
+      <ErrorNotice
+        error={quiz.error}
+        onRetry={() => {
+          void quiz.refetch()
+        }}
+      />
+    )
   if (report.isPending) return <Loading>正在读取已确认的学习结果…</Loading>
   if (report.error || !report.data)
     return (
@@ -135,7 +163,7 @@ export function ReportPage() {
                 <div>
                   <h3>
                     <CheckCircle2 size={16} />
-                    已经掌握
+                    本次答对的知识点
                   </h3>
                   <div className="tag-list">
                     {text.mastered_points?.length ? (

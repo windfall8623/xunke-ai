@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
+from app.learning.contracts import IanaTimezone
 from app.models.learning import TaskView
 from app.models.sources import PublicResolvedScope
 from app.rag.contracts import Contract, DocumentLocator, RequestedScope
@@ -18,6 +19,7 @@ class CourseCreate(Contract):
     goal: str = Field(default="", max_length=1000)
     prior_knowledge: str = Field(default="", max_length=1000)
     daily_minutes: int = Field(default=20, ge=5, le=120)
+    timezone: IanaTimezone = "Asia/Shanghai"
     lesson_count: int = Field(default=6, ge=1, le=10)
     source_policy: TeachSourcePolicy = "topic"
     scope: RequestedScope | None = None
@@ -38,7 +40,7 @@ class CourseTaskView(Contract):
     task_id: str
     course_id: str
     lesson_id: str | None = None
-    kind: Literal["course_outline", "course_lesson"]
+    kind: Literal["course_outline", "course_lesson", "course_tutor"]
     status: Literal["pending", "running", "completed", "failed", "cancelled"]
     stage: str = "queued"
     error_code: str | None = None
@@ -127,7 +129,7 @@ class CourseQuizCreate(Contract):
 class CourseQuizLinkView(Contract):
     link_id: str
     lesson_id: str
-    kind: Literal["initial", "review"]
+    kind: Literal["initial", "review", "scheduled_review"]
     parent_link_id: str | None = None
     content_version: int
     created_at: str
@@ -176,6 +178,7 @@ class CourseNextAction(Contract):
 class CourseReviewRun(Contract):
     link_id: str
     lesson_id: str
+    kind: Literal["review", "scheduled_review"] = "review"
     quiz_id: str | None = None
     status: str
     answered: int
@@ -205,4 +208,5 @@ class CourseProgressView(Contract):
     initial_accuracy: float | None = None
     review_runs: list[CourseReviewRun] = Field(default_factory=list)
     weak_points: list[CourseWeakPoint] = Field(default_factory=list)
+    pending_weak_points: list[CourseWeakPoint] = Field(default_factory=list)
     next_action: CourseNextAction

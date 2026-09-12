@@ -117,7 +117,7 @@ class LessonPayload(Contract):
 
 
 class TeachEnvelope(Contract):
-    schema_version: Literal["zhixue-teach.v1"] = "zhixue-teach.v1"
+    schema_version: Literal["xunke-teach.v1"] = "xunke-teach.v1"
     source_policy: TeachSourcePolicy
     status: Literal["draft", "needs_input", "needs_sources", "insufficient_evidence"] = "draft"
     context: TeachContext = Field(default_factory=TeachContext)

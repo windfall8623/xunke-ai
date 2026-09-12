@@ -33,7 +33,7 @@ export function ConceptProgressPage() {
   return (
     <div className="stack-form">
       <PageHeading
-        eyebrow="知学 AI · 概念进度"
+        eyebrow="循课 · 概念进度"
         title={progress.title}
         description="根据已完成活动中的独立学习证据展示阶段；它不是永久掌握程度。"
       />

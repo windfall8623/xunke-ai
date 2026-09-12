@@ -163,7 +163,7 @@ class SafeWebFetcher:
                     pinned,
                     headers={
                         "Host": host,
-                        "User-Agent": "ZhixueAI-Evidence/1.0",
+                        "User-Agent": "XunkeAI-Evidence/1.0",
                         "Accept": "text/html,text/plain",
                     },
                     extensions={"sni_hostname": hostname},

@@ -23,6 +23,7 @@ OPERATIONS = {
     "practice_grade": "practice.grade",
     "course_outline": "course.outline",
     "course_lesson": "course.lesson",
+    "course_tutor": "course.tutor",
 }
 
 
@@ -172,7 +173,7 @@ async def claim_job(worker_id, *, task_id=None, kinds=None):
             600
             if row["kind"] in ("ingest", "delete", "images")
             else s.course_job_deadline_seconds
-            if row["kind"] in ("course_outline", "course_lesson")
+            if row["kind"] in ("course_outline", "course_lesson", "course_tutor")
             else s.job_deadline_seconds
         )
         deadline = row["deadline_at"] or now() + timedelta(seconds=timeout)
@@ -283,6 +284,8 @@ async def cancel_job(owner, task_id, *, conn=None):
 
 
 async def get_task(owner, task_id):
+    from app.services import course_quiz_service
+
     row = await fetch_one(
         "SELECT * FROM quiz_tasks WHERE task_id=%s AND user_id=%s AND kind='quiz' AND mode='production'",
         (task_id, owner),
@@ -290,6 +293,7 @@ async def get_task(owner, task_id):
     if not row:
         raise not_found()
     result = decode(row)
+    await course_quiz_service.authorize_job(owner, result, require_active=False)
     return {
         key: result.get(key)
         for key in (

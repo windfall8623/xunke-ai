@@ -12,19 +12,25 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading, StatusBadge, safeImageUrl } from '../components/ui'
 import { useQuizProgress } from '../features/quiz/useQuizProgress'
 import { EvidencePanel } from '../features/evidence/EvidencePanel'
 import { FeedbackForm } from '../features/quiz/FeedbackForm'
-import { safeCourseReturn, withCourseReturn } from '../services/courseNavigation'
+import { courseReturnPath, withCourseReturn } from '../services/courseNavigation'
 
 export function QuizPage() {
   const { quizId = '' } = useParams()
+  const identity = useIdentityKey()
+  return <QuizWorkspace key={`${identity}:${quizId}`} quizId={quizId} />
+}
+
+function QuizWorkspace({ quizId }: { quizId: string }) {
   const [params] = useSearchParams()
-  const courseReturn = safeCourseReturn(params.get('returnTo'))
-  const reportPath = withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}/report`, courseReturn)
   const { quizQuery, answerMutation, completion } = useQuizProgress(quizId)
   const quiz = quizQuery.data
+  const courseReturn = courseReturnPath(quiz?.course_context, params.get('returnTo'))
+  const reportPath = withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}/report`, courseReturn)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string[]>([])
   const [evidence, setEvidence] = useState<string | null>(null)

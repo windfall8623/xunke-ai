@@ -365,8 +365,8 @@
       "type": "array"
     },
     "schema_version": {
-      "const": "zhixue-teach.v1",
-      "default": "zhixue-teach.v1",
+      "const": "xunke-teach.v1",
+      "default": "xunke-teach.v1",
       "title": "Schema Version",
       "type": "string"
     },

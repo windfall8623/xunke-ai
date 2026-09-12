@@ -65,7 +65,7 @@ function ReviewItem({
   if (review.source_status !== 'active')
     return <li className="card notice">资料已失效，这项复习已隐藏。</li>
   return (
-    <li className="card stack-form">
+    <li className="card stack-form" id={`review-${review.review_task_id}`}>
       <div className="button-row">
         <span className="badge">{review.paused ? '已暂停' : statusLabels[review.status]}</span>
         <span className="tiny muted">

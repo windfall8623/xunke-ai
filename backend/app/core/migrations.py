@@ -48,7 +48,7 @@ async def migration_status():
 async def migrate(target_version=None):
     async with require_pool().acquire() as conn:
         lock = await fetch_one(
-            "SELECT GET_LOCK('zhixue_schema_migrate',30) AS acquired", conn=conn
+            "SELECT GET_LOCK('xunke_schema_migrate',30) AS acquired", conn=conn
         )
         if lock["acquired"] != 1:
             raise RuntimeError("Another migration is running")
@@ -142,4 +142,4 @@ async def migrate(target_version=None):
                     conn=conn,
                 )
         finally:
-            await execute("SELECT RELEASE_LOCK('zhixue_schema_migrate')", conn=conn)
+            await execute("SELECT RELEASE_LOCK('xunke_schema_migrate')", conn=conn)

@@ -215,7 +215,7 @@ async def call_external(
             5
             if job["kind"] in {"quiz", "qa", "eval_sample", "practice_generate"}
             else 3
-            if job["kind"] == "course_lesson"
+            if job["kind"] in {"course_lesson", "course_tutor"}
             else 2
         )
         daily = s.user_daily_llm_calls
@@ -232,6 +232,8 @@ async def call_external(
                 stage, 1
             )
         )
+        if job["kind"] == "course_tutor" and stage == "reranker":
+            cap = 1
         daily = 2000
         global_daily = 20000
     prefix = "evaluation" if job["mode"] == "evaluation" else "production"
@@ -249,12 +251,25 @@ async def call_external(
         counts.append(
             (
                 f"job:{job['task_id']}:reranker",
-                1 if job["kind"] == "practice_generate" else 2,
+                1 if job["kind"] in {"practice_generate", "course_tutor"} else 2,
             )
         )
     logical_id = None
     async with transaction() as conn:
         current = await job_service.locked_job(job, conn)
+        if current["kind"] == "course_tutor":
+            from app.teaching.prompts import INPUT_LIMIT
+
+            if current["mode"] != "production" or stage not in {"llm", "embedding", "reranker"} or (
+                stage == "llm" and purpose not in {"course_tutor", "reranker"}
+            ):
+                raise AppError(409, "course_tutor_call_forbidden", "课内助教只能调用课程模型与资料检索")
+            if stage == "llm" and input_upper > INPUT_LIMIT:
+                raise AppError(422, "course_tutor_input_too_large", "助教请求超出单次上下文限制")
+            if stage == "llm" and purpose == "course_tutor":
+                if output_upper > 1500:
+                    raise AppError(422, "course_tutor_input_too_large", "助教请求超出单次上下文限制")
+                counts.append((f"job:{job['task_id']}:course_tutor", 2))
         if current["kind"] == "practice_generate":
             # Use the locked persisted identity. It is allocated by the create
             # service and shared by every retry task/attempt for this practice.

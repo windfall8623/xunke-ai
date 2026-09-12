@@ -176,11 +176,19 @@ async def cancel_task(owner, task_id):
         await job_service.cancel_job(owner, task_id, conn=conn)
         task = await fetch_one("SELECT * FROM quiz_tasks WHERE task_id=%s AND user_id=%s", (task_id, owner), conn=conn)
         from app.workers.course_job import reconcile_course
-        await reconcile_course(job_service.decode(task), conn)
+        if task["kind"] == "course_tutor":
+            from app.workers.course_tutor_job import reconcile_course_tutor
+
+            await reconcile_course_tutor(job_service.decode(task), conn)
+        else:
+            await reconcile_course(job_service.decode(task), conn)
     return await course_read.task_view(owner, task_id, view["course_id"], view["lesson_id"])
 
 
 async def purge_document(owner, doc_id):
+    from app.services.course_review_service import purge_course_reviews
+    from app.services.course_tutor_service import purge_course_tutor
+
     rows = await fetch_all("SELECT course_id,resolved_scope_json FROM learning_courses WHERE owner_id=%s AND source_policy='strict_docs'", (owner,))
     for row in rows:
         if not any(s["doc_id"] == doc_id for s in load(row["resolved_scope_json"], {}).get("documents", [])):
@@ -196,3 +204,5 @@ async def purge_document(owner, doc_id):
                 "active_task_id=NULL,revision=revision+1,updated_at=%s WHERE course_id=%s AND owner_id=%s AND status<>'source_revoked'",
                 (now(), row["course_id"], owner), conn=conn,
             )
+            await purge_course_tutor(conn, owner, row["course_id"])
+            await purge_course_reviews(conn, owner, row["course_id"])

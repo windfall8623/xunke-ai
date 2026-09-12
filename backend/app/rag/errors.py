@@ -42,6 +42,11 @@ class ProviderTimeout(RagError):
     status_code = 504
 
 
+class ProviderUnavailable(RagError):
+    code = "PROVIDER_UNAVAILABLE"
+    status_code = 503
+
+
 class ProviderRateLimited(RagError):
     code = "PROVIDER_RATE_LIMITED"
     status_code = 503

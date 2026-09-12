@@ -23,10 +23,13 @@ export const api = {
   session: (signal?: AbortSignal) => request<AuthSession>('/auth/session', { signal }),
   login: (data: ApiSchemas['LoginBody']) =>
     request<AuthSession>('/auth/login', { method: 'POST', data }),
+  sendEmailCode: (data: ApiSchemas['EmailCodeBody']) =>
+    request<ApiSchemas['EmailCodeView']>('/auth/email-code', { method: 'POST', data }),
   register: (data: ApiSchemas['RegisterBody']) =>
     request<AuthSession>('/auth/register', { method: 'POST', data }),
-  bindLegacy: (data: Pick<ApiSchemas['BindBody'], 'account' | 'password' | 'code'>) =>
-    request<AuthSession>('/auth/bind', { method: 'POST', data }),
+  bindLegacy: (
+    data: Pick<ApiSchemas['BindBody'], 'account' | 'password' | 'code' | 'verification_code'>,
+  ) => request<AuthSession>('/auth/bind', { method: 'POST', data }),
   recover: (data: ApiSchemas['RecoverBody']) =>
     request<{ recovery_code?: string }>('/auth/recover', { method: 'POST', data }),
   logout: () => request<null>('/auth/logout', { method: 'POST' }),

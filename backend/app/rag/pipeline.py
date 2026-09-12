@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -40,6 +41,38 @@ from app.rag.errors import (
 from app.rag.scope import evidence_in_scope, normalize_spec, require_execution_scope
 from app.rag.retrieval import rrf_merge
 from app.rag.validation import validate_quiz_artifact
+
+
+logger = logging.getLogger(__name__)
+
+
+def _validation_categories(errors):
+    """Only fixed categories reach logs; model errors may contain private text."""
+    allowed = {
+        "question_count_mismatch", "duplicate_question_id",
+        "provided_evidence_set_mismatch", "evidence_outside_scope",
+        "invalid_option_keys", "invalid_answer_set", "single_answer_required",
+        "multiple_answers_required", "invalid_judge_options", "difficulty_mismatch",
+        "duplicate_question", "unknown_or_duplicate_citation", "missing_citation",
+        "unsupported_support_quote", "absence_is_not_false_counterevidence",
+        "model_only_cannot_claim_citations", "unknown_coverage_target",
+        "coverage_evidence_mismatch", "generator_unavailable",
+        "semantic_checks_incomplete", "semantic_validation_failed",
+        "answer_valid", "explanation_valid", "not_duplicate", "source_supported",
+        "false_requires_counterevidence",
+    }
+    categories = set()
+    for error in errors:
+        if not isinstance(error, str):
+            categories.add("unclassified")
+        elif error.startswith("schema_invalid:"):
+            categories.add("schema_invalid")
+        elif error.startswith("coverage_quota_mismatch:"):
+            categories.add("coverage_quota_mismatch")
+        else:
+            code = error.rsplit(":", 1)[-1]
+            categories.add(code if code in allowed else "unclassified")
+    return sorted(categories)
 
 
 @dataclass(frozen=True)
@@ -530,6 +563,12 @@ async def generate_quiz_artifact(
             semantic_status=validation.semantic_status,
             errors=validation.errors,
         )
+        if not validation.passed:
+            logger.warning(
+                "Quiz validation rejected attempt=%s semantic=%s categories=%s",
+                state["attempt"], validation.semantic_status,
+                ",".join(_validation_categories(validation.errors)),
+            )
         return {"validation": validation}
 
     def after_validate(state):

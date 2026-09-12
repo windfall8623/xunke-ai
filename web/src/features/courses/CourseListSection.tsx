@@ -103,7 +103,7 @@ function CourseList({
       ) : !query.data?.items.length ? (
         <div className="card">
           <EmptyState title="从第一门课程开始">
-            告诉知学 AI 你想学什么，先看纲要，再逐课学习与练习。
+            告诉循课你想学什么，先看纲要，再逐课学习与练习。
           </EmptyState>
         </div>
       ) : (

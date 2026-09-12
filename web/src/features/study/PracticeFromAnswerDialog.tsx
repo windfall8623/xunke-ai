@@ -445,7 +445,7 @@ function PracticeFields({
   return (
     <div className="stack-form" style={wrap}>
       <p className="muted">
-        选择学习空间与练习目标。知学 AI 将依据本次回答保存的资料生成单选、多选和判断题。
+        选择学习空间与练习目标。循课将依据本次回答保存的资料生成单选、多选和判断题。
       </p>
       <StudyScopeSummary scope={context.scope} revision={context.scope_revision} />
       <fieldset className="stack-form" disabled={pending}>

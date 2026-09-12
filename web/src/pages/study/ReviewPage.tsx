@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { ReviewQueue } from '../../features/study/ReviewQueue'
@@ -15,6 +15,7 @@ import {
 } from '../../services/study'
 import type { StudyReview, StudyReviewQuiz, StudyReviewUpdate } from '../../types/study'
 import type { PracticeSpec } from '../../types/practice'
+import { courseKeys } from '../../services/courses'
 
 export function ReviewPage() {
   const identity = useIdentityKey()
@@ -30,6 +31,7 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
   const identity = useIdentityKey()
   const client = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
   const [cursor, setCursor] = useState<string>()
   const [paused, setPaused] = useState(false)
   const [questionCount, setQuestionCount] = useState(5)
@@ -55,6 +57,17 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
     retry: false,
   })
   useEffect(() => () => inFlight.current?.abort(), [])
+  useEffect(() => {
+    if (location.hash.startsWith('#review-') && query.data && !query.error) {
+      try {
+        document
+          .getElementById(decodeURIComponent(location.hash.slice(1)))
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } catch {
+        /* An invalid URL fragment must not interrupt the review list. */
+      }
+    }
+  }, [location.hash, query.data, query.error])
   async function start(review: StudyReview) {
     if (inFlight.current) return
     const controller = new AbortController()
@@ -89,6 +102,7 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
       if (!controller.signal.aborted) {
         keyFor.settle('quiz', semantic)
         void client.invalidateQueries({ queryKey: studyKeys.all(identity) })
+        void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
         navigate(
           practiceType === 'quiz'
             ? `/tasks/${encodeURIComponent(task.task_id)}?returnTo=/study/reviews`
@@ -117,8 +131,10 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
         { expected_revision: review.revision, action, ...(dueAt ? { due_at: dueAt } : {}) },
         controller.signal,
       )
-      if (!controller.signal.aborted)
+      if (!controller.signal.aborted) {
         await client.invalidateQueries({ queryKey: studyKeys.all(identity) })
+        void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+      }
     } catch (cause) {
       if (!controller.signal.aborted) {
         setError(cause)
@@ -132,7 +148,7 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
   return (
     <div className="stack-form">
       <PageHeading
-        eyebrow="知学 AI · 持续学习"
+        eyebrow="循课 · 持续学习"
         title="复习安排"
         description="按已确认的学习记录安排复习；完成整套作答后才更新这次复习。"
       />

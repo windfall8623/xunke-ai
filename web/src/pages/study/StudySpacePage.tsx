@@ -70,7 +70,7 @@ function SpaceLoader({ spaceId }: { spaceId: string }) {
   if (space.data.source_status === 'revoked' || !space.data.scope)
     return (
       <div style={wrap}>
-        <PageHeading eyebrow="知学 AI · 学习空间" title="资料已失效的学习空间" />
+        <PageHeading eyebrow="循课 · 学习空间" title="资料已失效的学习空间" />
         <p className="notice" role="alert">
           资料已不可用或访问权限已变更，相关目标、概念和学习单元已隐藏。
         </p>
@@ -363,7 +363,7 @@ function SpaceContent({ space }: { space: StudySpace }) {
   return (
     <div className="stack-form" style={wrap}>
       <PageHeading
-        eyebrow="知学 AI · 学习空间"
+        eyebrow="循课 · 学习空间"
         title={space.title}
         description="明确目标，按固定资料安排学习单元。"
       />

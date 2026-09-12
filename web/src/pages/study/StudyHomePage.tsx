@@ -8,6 +8,7 @@ import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/
 import { StudyScopePicker } from '../../features/study/StudyScopePicker'
 import { StudyActivitySummary } from '../../features/study/StudyActivitySummary'
 import { CourseListSection } from '../../features/courses/CourseListSection'
+import { CourseTodayCard } from '../../features/courses/CourseTodayCard'
 import { StudyNavigation } from './ReviewPage'
 import {
   createStudySubmissionKeys,
@@ -41,7 +42,7 @@ function StudyHome({ identity }: { identity: string | number }) {
   return (
     <div className="stack-form" style={{ minWidth: 0 }}>
       <PageHeading
-        eyebrow="知学 AI · 持续学习"
+        eyebrow="循课 · 持续学习"
         title="我的学习"
         description="找到原课程，接着读一课、练一组，让每次学习接得上。"
         action={
@@ -52,6 +53,7 @@ function StudyHome({ identity }: { identity: string | number }) {
         }
       />
       <StudyNavigation />
+      <CourseTodayCard />
       <CourseListSection showCreate={false} />
       <StudyActivitySummary />
       <div className="section-line">

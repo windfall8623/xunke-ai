@@ -75,10 +75,21 @@ async def lesson_material(engine, scope, unit, config, *, budget):
     # Bound context, keeping the configured retriever and reranker.
     config = config.model_copy(update={"context_token_budget": 4200, "final_top_k": 4})
     retrieved = await engine.retrieve(query, scope, config, budget=budget)
-    if not retrieved.evidence:
+    result = TeachingMaterial()
+    seen = set()
+    for item in retrieved.evidence:
+        if item.evidence_id in seen:
+            continue
+        ref = f"s{len(result.evidence) + 1}"
+        candidate = TeachingMaterial(evidence={**result.evidence, ref: item})
+        # Retrieval limits the ranked count, not the serialized teaching input.
+        # Count JSON escaping and citation metadata; keep verified excerpts whole.
+        if count_tokens(dump(candidate.prompt_data())) > config.context_token_budget:
+            continue
+        result.evidence[ref] = item
+        seen.add(item.evidence_id)
+        if len(result.evidence) >= config.final_top_k:
+            break
+    if not result.evidence:
         raise AppError(422, "course_material_gap", "当前资料没有足够依据生成本课")
-    result = TeachingMaterial(evidence={f"s{i + 1}": item for i, item in enumerate(retrieved.evidence)})
-    # Retrieved evidence already represents a bounded, local query, not full coverage.
-    if count_tokens(dump(result.prompt_data())) > 6500:
-        raise AppError(422, "course_scope_too_large", "本课材料过长，请选择更具体的章节")
     return result

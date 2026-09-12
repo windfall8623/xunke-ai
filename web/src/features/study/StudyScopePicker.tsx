@@ -45,7 +45,7 @@ export function StudyScopeSummary({ scope, revision }: { scope: StudyScope; revi
   )
 }
 
-const catalogVersion = (doc: DocumentItem) =>
+export const documentSelectionVersion = (doc: DocumentItem) =>
   JSON.stringify([
     doc.active_version_id,
     doc.active_build_id,
@@ -58,12 +58,14 @@ export function StudyScopePicker({
   scopeRevision,
   value,
   onChange,
+  initialVersions,
   disabled = false,
 }: {
   scope?: StudyScope
   scopeRevision?: number
   value: SourceScope | null
   onChange: (value: SourceScope | null) => void
+  initialVersions?: Record<string, string>
   disabled?: boolean
 }) {
   const identity = useIdentityKey()
@@ -76,7 +78,7 @@ export function StudyScopePicker({
     refetchOnMount: 'always',
     retry: false,
   })
-  const versions = useRef(new Map<string, string>())
+  const versions = useRef(new Map<string, string>(Object.entries(initialVersions || {})))
   const [catalogChanged, setCatalogChanged] = useState(false)
   const scopeIdentity = JSON.stringify([scopeRevision, scope?.documents])
   const previousScope = useRef(scopeIdentity)
@@ -84,9 +86,11 @@ export function StudyScopePicker({
   const scopeChanged = previousScope.current !== scopeIdentity
   const stale =
     !scope &&
+    catalog.isSuccess &&
+    !catalog.isFetching &&
     !!value?.documents.some((selected) => {
       const current = documents.find((item) => item.doc_id === selected.doc_id)
-      return !current || versions.current.get(selected.doc_id) !== catalogVersion(current)
+      return !current || versions.current.get(selected.doc_id) !== documentSelectionVersion(current)
     })
   useEffect(() => {
     if (!scopeChanged && !stale) return
@@ -171,7 +175,7 @@ export function StudyScopePicker({
                   onChange={(event) => {
                     if (event.target.checked) {
                       if (!fixed && current)
-                        versions.current.set(source.doc_id, catalogVersion(current))
+                        versions.current.set(source.doc_id, documentSelectionVersion(current))
                       change([...selected, defaultSelection(source.doc_id)])
                     } else {
                       versions.current.delete(source.doc_id)

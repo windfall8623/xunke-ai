@@ -9,6 +9,9 @@ import type {
   CourseProgressView,
   CourseQuizCreate,
   CourseQuizLinkView,
+  CourseReviewStart,
+  CourseReviewView,
+  CourseTodayView,
   CourseTaskView,
   CourseView,
 } from '../types/course'
@@ -68,6 +71,26 @@ export const coursesApi = {
     }),
   progress: (id: string, signal?: AbortSignal) =>
     request<CourseProgressView>(`${courseBase(id)}/progress`, { signal }),
+  reviews: (id: string, signal?: AbortSignal) =>
+    request<CourseReviewView[]>(`${courseBase(id)}/reviews`, { signal }),
+  startReview: (
+    id: string,
+    lessonId: string,
+    data: CourseReviewStart,
+    key: string,
+    signal?: AbortSignal,
+  ) =>
+    request<CourseQuizLinkView>(`${lessonBase(id, lessonId)}/review-jobs`, {
+      method: 'POST',
+      data,
+      idempotencyKey: key,
+      signal,
+    }),
+  today: (timezone = 'Asia/Shanghai', minutesBudget = 20, signal?: AbortSignal) =>
+    request<CourseTodayView>(
+      `/courses/today?timezone=${segment(timezone)}&minutes_budget=${minutesBudget}`,
+      { signal },
+    ),
   task: (taskId: string, signal?: AbortSignal) =>
     request<CourseTaskView>(`/courses/tasks/${segment(taskId)}`, { signal }),
   cancelTask: (taskId: string, signal?: AbortSignal) =>
@@ -89,6 +112,10 @@ export const courseKeys = {
     [identity, 'courses', 'lesson', id, lessonId] as const,
   progress: (identity: string | number, id: string) =>
     [identity, 'courses', 'progress', id] as const,
+  reviews: (identity: string | number, id: string) => [identity, 'courses', 'reviews', id] as const,
+  todayAll: (identity: string | number) => [identity, 'courses', 'today'] as const,
+  today: (identity: string | number, timezone: string, minutes: number, date: string) =>
+    [identity, 'courses', 'today', timezone, minutes, date] as const,
   task: (identity: string | number, id: string, taskId: string, lessonId?: string | null) =>
     [identity, 'courses', 'task', id, lessonId || null, taskId] as const,
   evidence: (identity: string | number, id: string, sourceRef: string, lessonId?: string) =>
@@ -117,6 +144,37 @@ const courseErrors: Record<string, string> = {
   course_not_ready: '请等待课程纲要生成完成后再开始学习。',
   no_wrong_questions: '这次练习没有可补练的错题，可以继续下一课。',
   quiz_incomplete: '请先完成并确认原练习，再针对错题补练。',
+  course_review_not_due: '这节课还未到建议复习时间；如需现在开始，请点击“提前复习”。',
+  course_review_conflict: '复习安排已更新，请核对最新状态后重试。',
+  content_version_conflict: '课文版本已更新，请刷新这一课后继续。',
+  course_tutor_busy: '本课已有助教回答正在准备，请等待完成或取消后再提问。',
+}
+
+export function courseLocalDate(now: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const part = (name: string) => parts.find((item) => item.type === name)?.value || ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+export function courseReviewTime(review: Pick<CourseReviewView, 'due_at' | 'timezone'>) {
+  const date = new Date(review.due_at)
+  if (Number.isNaN(date.getTime())) return '时间待更新'
+  try {
+    return new Intl.DateTimeFormat('zh-CN', {
+      timeZone: review.timezone,
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date)
+  } catch {
+    return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(
+      date,
+    )
+  }
 }
 
 export function courseTaskErrorMessage(
@@ -142,6 +200,8 @@ export function courseErrorMessage(error: unknown) {
         error.message ||
         courseErrors.revision_conflict
       )
+    const providerMessage = providerErrorMessage(String(error.code).toUpperCase())
+    if (providerMessage) return providerMessage
     if (error.status === 0 || error.status >= 500 || error.code === 'INVALID_RESPONSE')
       return '提交或读取结果尚未确认，请检查网络后重试；重复提交会沿用原请求。'
     return courseErrors[String(error.code).toLowerCase()] || error.message

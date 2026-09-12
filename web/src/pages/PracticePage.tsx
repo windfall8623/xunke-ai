@@ -43,7 +43,7 @@ function PracticeContent({ practiceId }: { practiceId: string }) {
         返回所属学习空间
       </Link>
       <PageHeading
-        eyebrow="知学 AI · 综合练习"
+        eyebrow="循课 · 综合练习"
         title={practice.title}
         description={practice.summary}
       />

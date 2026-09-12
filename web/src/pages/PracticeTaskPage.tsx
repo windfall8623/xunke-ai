@@ -51,7 +51,7 @@ export function PracticeTaskPage() {
   return (
     <div className="narrow-page stack-form">
       <PageHeading
-        eyebrow="知学 AI · 练习任务"
+        eyebrow="循课 · 练习任务"
         title={
           terminal
             ? '这次任务暂未完成'

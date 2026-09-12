@@ -9,6 +9,7 @@ import {
 } from '../../services/practice'
 import { ApiError } from '../../services/http'
 import { studyKeys } from '../../services/study'
+import { courseKeys } from '../../services/courses'
 import type { PracticeAnswer, PracticeAnswerBody, PracticeQuestion } from '../../types/practice'
 
 export type PendingPracticeAnswer = {
@@ -167,6 +168,7 @@ export function usePracticeProgress(practiceId: string) {
       await Promise.all([
         client.invalidateQueries({ queryKey }),
         client.invalidateQueries({ queryKey: studyKeys.all(identity) }),
+        client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) }),
       ])
     },
     onError: async () => {

@@ -44,8 +44,18 @@ async def _locked_quiz_for_write(conn, owner, quiz_id, *, answer=False):
 
 
 async def get_detail(owner, quiz_id, *, conn=None):
+    from app.services.course_read import course_context_for_quiz
+
     row = await owned_quiz(owner, quiz_id, conn=conn)
     available = await learning_scopes.quiz_sources_available(owner, row, conn=conn)
+    course_context = None
+    if available:
+        try:
+            course_context = await course_context_for_quiz(owner, quiz_id, conn=conn)
+        except AppError as exc:
+            if exc.code != "source_revoked":
+                raise
+            available = False
     answers = (
         await fetch_all(
             "SELECT receipt_json FROM quiz_answers WHERE quiz_id=%s ORDER BY created_at,question_id",
@@ -115,6 +125,7 @@ async def get_detail(owner, quiz_id, *, conn=None):
         "images_status": row["images_status"],
         "report_status": report["status"] if report else "not_requested",
         "created_at": iso(row["created_at"]),
+        "course_context": course_context,
     }
 
 
@@ -319,6 +330,11 @@ async def complete_quiz(owner, quiz_id, expected_revision):
             f"report:{quiz_id}:initial",
             conn=conn,
         )
+        from app.services.course_review_service import append_settlement_event
+
+        # Course quizzes have no legacy learning_context. The outbox belongs to
+        # this same successful settlement transaction regardless of that origin.
+        await append_settlement_event(conn, owner, quiz_id)
         if origin is not None:
             settled = await fetch_one(
                 "SELECT settled_at FROM quiz_sessions WHERE quiz_id=%s AND user_id=%s",

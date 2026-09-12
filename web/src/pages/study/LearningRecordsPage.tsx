@@ -74,7 +74,7 @@ function Records({
   return (
     <div className="stack-form">
       <PageHeading
-        eyebrow="知学 AI · 学习记录"
+        eyebrow="循课 · 学习记录"
         title={kind === 'history' ? '学习历史' : '跨套错题本'}
         description={
           kind === 'history'

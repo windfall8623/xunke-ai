@@ -4,6 +4,7 @@ from app.core.db import execute, fetch_all, fetch_one
 from app.core.errors import AppError, not_found
 from app.core.values import iso, load, now
 from app.models.sources import PublicResolvedScope
+from app.models.learning import CourseReturnContext
 from app.rag.contracts import DocumentEvidence, ResolvedScope
 from app.rag.errors import ScopeRevoked, SourceUnavailable
 from app.rag.scope import evidence_in_scope
@@ -32,6 +33,26 @@ async def owned_lesson(owner, course_id, lesson_id, *, conn=None, lock=False):
     return row
 
 
+async def course_context_for_quiz(owner, quiz_id, *, conn=None):
+    """Resolve only an owned, published quiz's actual immutable course link."""
+    link = await fetch_one(
+        "SELECT link.course_id,link.lesson_id,link.link_id,link.kind,link.content_version "
+        "FROM learning_course_quiz_links link "
+        "JOIN quiz_tasks task ON task.task_id=link.task_id AND task.user_id=link.owner_id "
+        "AND task.kind='quiz' AND task.mode='production' AND task.status='completed' "
+        "JOIN quiz_sessions quiz ON quiz.quiz_id=task.quiz_id AND quiz.user_id=link.owner_id "
+        "AND quiz.origin_task_id=task.task_id "
+        "WHERE quiz.quiz_id=%s AND link.owner_id=%s",
+        (quiz_id, owner), conn=conn,
+    )
+    if link is None:
+        return None
+    course = await owned_course(owner, link["course_id"], conn=conn)
+    await owned_lesson(owner, link["course_id"], link["lesson_id"], conn=conn)
+    await authorize_course(course, conn=conn)
+    return CourseReturnContext.model_validate(link).model_dump(mode="json")
+
+
 async def authorize_course(row, *, conn=None):
     if row["status"] == "source_revoked" or not row["resolved_scope_json"]:
         raise AppError(404, "source_revoked", "课程关联资料已失效，请重新选择资料创建课程")
@@ -52,7 +73,7 @@ async def task_view(owner, task_id, course_id, lesson_id=None, *, conn=None):
         return None
     task = await fetch_one(
         "SELECT task_id,kind,status,stage,error_code FROM quiz_tasks "
-        "WHERE task_id=%s AND user_id=%s AND mode='production' AND kind IN ('course_outline','course_lesson')",
+        "WHERE task_id=%s AND user_id=%s AND mode='production' AND kind IN ('course_outline','course_lesson','course_tutor')",
         (task_id, owner), conn=conn,
     )
     if not task:
@@ -64,11 +85,18 @@ async def task_view(owner, task_id, course_id, lesson_id=None, *, conn=None):
         "course_provider_unavailable": "课程模型暂未配置，请检查模型设置",
         "course_generation_invalid": "模型返回的课程格式不完整，请重试",
         "course_disabled": "课程生成功能暂未启用",
+        "course_tutor_invalid": "助教回答格式不完整，请重试",
+        "course_tutor_generation_invalid": "助教回答格式不完整，请重试",
+        "course_tutor_input_too_large": "本次问题与课文上下文过长，请缩小提问范围",
+        "course_content_changed": "课文已更新，请刷新后再试",
+        "provider_unavailable": "模型服务暂时不可达，请稍后重试",
+        "provider_timeout": "模型服务响应超时，请稍后重试",
+        "provider_rate_limited": "模型服务当前请求过多，请稍后重试",
         "source_revoked": "关联资料已失效",
     }
     return dict(
         **task, course_id=course_id, lesson_id=lesson_id,
-        error_message=errors.get(task["error_code"], "生成未完成，请稍后重试") if task["error_code"] else None,
+        error_message=errors.get(task["error_code"].lower(), "生成未完成，请稍后重试") if task["error_code"] else None,
     )
 
 
@@ -173,7 +201,7 @@ async def get_lesson(owner, course_id, lesson_id, *, opened=False):
 async def get_task(owner, task_id):
     task = await fetch_one(
         "SELECT kind,request_json FROM quiz_tasks WHERE task_id=%s AND user_id=%s "
-        "AND kind IN ('course_outline','course_lesson') AND mode='production'", (task_id, owner),
+        "AND kind IN ('course_outline','course_lesson','course_tutor') AND mode='production'", (task_id, owner),
     )
     if not task:
         raise not_found()
@@ -183,8 +211,12 @@ async def get_task(owner, task_id):
         raise AppError(404, "source_revoked", "课程任务来源已失效")
     course = await owned_course(owner, course_id)
     await authorize_course(course)
-    if task["kind"] == "course_lesson":
+    if task["kind"] in {"course_lesson", "course_tutor"}:
         await owned_lesson(owner, course_id, lesson_id)
+    if task["kind"] == "course_tutor":
+        from app.services.course_tutor_service import authorize_tutor_task
+
+        await authorize_tutor_task(owner, task_id, request)
     return await task_view(owner, task_id, course_id, lesson_id)
 
 

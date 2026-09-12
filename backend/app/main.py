@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.routes import (
     auth,
+    course_reviews,
+    course_tutor,
     courses,
     evaluation,
     feedback,
@@ -55,7 +57,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="知学 AI",
+    title="循课",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -79,6 +81,8 @@ app.include_router(knowledge.router, prefix="/api/v1")
 app.include_router(knowledge.eval_router, prefix="/api/v1")
 app.include_router(qa.router, prefix="/api/v1")
 app.include_router(study.router, prefix="/api/v1")
+app.include_router(course_reviews.router, prefix="/api/v1")
+app.include_router(course_tutor.router, prefix="/api/v1")
 app.include_router(courses.router, prefix="/api/v1")
 app.include_router(practice.router, prefix="/api/v1")
 app.include_router(practice_grading.router, prefix="/api/v1")

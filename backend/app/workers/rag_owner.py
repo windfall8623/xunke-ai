@@ -249,6 +249,7 @@ class OwnerWorker:
         practice_provider=None,
         grading_provider=None,
         course_generator=None,
+        course_tutor_generator=None,
         worker_id=None,
     ):
         self.engine = engine
@@ -256,8 +257,10 @@ class OwnerWorker:
         self.practice_provider = practice_provider
         self.grading_provider = grading_provider
         self.course_generator = course_generator
+        self.course_tutor_generator = course_tutor_generator
         self.worker_id = worker_id or uid("owner")
         self._serial = asyncio.Lock()
+        self._next_course_review_reconcile = 0.0
 
     async def _worker_heartbeat(self):
         await execute(
@@ -288,6 +291,14 @@ class OwnerWorker:
         """Return True when a durable job was claimed, even if it ends in failure."""
         async with self._serial:
             await self._worker_heartbeat()
+            if time.monotonic() >= self._next_course_review_reconcile:
+                from app.services.course_review_service import reconcile_course_reviews
+
+                try:
+                    await reconcile_course_reviews(limit=100)
+                except Exception:  # Scheduling is retried from the durable settlement events.
+                    logger.exception("Course review scheduling will retry")
+                self._next_course_review_reconcile = time.monotonic() + 5
             await self.reconcile(task_id=task_id)
             job = await job_service.claim_job(
                 self.worker_id, task_id=task_id, kinds=list(job_service.OPERATIONS)
@@ -379,6 +390,13 @@ class OwnerWorker:
                 from app.workers.course_job import run_course
 
                 await run_course(job, self.engine, self.course_generator, usage_loader=_metered_usage)
+            elif job["kind"] == "course_tutor":
+                from app.workers.course_tutor_job import run_course_tutor
+
+                await run_course_tutor(
+                    job, actor, self.engine, generator=self.course_tutor_generator,
+                    usage_loader=_metered_usage,
+                )
             elif job["kind"] == "report":
                 await self._report(job, actor)
             elif job["kind"] == "learning_project":
@@ -408,6 +426,11 @@ class OwnerWorker:
         if job["mode"] != "production":
             raise ScopeRevoked("Evaluation cannot create a learning session")
         from app.services.evaluation_service import pipeline_config
+        from app.services import course_quiz_service
+
+        async with transaction() as conn:
+            current = await job_service.locked_job(job, conn)
+            await course_quiz_service.authorize_job(actor.owner_id, current, conn=conn)
 
         scope = _scope(job)
         context = ExecutionContext(
@@ -450,6 +473,7 @@ class OwnerWorker:
         result = {}
 
         async def publish(current, public, conn):
+            await course_quiz_service.authorize_job(actor.owner_id, current, conn=conn)
             if learning_context is not None:
                 (
                     saved_spec,
@@ -949,6 +973,10 @@ class OwnerWorker:
                     from app.workers.course_job import reconcile_course
 
                     await reconcile_course(job, conn)
+                elif job["kind"] == "course_tutor":
+                    from app.workers.course_tutor_job import reconcile_course_tutor
+
+                    await reconcile_course_tutor(job, conn)
                 elif job["kind"] == "images" and request.get("quiz_id"):
                     await execute(
                         "UPDATE quiz_sessions SET images_status='failed' WHERE quiz_id=%s AND user_id=%s "
@@ -992,6 +1020,7 @@ async def _main(args):
             practice_provider=runtime.practice_provider,
             grading_provider=runtime.grading_provider,
             course_generator=runtime.course_generator,
+            course_tutor_generator=runtime.course_tutor_generator,
             worker_id=args.worker_id,
         )
         stop = asyncio.Event()

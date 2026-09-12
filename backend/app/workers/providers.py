@@ -41,6 +41,7 @@ from app.rag.providers.web_evidence import (
 from app.services.provider_meter import MeteredChat, MeteredHTTP, call_external
 from app.services.source_service import reauthorize_scope
 from app.teaching.generator import CourseGenerator
+from app.teaching.tutor import CourseTutorGenerator
 
 
 class UnconfiguredEmbedding:
@@ -155,6 +156,7 @@ class Runtime:
     practice_provider: LangChainPracticeProvider | None = None
     grading_provider: LangChainShortAnswerProvider | None = None
     course_generator: CourseGenerator | None = None
+    course_tutor_generator: CourseTutorGenerator | None = None
 
     async def close(self):
         try:
@@ -184,7 +186,7 @@ def build_runtime(settings=None) -> Runtime:
             )
         )
         chat, llm_reranker, qa_generator, practice_provider = None, None, None, None
-        grading_provider, course_generator = None, None
+        grading_provider, course_generator, course_tutor_generator = None, None, None
         llm_config = resolve_llm_config(settings)
         if llm_config.configured:
             model = create_chat_model(settings, temperature=0.2)
@@ -199,6 +201,12 @@ def build_runtime(settings=None) -> Runtime:
                 course_generator = CourseGenerator(
                     MeteredChat(course_model.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
                     MeteredChat(course_model, purpose="course_lesson", output_upper=4500),
+                    timeout_seconds=settings.course_provider_timeout_seconds,
+                    model_configuration={"provider": llm_config.provider, "model": llm_config.model,
+                                         "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
+                )
+                course_tutor_generator = CourseTutorGenerator(
+                    MeteredChat(course_model.bind(max_tokens=1500), purpose="course_tutor", output_upper=1500),
                     timeout_seconds=settings.course_provider_timeout_seconds,
                     model_configuration={"provider": llm_config.provider, "model": llm_config.model,
                                          "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
@@ -314,6 +322,7 @@ def build_runtime(settings=None) -> Runtime:
             practice_provider=practice_provider,
             grading_provider=grading_provider,
             course_generator=course_generator,
+            course_tutor_generator=course_tutor_generator,
         )
     except BaseException:
         # Client constructors do not make network calls. A failed configuration

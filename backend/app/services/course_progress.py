@@ -22,6 +22,25 @@ def _settled(link):
     )
 
 
+def pending_review_links(lessons: list[dict], quiz_links: list[dict]) -> list[dict]:
+    """A settled child replaces the parent's pending errors, never its history."""
+    by_lesson = {lesson["lesson_id"]: lesson for lesson in lessons if _available(lesson)}
+    links = [
+        link for link in quiz_links
+        if link["lesson_id"] in by_lesson
+        and link.get("content_version") == by_lesson[link["lesson_id"]].get("content_version")
+    ]
+    reviewed = {
+        link["parent_link_id"] for link in links
+        if link["kind"] == "review" and _settled(link)
+    }
+    return [
+        link for link in links
+        if _settled(link) and link.get("wrong_question_ids")
+        and link["link_id"] not in reviewed
+    ]
+
+
 def select_next_action(lessons: list[dict], quiz_links: list[dict]) -> dict:
     """Prioritize unfinished checks, unreviewed errors, then the next lesson."""
     available = sorted(
@@ -51,19 +70,11 @@ def select_next_action(lessons: list[dict], quiz_links: list[dict]) -> dict:
                 "continue_quiz", "本课还有未完成的检查，先继续这次练习。",
                 link["lesson_id"], link,
             )
-    reviewed = {
-        link["parent_link_id"] for link in links
-        if link["kind"] == "review" and _settled(link)
-    }
-    for link in links:
-        if (
-            _settled(link) and link.get("wrong_question_ids")
-            and link["link_id"] not in reviewed
-        ):
-            return action(
-                "review_lesson", "这次检查还有尚未补练的错题，建议回看本课后再练。",
-                link["lesson_id"], link,
-            )
+    for link in pending_review_links(available, links):
+        return action(
+            "review_lesson", "这次检查还有尚未补练的错题，建议回看本课后再练。",
+            link["lesson_id"], link,
+        )
     practiced = {
         link["lesson_id"] for link in links
         if link["kind"] == "initial" and _settled(link)
@@ -134,6 +145,7 @@ async def get_progress(owner, course_id):
         review_runs = [
             {
                 "link_id": link["link_id"], "lesson_id": link["lesson_id"],
+                "kind": link["kind"],
                 "quiz_id": link["quiz_id"],
                 "status": link["quiz_status"] or link["task_status"],
                 "answered": link["answered"], "correct": link["correct"],
@@ -141,8 +153,9 @@ async def get_progress(owner, course_id):
                 "accuracy": link["correct"] / link["answered"] if link["answered"] else None,
                 "created_at": iso(link["created_at"]),
             }
-            for link in links if link["kind"] == "review"
+            for link in links if link["kind"] in {"review", "scheduled_review"}
         ]
+        pending_ids = {link["link_id"] for link in pending_review_links(lessons, links)}
         return CourseProgressView(
             course_id=course_id,
             total_lessons=len(lessons),
@@ -158,6 +171,7 @@ async def get_progress(owner, course_id):
             initial_accuracy=correct / answered if answered else None,
             review_runs=review_runs,
             weak_points=weak_points,
+            pending_weak_points=[point for point in weak_points if point["link_id"] in pending_ids],
             next_action=select_next_action(lessons, links),
         ).model_dump(mode="json")
 

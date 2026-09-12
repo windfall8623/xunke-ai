@@ -60,7 +60,13 @@ export function AttemptTimeline({ items }: { items: StudyHistory[] }) {
                 {item.confirmed_count} 题
                 {item.pending_count > 0 ? ` · ${item.pending_count} 题待确认` : ''}
               </p>
-              <p role="status">{projectionLabels[item.projection_status]}</p>
+              <p role="status">
+                {item.origin_kind === 'quiz' &&
+                item.status === 'settled' &&
+                item.projection_status === 'not_ready'
+                  ? '已完成并结算'
+                  : projectionLabels[item.projection_status]}
+              </p>
               {item.concepts.length > 0 && (
                 <div className="button-row">
                   {item.concepts.map((concept) => (

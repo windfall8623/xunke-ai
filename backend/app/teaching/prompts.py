@@ -18,7 +18,7 @@ def _section(text, heading):
 
 @lru_cache(maxsize=1)
 def teaching_skill():
-    root = Path(os.environ.get("TEACH_SKILL_DIR") or Path(__file__).resolve().parents[3] / ".agents/skills/zhixue-teach")
+    root = Path(os.environ.get("TEACH_SKILL_DIR") or Path(__file__).resolve().parents[3] / ".agents/skills/xunke-teach")
     names = ["SKILL.md", "references/teaching-patterns.md", "references/artifact-format.md"]
     files = {name: (root / name).read_text(encoding="utf-8") for name in names}
     match = re.search(r'version:\s*["\']?([\d.]+)', files["SKILL.md"])
@@ -35,7 +35,7 @@ def teaching_skill():
 
 ENVELOPE = (
     '输出单个JSON，禁止Markdown围栏，字段必须遵循本格式，不加额外字段。'
-    'schema_version="zhixue-teach.v1"；source_policy复制输入；status=draft或insufficient_evidence；'
+    'schema_version="xunke-teach.v1"；source_policy复制输入；status=draft或insufficient_evidence；'
     'context={space_id:null,course_id:null,scope_revision:null}；assumptions,warnings,questions都是字符串数组；'
     'sources只能从输入sources逐项原样复制实际引用项，不能改写证据ID或捏造来源。'
     'source_refs引用sources的source_ref。topic的sources与source_refs均为空。'

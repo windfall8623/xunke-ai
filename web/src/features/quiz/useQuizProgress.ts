@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { api } from '../../services/api'
 import { ApiError } from '../../services/http'
+import { courseKeys } from '../../services/courses'
 import type { Quiz } from '../../types/api'
 
 export function useQuizProgress(quizId: string) {
@@ -17,6 +18,9 @@ export function useQuizProgress(quizId: string) {
   const quizQuery = useQuery({
     queryKey: key,
     queryFn: ({ signal }) => api.quiz(quizId, signal),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     refetchInterval: (state) =>
       ['pending', 'queued', 'running', 'processing'].includes(state.state.data?.images_status || '')
@@ -72,6 +76,7 @@ export function useQuizProgress(quizId: string) {
       void client.invalidateQueries({ queryKey: [identity, 'history'] })
       void client.invalidateQueries({ queryKey: [identity, 'profile'] })
       void client.invalidateQueries({ queryKey: key })
+      void client.invalidateQueries({ queryKey: courseKeys.all(identity) })
     },
     onError: (cause) => {
       if (cause instanceof ApiError && cause.status === 409)
