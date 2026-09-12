@@ -1,9 +1,10 @@
 import { ArrowLeft, ArrowRight, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/AuthProvider'
 import { api } from '../services/api'
+import { ApiError } from '../services/http'
 import { ErrorNotice } from '../components/ui'
 import { Brand } from '../components/Brand'
 import type { AuthSession } from '../types/api'
@@ -15,6 +16,19 @@ export function LoginPage() {
   const [nickname, setNickname] = useState('')
   const [recovery, setRecovery] = useState('')
   const [migrationCode, setMigrationCode] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
+  const [emailCodeNotice, setEmailCodeNotice] = useState('')
+  const [emailCodeError, setEmailCodeError] = useState<unknown>(null)
+  const [sendingCode, setSendingCode] = useState(false)
+  const [cooldownUntil, setCooldownUntil] = useState(0)
+  const [clock, setClock] = useState(Date.now)
+  const accountInput = useRef<HTMLInputElement>(null)
+  // Editing the email or switching modes makes older send responses irrelevant.
+  const emailCodeGeneration = useRef(0)
+  const activeEmailRequest = useRef<number | null>(null)
+  // Keep only cooldown deadlines in memory; the server enforces sending limits.
+  const emailCooldowns = useRef(new Map<string, number>())
+  const verificationId = useId()
   const [receipt, setReceipt] = useState<AuthSession | null>(null)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState<unknown>(null)
@@ -26,6 +40,22 @@ export function LoginPage() {
   })
   const legacyLinkEnabled =
     capabilities.isSuccess && capabilities.data?.legacy_link_enabled === true
+  const emailRegistration = mode === 'register' || mode === 'bind'
+  const emailRegistrationEnabled =
+    capabilities.isSuccess && capabilities.data?.email_registration_enabled === true
+  const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - clock) / 1000))
+  const coolingDown = cooldownSeconds > 0
+  useEffect(() => {
+    if (!emailRegistration || !coolingDown) return
+    const timer = window.setInterval(() => setClock(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [emailRegistration, coolingDown])
+  useEffect(
+    () => () => {
+      emailCodeGeneration.current++
+    },
+    [],
+  )
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -35,19 +65,84 @@ export function LoginPage() {
     requestedPath && /^\/(?!\/)/.test(requestedPath) && !requestedPath.includes('\\')
       ? requestedPath
       : '/'
+  const resetEmailVerification = (nextAccount = account) => {
+    emailCodeGeneration.current++
+    activeEmailRequest.current = null
+    setVerificationCode('')
+    setEmailCodeNotice('')
+    setEmailCodeError(null)
+    setSendingCode(false)
+    setCooldownUntil(emailCooldowns.current.get(nextAccount.trim().toLowerCase()) || 0)
+    setClock(Date.now())
+  }
   const switchMode = (next: typeof mode) => {
+    if (pending) return
     setMode(next)
     setError(null)
     setNotice('')
     setPassword('')
     setRecovery('')
     setMigrationCode('')
+    resetEmailVerification()
+  }
+  async function sendEmailCode() {
+    if (
+      pending ||
+      !emailRegistration ||
+      !emailRegistrationEnabled ||
+      (mode === 'bind' && !legacyLinkEnabled) ||
+      activeEmailRequest.current !== null
+    )
+      return
+    if (!accountInput.current?.reportValidity()) return
+    const email = account.trim().toLowerCase()
+    if ((emailCooldowns.current.get(email) || 0) > Date.now()) return
+    const generation = ++emailCodeGeneration.current
+    activeEmailRequest.current = generation
+    const started = Date.now()
+    const retryAt = started + (capabilities.data?.email_code_cooldown_seconds ?? 60) * 1000
+    emailCooldowns.current.set(email, retryAt)
+    setCooldownUntil(retryAt)
+    setClock(started)
+    setSendingCode(true)
+    setVerificationCode('')
+    setEmailCodeNotice('')
+    setEmailCodeError(null)
+    setError(null)
+    try {
+      const result = await api.sendEmailCode({ email })
+      if (generation !== emailCodeGeneration.current) return
+      const received = Date.now()
+      const retryAt = received + result.retry_after_seconds * 1000
+      emailCooldowns.current.set(email, retryAt)
+      setCooldownUntil(retryAt)
+      setClock(received)
+      setEmailCodeNotice(`${result.message} 请在 ${result.expires_in_seconds} 秒内完成验证。`)
+    } catch (cause) {
+      if (generation !== emailCodeGeneration.current) return
+      setEmailCodeError(
+        cause instanceof ApiError && cause.code === 'TIMEOUT'
+          ? new Error('发送状态暂未确认，请先检查收件箱和垃圾邮件，稍后再试。')
+          : cause,
+      )
+    } finally {
+      if (activeEmailRequest.current === generation) activeEmailRequest.current = null
+      if (generation === emailCodeGeneration.current) setSendingCode(false)
+    }
   }
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (pending) return
+    if (pending || sendingCode) return
+    if (emailRegistration && !emailRegistrationEnabled) {
+      setError(new Error('邮箱注册暂未开放，已有账号仍可登录或使用恢复码找回密码。'))
+      return
+    }
     if (mode === 'bind' && !legacyLinkEnabled) {
       setError(new Error('旧账号关联当前未启用，请返回登录。'))
+      return
+    }
+    if (emailRegistration && !/^[0-9]{6}$/.test(verificationCode)) {
+      setError(new Error('请输入邮箱收到的 6 位数字验证码。'))
       return
     }
     setPending(true)
@@ -61,6 +156,7 @@ export function LoginPage() {
           new_password: password,
         })
         setMode('login')
+        resetEmailVerification()
         setPassword('')
         setRecovery('')
         setNotice(
@@ -74,13 +170,20 @@ export function LoginPage() {
             ? await api.login({ account: account.trim(), password })
             : mode === 'bind'
               ? await api.bindLegacy({
-                  account: account.trim(),
+                  account: account.trim().toLowerCase(),
                   password,
                   code: migrationCode.trim(),
+                  verification_code: verificationCode,
                 })
-              : await api.register({ account: account.trim(), password, nickname: nickname.trim() })
+              : await api.register({
+                  account: account.trim().toLowerCase(),
+                  password,
+                  nickname: nickname.trim(),
+                  verification_code: verificationCode,
+                })
         setPassword('')
         setMigrationCode('')
+        resetEmailVerification()
         if ((mode === 'register' || mode === 'bind') && result.recovery_code) setReceipt(result)
         else {
           await auth.acceptSession(result)
@@ -96,11 +199,11 @@ export function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-intro">
-        <Link to="/" className="brand" aria-label="知学 AI 首页">
+        <Link to="/" className="brand" aria-label="循课首页">
           <Brand />
         </Link>
         <div>
-          <span className="eyebrow">A LITTLE CURIOSITY, EVERY DAY</span>
+          <span className="eyebrow">每天一点好奇心，每一步有依据</span>
           <h2>
             所有进步，
             <br />
@@ -124,7 +227,7 @@ export function LoginPage() {
         </span>
       </div>
       <section className="auth-panel">
-        <Link to="/" className="brand auth-mobile-brand" aria-label="知学 AI 首页">
+        <Link to="/" className="brand auth-mobile-brand" aria-label="循课首页">
           <Brand />
         </Link>
         <Link to="/" className="back-link">
@@ -168,9 +271,9 @@ export function LoginPage() {
                 {mode === 'login'
                   ? '登录后，继续积累属于你的知识。'
                   : mode === 'register'
-                    ? '创建账号，保存每一次练习与进步。'
+                    ? '验证邮箱并创建账号，保存每一次练习与进步。'
                     : mode === 'bind'
-                      ? '用原微信账号的一次性迁移码设置网页账号与密码，保留已有学习记录和积分。'
+                      ? '用原账号的一次性迁移码和已验证邮箱设置网页账号，保留已有学习记录和积分。'
                       : '使用注册时保存的恢复码设置新密码。'}
               </p>
               {auth.status === 'expired' && (
@@ -184,18 +287,51 @@ export function LoginPage() {
                   {notice || locationNotice}
                 </div>
               )}
+              {emailRegistration && !emailRegistrationEnabled && (
+                <div className="notice warning auth-registration-status" role="status">
+                  {capabilities.isPending
+                    ? '正在确认邮箱注册是否开放…'
+                    : capabilities.isError
+                      ? '暂时无法确认邮箱注册状态。已有账号仍可登录或使用恢复码找回密码。'
+                      : '邮箱注册暂未开放。已有账号仍可登录或使用恢复码找回密码。'}
+                  {capabilities.isError && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={capabilities.isFetching}
+                      onClick={() => {
+                        void capabilities.refetch()
+                      }}
+                    >
+                      重新检查
+                    </button>
+                  )}
+                </div>
+              )}
               <form onSubmit={submit} className="stack-form">
                 <label>
-                  账号
+                  {emailRegistration ? '邮箱' : '账号或邮箱'}
                   <input
+                    ref={accountInput}
                     name="account"
-                    autoComplete="username"
+                    type={emailRegistration ? 'email' : 'text'}
+                    inputMode={emailRegistration ? 'email' : undefined}
+                    autoComplete={emailRegistration ? 'email' : 'username'}
+                    autoCapitalize="none"
+                    spellCheck={false}
                     value={account}
-                    onChange={(event) => setAccount(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setAccount(value)
+                      setError(null)
+                      setNotice('')
+                      resetEmailVerification(value)
+                    }}
+                    disabled={pending}
                     required
                     minLength={3}
-                    maxLength={64}
-                    placeholder="输入你的账号"
+                    maxLength={100}
+                    placeholder={emailRegistration ? 'name@example.com' : '输入原账号或邮箱'}
                   />
                 </label>
                 {mode === 'register' && (
@@ -205,6 +341,7 @@ export function LoginPage() {
                       autoComplete="nickname"
                       value={nickname}
                       onChange={(event) => setNickname(event.target.value)}
+                      disabled={pending}
                       required
                       maxLength={100}
                       placeholder="想让我们怎么称呼你"
@@ -218,6 +355,7 @@ export function LoginPage() {
                       autoComplete="off"
                       value={recovery}
                       onChange={(event) => setRecovery(event.target.value)}
+                      disabled={pending}
                       required
                       placeholder="输入保存的恢复码"
                     />
@@ -231,6 +369,7 @@ export function LoginPage() {
                       spellCheck={false}
                       value={migrationCode}
                       onChange={(event) => setMigrationCode(event.target.value)}
+                      disabled={pending}
                       required
                       minLength={16}
                       maxLength={128}
@@ -246,16 +385,77 @@ export function LoginPage() {
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
+                    disabled={pending}
                     required
                     minLength={mode === 'login' ? 1 : 10}
                     maxLength={128}
                     placeholder={mode === 'login' ? '输入密码' : '至少 10 个字符'}
                   />
                 </label>
+                {emailRegistration && (
+                  <div className="auth-email-verification">
+                    <label htmlFor={verificationId}>邮箱验证码</label>
+                    <div className="auth-email-code-row">
+                      <input
+                        id={verificationId}
+                        name="verification_code"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        minLength={6}
+                        maxLength={6}
+                        required
+                        spellCheck={false}
+                        value={verificationCode}
+                        onChange={(event) => {
+                          setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                          setError(null)
+                        }}
+                        disabled={pending || !emailRegistrationEnabled}
+                        placeholder="6 位数字"
+                        aria-describedby={`${verificationId}-help`}
+                      />
+                      <button
+                        type="button"
+                        className="button secondary"
+                        disabled={
+                          pending ||
+                          sendingCode ||
+                          coolingDown ||
+                          !emailRegistrationEnabled ||
+                          !account.trim() ||
+                          (mode === 'bind' && !legacyLinkEnabled)
+                        }
+                        onClick={() => {
+                          void sendEmailCode()
+                        }}
+                      >
+                        {sendingCode
+                          ? '正在发送…'
+                          : coolingDown
+                            ? `${cooldownSeconds} 秒后重发`
+                            : emailCodeNotice
+                              ? '重新发送'
+                              : '发送验证码'}
+                      </button>
+                    </div>
+                    <p id={`${verificationId}-help`} className="tiny muted">
+                      重发后请使用最新验证码，并在有效期内完成注册。
+                    </p>
+                    {emailCodeNotice && (
+                      <div className="notice success" role="status">
+                        {emailCodeNotice}
+                      </div>
+                    )}
+                    <ErrorNotice error={emailCodeError} />
+                  </div>
+                )}
                 {mode === 'login' && (
                   <button
                     type="button"
                     className="text-button align-right"
+                    disabled={pending}
                     onClick={() => switchMode('recover')}
                   >
                     忘记密码？
@@ -264,7 +464,12 @@ export function LoginPage() {
                 <button
                   type="submit"
                   className="button primary full-width"
-                  disabled={pending || (mode === 'bind' && !legacyLinkEnabled)}
+                  disabled={
+                    pending ||
+                    sendingCode ||
+                    (emailRegistration && !emailRegistrationEnabled) ||
+                    (mode === 'bind' && !legacyLinkEnabled)
+                  }
                 >
                   {pending
                     ? '正在处理…'
@@ -283,6 +488,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   className="text-button"
+                  disabled={pending}
                   onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
                 >
                   {mode === 'login' ? '立即注册' : '返回登录'}

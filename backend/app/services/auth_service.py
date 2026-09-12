@@ -10,8 +10,10 @@ from pymysql import IntegrityError
 
 from app.core.config import get_settings
 from app.core.db import execute, fetch_one, insert, transaction
-from app.core.errors import AppError, conflict
+from app.core.errors import AppError
 from app.core.values import digest, now
+from app.models.auth import normalize_email
+from app.services import email_verification
 
 _passwords = PasswordHasher()
 _dummy_hash = _passwords.hash("nonexistent-account-dummy-password")
@@ -83,28 +85,90 @@ async def issue_session(user_id, *, conn):
     return {"user": user, "csrf_token": csrf}, token
 
 
-async def register(body, *, existing_user=None, conn=None):
-    if conn is None:
-        async with transaction() as tx:
-            return await register(body, existing_user=existing_user, conn=tx)
-    encoded = await asyncio.to_thread(_passwords.hash, body.password)
-    recovery = secrets.token_urlsafe(32)
+async def _register_email_identity(body, *, link_code=None):
+    """Register and legacy bind share verification and a single commit boundary."""
+    email_verification.require_available()
     try:
-        user_id = existing_user or await insert(
-            "INSERT INTO users(openid,nickname) VALUES(NULL,%s)",
-            (body.nickname,),
-            conn=conn,
-        )
-        await execute(
-            "INSERT INTO auth_identities(user_id,provider,app_scope,subject,password_hash,recovery_hash) VALUES(%s,'password','web',%s,%s,%s)",
-            (user_id, body.account, encoded, digest(recovery)),
-            conn=conn,
-        )
-    except IntegrityError as exc:
-        raise conflict("account_unavailable", "账号不可用，请选择其他账号") from exc
-    result, token = await issue_session(user_id, conn=conn)
-    result["recovery_code"] = recovery
-    return result, token
+        email = normalize_email(body.account)
+    except ValueError:
+        raise email_verification.registration_unavailable() from None
+    verification_code = getattr(body, "verification_code", "")
+    if not isinstance(verification_code, str):
+        verification_code = ""
+    encoded = await asyncio.to_thread(_passwords.hash, body.password)
+    rejection = None
+    result = None
+    try:
+        async with transaction() as conn:
+            challenge, rejection = await email_verification.check_registration_code(
+                email, verification_code, conn=conn
+            )
+            if rejection is None:
+                existing_user = None
+                if link_code is not None:
+                    # Stable order: challenge -> link token -> owner -> identity.
+                    row = await fetch_one(
+                        "SELECT * FROM auth_link_codes WHERE code_hash=%s FOR UPDATE",
+                        (digest(link_code),),
+                        conn=conn,
+                    )
+                    if (
+                        not row
+                        or row["used_at"]
+                        or row["expires_at"] <= now()
+                        or row["app_scope"] != get_settings().wechat_app_id
+                    ):
+                        raise invalid_login()
+                    user = await fetch_one(
+                        "SELECT id FROM users WHERE id=%s FOR UPDATE",
+                        (row["user_id"],),
+                        conn=conn,
+                    )
+                    if not user or row["expires_at"] <= now():
+                        raise invalid_login()
+                    exists = await fetch_one(
+                        "SELECT identity_id FROM auth_identities "
+                        "WHERE user_id=%s AND provider='password' FOR UPDATE",
+                        (row["user_id"],),
+                        conn=conn,
+                    )
+                    if exists:
+                        raise email_verification.registration_unavailable()
+                    existing_user = row["user_id"]
+                recovery = secrets.token_urlsafe(32)
+                user_id = existing_user or await insert(
+                    "INSERT INTO users(openid,nickname) VALUES(NULL,%s)",
+                    (body.nickname,),
+                    conn=conn,
+                )
+                await execute(
+                    "INSERT INTO auth_identities"
+                    "(user_id,provider,app_scope,subject,password_hash,recovery_hash,email_verified_at) "
+                    "VALUES(%s,'password','web',%s,%s,%s,%s)",
+                    (user_id, email, encoded, digest(recovery), now()),
+                    conn=conn,
+                )
+                session, token = await issue_session(user_id, conn=conn)
+                session["recovery_code"] = recovery
+                await email_verification.consume_registration_code(challenge, conn=conn)
+                if link_code is not None:
+                    await execute(
+                        "UPDATE auth_link_codes SET used_at=%s WHERE code_hash=%s",
+                        (now(), digest(link_code)),
+                        conn=conn,
+                    )
+                result = session, token
+    except IntegrityError:
+        # The context has rolled back any new user/session and challenge consume.
+        raise email_verification.registration_unavailable() from None
+    # A wrong-code update must commit before a public error is raised.
+    if rejection is not None:
+        raise rejection
+    return result
+
+
+async def register(body):
+    return await _register_email_identity(body)
 
 
 async def login(body):
@@ -198,39 +262,4 @@ async def link_code(user_id):
 async def bind(body):
     if not get_settings().legacy_link_enabled:
         raise AppError(404, "feature_disabled", "未启用旧账号关联")
-    async with transaction() as conn:
-        row = await fetch_one(
-            "SELECT * FROM auth_link_codes WHERE code_hash=%s FOR UPDATE",
-            (digest(body.code),),
-            conn=conn,
-        )
-        if (
-            not row
-            or row["used_at"]
-            or row["expires_at"] <= now()
-            or row["app_scope"] != get_settings().wechat_app_id
-        ):
-            raise invalid_login()
-        # A user can hold several valid link codes. Lock their shared owner
-        # before the first consistent identity read, not only the redeemed code.
-        user = await fetch_one(
-            "SELECT id FROM users WHERE id=%s FOR UPDATE",
-            (row["user_id"],),
-            conn=conn,
-        )
-        if not user or row["expires_at"] <= now():
-            raise invalid_login()
-        exists = await fetch_one(
-            "SELECT identity_id FROM auth_identities WHERE user_id=%s AND provider='password'",
-            (row["user_id"],),
-            conn=conn,
-        )
-        if exists:
-            raise conflict("identity_already_bound", "此账号已有关联的网页身份")
-        result = await register(body, existing_user=row["user_id"], conn=conn)
-        await execute(
-            "UPDATE auth_link_codes SET used_at=UTC_TIMESTAMP(6) WHERE code_hash=%s",
-            (digest(body.code),),
-            conn=conn,
-        )
-        return result
+    return await _register_email_identity(body, link_code=body.code)

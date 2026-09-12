@@ -1,4 +1,4 @@
-"""知学 AI - 后端配置"""
+"""循课 - 后端配置"""
 
 from functools import lru_cache
 from typing import Literal
@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     session_days: int = Field(default=7, ge=1, le=30)
     auth_rate_limit: int = 20
     legacy_link_enabled: bool = False
+    email_registration_enabled: bool = True
+    email_code_secret: str = Field(default="", repr=False)
+    smtp_host: str = ""
+    smtp_port: int = Field(default=465, ge=1, le=65535)
+    smtp_security: str = "ssl"
+    smtp_username: str = ""
+    smtp_password: str = Field(default="", repr=False)
+    smtp_from_email: str = ""
+    smtp_from_name: str = "循课"
+    smtp_timeout_seconds: float = Field(default=10, gt=0, allow_inf_nan=False)
+    email_send_cooldown_seconds: int = Field(default=60, ge=60)
+    email_send_max_per_email_per_day: int = Field(default=5, ge=1)
+    email_send_max_per_ip_per_hour: int = Field(default=10, ge=1)
+    email_send_daily_limit: int = Field(default=100, ge=1)
     quiz_min_questions: int = 3
     quiz_max_questions: int = 10
     practice_enabled: bool = False
@@ -83,7 +97,7 @@ class Settings(BaseSettings):
 
     @property
     def session_cookie_name(self) -> str:
-        return "__Host-zhixue_session" if self.cookie_secure else "zhixue_session"
+        return "__Host-xunke_session" if self.cookie_secure else "xunke_session"
 
     @model_validator(mode="after")
     def secure_deployment(self):

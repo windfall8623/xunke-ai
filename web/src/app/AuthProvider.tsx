@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../services/api'
 import { ApiError, setCsrfToken } from '../services/http'
 import { clearQaSubmissions } from '../services/qaDrafts'
+import { clearCourseDrafts } from '../services/courseDrafts'
 import type { AuthSession, User } from '../types/api'
 
 type AuthState = 'initializing' | 'authenticated' | 'guest' | 'expired'
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (currentGeneration !== generation.current) return
       clearQaSubmissions(session.user.id)
+      clearCourseDrafts(session.user.id)
       identity.current = session.user.id
       setCsrfToken(session.csrf_token)
       setUser(session.user)
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (next: AuthState) => {
       generation.current++
       clearQaSubmissions()
+      clearCourseDrafts()
       identity.current = null
       setCsrfToken(null)
       setUser(null)

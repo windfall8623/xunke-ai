@@ -7,6 +7,8 @@ from app.core.errors import AppError
 from app.models.auth import (
     AuthCapabilitiesView,
     BindBody,
+    EmailCodeBody,
+    EmailCodeView,
     LoginBody,
     PasswordBody,
     RecoverBody,
@@ -15,6 +17,7 @@ from app.models.auth import (
 )
 from app.models.common import ApiResponse
 from app.services import auth_service as service
+from app.services import email_verification
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -42,9 +45,25 @@ async def preflight(request, scope, account):
 @router.get("/capabilities", response_model=ApiResponse[AuthCapabilitiesView])
 async def capabilities(response: Response):
     response.headers["Cache-Control"] = "no-store"
+    settings = get_settings()
     return ApiResponse.success(
-        AuthCapabilitiesView(legacy_link_enabled=get_settings().legacy_link_enabled)
+        AuthCapabilitiesView(
+            legacy_link_enabled=settings.legacy_link_enabled,
+            email_registration_enabled=email_verification.is_available(settings),
+            email_verification_required=True,
+            email_code_cooldown_seconds=settings.email_send_cooldown_seconds,
+        )
     )
+
+
+@router.post("/email-code", response_model=ApiResponse[EmailCodeView])
+async def email_code(body: EmailCodeBody, request: Request, response: Response):
+    verify_origin(request)
+    response.headers["Cache-Control"] = "no-store"
+    result = await email_verification.send_code(
+        body.email, request.client.host if request.client else "unknown"
+    )
+    return ApiResponse.success(result)
 
 
 @router.post("/register", status_code=201, response_model=ApiResponse[SessionView])
