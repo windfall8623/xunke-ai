@@ -58,3 +58,34 @@ export function newlySavedCheck(
   return latest && !beforeIds.has(latest.attempt_id) &&
     checkAnswerKey(latest.answer) === checkAnswerKey(body.answer) ? latest : undefined
 }
+
+/** B02：自检"先回忆再对照"的一轮作答状态。 */
+export type RecallRound = {
+  intentId: string
+  baselineAttemptId: string | null
+  baselineSeen: boolean
+  savedAttemptId: string | null
+  revealed: boolean
+}
+
+/**
+ * 本轮是否已保存：显式保存成功，或基线冻结后出现了不属于基线的新记录
+ * （含恢复路径读回的回执）。基线在首次点击保存时冻结。
+ */
+export function selfCheckRoundState(
+  round: RecallRound,
+  attempt?: { attempt_id: string; answer: unknown } | null,
+  draftAnswer?: unknown,
+): { roundSaved: boolean; savedAttemptId: string | null; canReveal: boolean; draftDiffers: boolean } {
+  const roundSaved =
+    round.savedAttemptId !== null ||
+    (!!attempt &&
+      round.baselineSeen &&
+      attempt.attempt_id !== round.baselineAttemptId)
+  const savedAttemptId = round.savedAttemptId ?? (roundSaved ? attempt?.attempt_id ?? null : null)
+  const canReveal =
+    roundSaved && savedAttemptId !== null && savedAttemptId !== round.baselineAttemptId
+  const draftDiffers = roundSaved && !!attempt &&
+    JSON.stringify(draftAnswer ?? null) !== JSON.stringify(attempt.answer ?? null)
+  return { roundSaved, savedAttemptId, canReveal, draftDiffers }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Dialog } from '../../components/Dialog'
+import { CourseCorrectionNotice } from './CourseCorrectionNotice'
 import {
-  correctionEffectLabel,
   createCourseCorrection,
   createCourseFeedback,
   listCourseFeedback,
@@ -132,7 +132,7 @@ export function CourseFeedbackDialog({
               </p>
             ))}
           </div>
-          <p className="course-feedback-effect">{correctionEffectLabel(existing)}</p>
+          <CourseCorrectionNotice view={existing} />
           {existing.status !== 'rejected' && (
             <form
               onSubmit={(event) => {

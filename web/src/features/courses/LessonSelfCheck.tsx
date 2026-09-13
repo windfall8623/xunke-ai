@@ -12,7 +12,7 @@ import type {
   LessonCheck,
 } from '../../types/course'
 import type { LessonTutorController } from './useLessonTutor'
-import { checkAnswerKey, feedbackForAttempt, teachingFeedbackState, type CourseOperationState } from './courseActionState'
+import { feedbackForAttempt, selfCheckRoundState, teachingFeedbackState, type CourseOperationState, type RecallRound } from './courseActionState'
 import { CourseFeedbackDialog, type CourseFeedbackEntry } from './CourseFeedbackDialog'
 import { SelfCheckHistory } from './SelfCheckHistory'
 import { CourseOperationNotice } from './CourseOperationNotice'
@@ -184,23 +184,17 @@ function SelfCheckItem({
   const [answer, setAnswer] = useState<CourseSelfCheckCreate['answer']>(
     multiple ? [] : '',
   )
-  const [round, setRound] = useState(() => ({
+  const [round, setRound] = useState<RecallRound>(() => ({
     intentId: crypto.randomUUID(),
-    baselineAttemptId: null as string | null,
+    baselineAttemptId: null,
     baselineSeen: false,
-    savedAttemptId: null as string | null,
+    savedAttemptId: null,
     revealed: false,
   }))
   const [feedbackRevealed, setFeedbackRevealed] = useState(false)
-  // 基线在「本轮第一次点击保存」时冻结：之后出现的任何记录（含恢复路径
-  // 读回的回执）都属于本轮；再次保存前的旧回答不预填、不阻断新轮。
-  const roundSaved =
-    round.baselineSeen &&
-    (round.savedAttemptId !== null ||
-      (!!attempt && attempt.attempt_id !== round.baselineAttemptId))
-  const savedAttemptId = round.savedAttemptId ?? (roundSaved ? attempt?.attempt_id ?? null : null)
-  const canReveal = roundSaved && savedAttemptId !== null && savedAttemptId !== round.baselineAttemptId
-  const draftDiffers = roundSaved && !!attempt && checkAnswerKey(answer) !== checkAnswerKey(attempt.answer)
+  const { roundSaved, canReveal, draftDiffers } = selfCheckRoundState(
+    round, attempt, answer,
+  )
   const feedbackState = teachingFeedbackState(feedback)
   const hasOperationNotice = ['submitting', 'unconfirmed', 'failed'].includes(operationState.kind)
   const describedBy = `${fieldId}-saved${hasOperationNotice ? ` ${fieldId}-operation` : ''}`

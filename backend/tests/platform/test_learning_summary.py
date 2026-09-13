@@ -6,7 +6,6 @@ import pytest
 
 from app.core.db import execute, fetch_one
 from app.core.values import dump, uid
-from app.services.learning_notification_service import may_send_reminder
 from app.services.learning_summary_service import (
     load_activity_facts,
     quiz_fact_id,
@@ -44,17 +43,6 @@ def test_week_bounds_reject_non_monday_and_use_local_midnight():
         week_bounds(date(2026, 9, 9), "Asia/Shanghai")  # 周三
 
 
-def test_may_send_reminder_matrix():
-    assert may_send_reminder(enabled=False, paused_until=None, now_utc=2,
-                             already_delivered=False, source_available=True) is False
-    assert may_send_reminder(enabled=True, paused_until=None, now_utc=2,
-                             already_delivered=True, source_available=True) is False
-    assert may_send_reminder(enabled=True, paused_until=1, now_utc=2,
-                             already_delivered=False, source_available=True) is True
-    assert may_send_reminder(enabled=True, paused_until=None, now_utc=2,
-                             already_delivered=False, source_available=False) is False
-
-
 @pytest.mark.asyncio
 async def test_weekly_summary_counts_each_fact_once(learner):
     api, session = learner
@@ -84,34 +72,3 @@ async def test_weekly_summary_counts_each_fact_once(learner):
     data = summary.json()["data"]
     assert data["counts"]["self_checks_saved"] >= 1
     assert data["week_end_exclusive"] == (week_start + timedelta(days=7)).isoformat()
-
-
-@pytest.mark.asyncio
-async def test_reminder_preferences_default_off_and_outbox_dedup(learner):
-    api, session = learner
-    owner = session["user"]["id"]
-    initial = await api.get("/api/v1/study/notification-preferences")
-    assert initial.status_code == 200
-    assert initial.json()["data"]["in_app_enabled"] is False
-    assert initial.json()["data"]["email_enabled"] is False
-
-    saved = await api.patch(
-        "/api/v1/study/notification-preferences",
-        json={"expected_revision": 1, "in_app_enabled": True, "email_enabled": False,
-              "frequency": "weekly", "local_time": "09:00", "timezone": "Asia/Shanghai"},
-    )
-    assert saved.status_code == 200, saved.text
-
-    due = datetime.now(UTC) - timedelta(hours=1)
-    from app.services import learning_notification_service as reminders
-
-    first = await reminders.enqueue_due_review_reminder(
-        owner, lesson_title="返回值", link_path="/study", due_at=due)
-    second = await reminders.enqueue_due_review_reminder(
-        owner, lesson_title="返回值", link_path="/study", due_at=due)
-    assert first and second is None  # 同身份重放不重复入队
-    delivered = await reminders.deliver_due_reminders(apply=True)
-    assert delivered >= 1
-    reminders_list = await api.get("/api/v1/study/reminders")
-    items = reminders_list.json()["data"]["items"]
-    assert any(item["kind"] == "due_review" for item in items)

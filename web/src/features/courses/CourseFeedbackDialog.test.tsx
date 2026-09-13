@@ -49,7 +49,7 @@ describe('CourseFeedbackDialog', () => {
     await waitFor(() => expect(createFeedback).toHaveBeenCalled())
     expect(createFeedback.mock.calls[0][1]).toMatchObject({ issue_kind: 'content_error', comment: '这段与资料矛盾。' })
     expect(await screen.findByText('已记录，待处理')).toBeVisible()
-    expect(screen.getByText(/尚无已确认纠正/)).toBeVisible()
+    expect(screen.getAllByText(/尚无已确认纠正/).length).toBeGreaterThan(0)
   })
 
   it('shows reviewer confirmations separately from provisional notes', async () => {

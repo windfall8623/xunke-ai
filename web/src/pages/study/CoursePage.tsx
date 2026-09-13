@@ -9,6 +9,7 @@ import { EvidenceNoticeBar } from '../../features/courses/EvidenceNoticeBar'
 import { CourseAgentProgress } from '../../features/courses/CourseAgentProgress'
 import { CourseAssessmentPanel } from '../../features/courses/CourseAssessmentPanel'
 import { CourseRevisionDialog } from '../../features/courses/CourseRevisionDialog'
+import { CourseVersionHistory } from '../../features/courses/CourseVersionHistory'
 import { CourseExportActions } from '../../features/courses/CourseExportActions'
 import { CourseLesson } from '../../features/courses/CourseLesson'
 import { CourseOutline } from '../../features/courses/CourseOutline'
@@ -74,6 +75,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
 
   const [sourceHidden, setSourceHidden] = useState(false)
   const [revisionOpen, setRevisionOpen] = useState(false)
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
   const courseQuery = useQuery({
     queryKey: courseKeys.course(identity, courseId),
     queryFn: ({ signal }) => coursesApi.course(courseId, signal),
@@ -590,7 +592,17 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
             修订这一课
           </button>
           <CourseExportActions courseId={courseId} />
+          <button type="button" className="button secondary" onClick={() => setVersionHistoryOpen(true)}>
+            版本历史
+          </button>
         </div>
+      )}
+      {versionHistoryOpen && lessonId && (
+        <CourseVersionHistory
+          courseId={courseId}
+          lessonId={lessonId}
+          onClose={() => setVersionHistoryOpen(false)}
+        />
       )}
       {revisionOpen && lessonId && (
         <CourseRevisionDialog
