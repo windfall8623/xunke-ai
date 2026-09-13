@@ -357,7 +357,9 @@ async def _stream(
             except AuthenticationError:
                 return
             except AppError as exc:
-                if exc.status == 403 and exc.code in SOURCE_REVOKED_REASONS:
+                # 课程/问答读路径把资料撤销报告为 404+source_revoked，
+                # 授权类撤销也可能是 403；两者都要发控制帧，客户端才能隐藏内容。
+                if exc.status in (403, 404) and exc.code in SOURCE_REVOKED_REASONS:
                     yield _sse(
                         _source_revoked_frame(task_id, "source_revoked"),
                         event="source_revoked",

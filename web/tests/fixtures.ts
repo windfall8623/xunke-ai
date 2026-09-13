@@ -173,6 +173,10 @@ export async function installTestApi(
       if (path === '/courses/course-1') return respond(course)
       if (path === '/courses/course-1/progress') return respond(courseProgressFixture)
       if (path === '/courses/course-1/reviews') return respond([])
+      // 结业面板读取失败会被判为课程不可访问并隐藏全部课时内容。
+      if (path === '/courses/course-1/outcomes')
+        return respond({ course_id: 'course-1', criteria_revision: 1, criteria: [] })
+      if (path === '/courses/course-1/assessments') return respond([])
       if (path === '/courses/course-1/lessons/lesson-1') return respond(state.courseLesson)
       if (path === '/courses/course-1/lessons/lesson-1/progress') {
         state.courseLesson = { ...state.courseLesson, revision: state.courseLesson.revision + 1,

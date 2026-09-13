@@ -223,8 +223,13 @@ async def reset_password_with_email_code(body):
     """Recovery-code-free reset: an email code proves ownership of the account.
 
     旧恢复码保持有效：它与密码是相互独立的凭证，邮箱重置不改变其价值。
+    check_code 返回 rejection 而不抛出，是为了让失败计数随本事务提交；
+    与注册流程一致：正常分支收在 rejection is None 内，提交后再对外抛出，
+    错误试错才能累计到尝试上限。
     """
     encoded = await asyncio.to_thread(_passwords.hash, body.new_password)
+    rejection = None
+    result = None
     async with transaction() as conn:
         challenge, rejection = await email_verification.check_code(
             body.account,
@@ -232,30 +237,31 @@ async def reset_password_with_email_code(body):
             purpose=email_verification.PURPOSE_RESET,
             conn=conn,
         )
-        if rejection is not None:
-            raise rejection
-        identity = await fetch_one(
-            "SELECT * FROM auth_identities WHERE provider='password' AND app_scope='web' AND subject=%s FOR UPDATE",
-            (body.account,),
-            conn=conn,
-        )
-        if not identity or not identity["email_verified_at"]:
-            raise invalid_login()
-        await execute(
-            "UPDATE auth_identities SET password_hash=%s WHERE identity_id=%s",
-            (encoded, identity["identity_id"]),
-            conn=conn,
-        )
-        await execute(
-            "UPDATE auth_sessions SET revoked_at=UTC_TIMESTAMP(6) WHERE user_id=%s AND revoked_at IS NULL",
-            (identity["user_id"],),
-            conn=conn,
-        )
-        session, token = await issue_session(identity["user_id"], conn=conn)
-        await email_verification.consume_code(
-            challenge, purpose=email_verification.PURPOSE_RESET, conn=conn
-        )
-    return session, token
+        if rejection is None:
+            identity = await fetch_one(
+                "SELECT * FROM auth_identities WHERE provider='password' AND app_scope='web' AND subject=%s FOR UPDATE",
+                (body.account,),
+                conn=conn,
+            )
+            if not identity or not identity["email_verified_at"]:
+                raise invalid_login()
+            await execute(
+                "UPDATE auth_identities SET password_hash=%s WHERE identity_id=%s",
+                (encoded, identity["identity_id"]),
+                conn=conn,
+            )
+            await execute(
+                "UPDATE auth_sessions SET revoked_at=UTC_TIMESTAMP(6) WHERE user_id=%s AND revoked_at IS NULL",
+                (identity["user_id"],),
+                conn=conn,
+            )
+            result = await issue_session(identity["user_id"], conn=conn)
+            await email_verification.consume_code(
+                challenge, purpose=email_verification.PURPOSE_RESET, conn=conn
+            )
+    if rejection is not None:
+        raise rejection
+    return result
 
 
 async def change_password(user_id, body):
