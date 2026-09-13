@@ -630,6 +630,13 @@ async def run_maintenance(*, apply=False, operator=None, owner_id=None):
         _count(report, "teaching_candidates_expired", await purge_expired_quality_candidates(
             owner_id=owner_id, dry_run=not apply,
         ))
+        if apply and owner_id is None:
+            from app.services import learning_notification_service as reminders
+
+            _count(report, "learning_weekly_digests_scheduled",
+                   await reminders.enqueue_weekly_digests(apply=True))
+            _count(report, "learning_reminders_delivered",
+                   await reminders.deliver_due_reminders(apply=True))
         await _tombstones(store, report, operator, owner_id)
         if apply:
             await _drain(store, report, owner_id=owner_id)

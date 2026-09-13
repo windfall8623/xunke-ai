@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from app.api.v1.routes import (
     auth,
     course_assessments,
+    course_exports,
+    course_feedback,
     course_reviews,
     course_tutor,
     courses,
@@ -96,6 +98,8 @@ app.include_router(course_reviews.router, prefix="/api/v1")
 app.include_router(course_assessments.router, prefix="/api/v1")
 app.include_router(course_tutor.router, prefix="/api/v1")
 app.include_router(courses.router, prefix="/api/v1")
+app.include_router(course_feedback.router, prefix="/api/v1")
+app.include_router(course_exports.router, prefix="/api/v1")
 app.include_router(practice.router, prefix="/api/v1")
 app.include_router(practice_grading.router, prefix="/api/v1")
 app.include_router(practice_views.router, prefix="/api/v1")

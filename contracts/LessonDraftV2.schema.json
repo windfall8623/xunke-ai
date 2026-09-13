@@ -1,5 +1,57 @@
 {
   "$defs": {
+    "ComparisonVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "title": "Columns",
+          "type": "array"
+        },
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "comparison",
+          "title": "Kind",
+          "type": "string"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Rows",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "columns",
+        "rows",
+        "fallback_text"
+      ],
+      "title": "ComparisonVisual",
+      "type": "object"
+    },
     "CriterionAlignment": {
       "additionalProperties": false,
       "properties": {
@@ -50,6 +102,45 @@
       "title": "CriterionAlignment",
       "type": "object"
     },
+    "FlowVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "flow",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/VisualStep"
+          },
+          "maxItems": 8,
+          "minItems": 2,
+          "title": "Steps",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "steps",
+        "fallback_text"
+      ],
+      "title": "FlowVisual",
+      "type": "object"
+    },
     "LessonBlockV2": {
       "additionalProperties": false,
       "properties": {
@@ -97,6 +188,36 @@
           ],
           "title": "Type",
           "type": "string"
+        },
+        "visual": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "comparison": "#/$defs/ComparisonVisual",
+                  "flow": "#/$defs/FlowVisual",
+                  "steps": "#/$defs/StepsVisual"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/FlowVisual"
+                },
+                {
+                  "$ref": "#/$defs/ComparisonVisual"
+                },
+                {
+                  "$ref": "#/$defs/StepsVisual"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visual"
         }
       },
       "required": [
@@ -246,6 +367,45 @@
       "title": "LessonPayloadV2",
       "type": "object"
     },
+    "StepsVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/VisualStep"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "steps",
+        "fallback_text"
+      ],
+      "title": "StepsVisual",
+      "type": "object"
+    },
     "TeachContext": {
       "additionalProperties": false,
       "properties": {
@@ -353,6 +513,28 @@
         "title"
       ],
       "title": "TeachSource",
+      "type": "object"
+    },
+    "VisualStep": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "maxLength": 400,
+          "title": "Detail",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "VisualStep",
       "type": "object"
     }
   },

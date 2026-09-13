@@ -111,9 +111,17 @@ async def generate_lesson(actor, course_id, lesson_id, body, key):
         spec.teaching_mode, body.request_quality_review,
         schema_version=load(course["outline_json"], {}).get("schema_version"),
     )
+    if body.revision_id:
+        from app.core.config import get_settings as _gs
+        from app.services import course_revision_service
+
+        if not _gs().enable_course_revisions:
+            raise AppError(409, "course_revisions_disabled", "课程修订功能未开启")
+        await course_revision_service.ensure_generating(owner, course_id, body.revision_id, lesson_id)
     request = dict(course_id=course_id, lesson_id=lesson_id, expected_course_revision=body.expected_course_revision,
                    scope_fingerprint=scope.fingerprint, pipeline_id=get_settings().rag_pipeline_id,
                    criteria_revision=course.get("criteria_revision", 1),
+                   revision_id=body.revision_id,
                    plan_hash=draft_hash(await course_read.load_course_plan(course)), **frozen)
     try:
         async with transaction() as conn:
@@ -125,7 +133,10 @@ async def generate_lesson(actor, course_id, lesson_id, body, key):
             if lesson["generation_task_id"] == job["task_id"]:
                 return await course_read.task_view(owner, job["task_id"], course_id, lesson_id, conn=conn)
             last = await course_read.task_view(owner, lesson["generation_task_id"], course_id, lesson_id, conn=conn)
-            if last and (lesson["status"] == "ready" or last["status"] in {"pending", "running"}):
+            if body.revision_id:
+                if last and last["status"] in {"pending", "running"}:
+                    raise _ReuseTask(last["task_id"])
+            elif last and (lesson["status"] == "ready" or last["status"] in {"pending", "running"}):
                 raise _ReuseTask(last["task_id"])
             if course["revision"] != body.expected_course_revision:
                 raise conflict()
@@ -135,11 +146,19 @@ async def generate_lesson(actor, course_id, lesson_id, body, key):
                 raise conflict("course_not_ready", "请等待课程纲要生成完成")
             if lesson["status"] == "material_gap":
                 raise conflict("course_material_gap", "本课缺少资料，请补充资料后重新创建课程")
-            await execute(
-                "UPDATE learning_course_lessons SET generation_task_id=%s,active_task_id=%s,status='generating',"
-                "revision=revision+1,updated_at=%s WHERE lesson_id=%s AND owner_id=%s",
-                (job["task_id"], job["task_id"], now(), lesson_id, owner), conn=conn,
-            )
+            if body.revision_id:
+                # 修订候选：旧正文保持 ready 可读，仅挂任务身份。
+                await execute(
+                    "UPDATE learning_course_lessons SET generation_task_id=%s,active_task_id=%s,"
+                    "revision=revision+1,updated_at=%s WHERE lesson_id=%s AND owner_id=%s",
+                    (job["task_id"], job["task_id"], now(), lesson_id, owner), conn=conn,
+                )
+            else:
+                await execute(
+                    "UPDATE learning_course_lessons SET generation_task_id=%s,active_task_id=%s,status='generating',"
+                    "revision=revision+1,updated_at=%s WHERE lesson_id=%s AND owner_id=%s",
+                    (job["task_id"], job["task_id"], now(), lesson_id, owner), conn=conn,
+                )
             await execute("UPDATE learning_courses SET updated_at=%s WHERE course_id=%s AND owner_id=%s",
                           (now(), course_id, owner), conn=conn)
     except _ReuseTask as reuse:
@@ -208,6 +227,7 @@ async def cancel_task(owner, task_id):
 
 async def purge_document(owner, doc_id):
     from app.services.course_assessment_service import purge_course_assessments
+    from app.services.course_feedback_service import purge_course_feedback
     from app.services.course_review_service import purge_course_reviews
     from app.services.course_tutor_service import purge_course_tutor
     from app.services.teaching_quality_service import purge_quality_content
@@ -231,3 +251,4 @@ async def purge_document(owner, doc_id):
             await purge_course_reviews(conn, owner, row["course_id"])
             await purge_quality_content(owner, row["course_id"], conn=conn)
             await purge_course_assessments(conn, owner, row["course_id"])
+            await purge_course_feedback(conn, owner, row["course_id"])

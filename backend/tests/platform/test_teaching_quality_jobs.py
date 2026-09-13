@@ -192,7 +192,9 @@ async def test_guided_repair_streams_before_publication_and_rechecks_its_new_has
         if runner.execution_errors:
             raise runner.execution_errors[0]
         assert run["status"] == "published" and lesson["content_version"] == 1
-        assert load(lesson["content_json"])["payload"]["blocks"][1] == revised["payload"]["blocks"][1]
+        stored_block = load(lesson["content_json"])["payload"]["blocks"][1]
+        # B04 后块可带 visual 可选增强：None 视为未设置，不参与内容等价比较。
+        assert {k: v for k, v in stored_block.items() if v is not None} == revised["payload"]["blocks"][1]
         assert head == {"status": "finalized", "generation_revision": 2}
         assert task.json()["data"]["quality_summary"]["status"] == "reviewed"
     else:

@@ -7,6 +7,8 @@ import { Dialog } from '../../components/Dialog'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { StudyScopePicker } from '../../features/study/StudyScopePicker'
 import { StudyActivitySummary } from '../../features/study/StudyActivitySummary'
+import { LearningHabitCard } from '../../features/study/LearningHabitCard'
+import { WeeklySummaryCard } from '../../features/study/WeeklySummaryCard'
 import { CourseListSection } from '../../features/courses/CourseListSection'
 import { CourseTodayCard } from '../../features/courses/CourseTodayCard'
 import { StudyNavigation } from './ReviewPage'
@@ -56,6 +58,8 @@ function StudyHome({ identity }: { identity: string | number }) {
       <CourseTodayCard />
       <CourseListSection showCreate={false} />
       <StudyActivitySummary />
+      <LearningHabitCard />
+      <WeeklySummaryCard />
       <div className="section-line">
         <h2>学习空间</h2>
         <button className="button secondary" onClick={() => setCreating(true)}>

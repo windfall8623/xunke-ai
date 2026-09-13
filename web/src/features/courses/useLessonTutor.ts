@@ -371,12 +371,15 @@ export function useLessonTutor(lesson: CourseLessonView, onUnavailable: () => vo
       }
     }, (saved) => confirmCheckReceipt(intent, saved))
   }
-  async function save(checkRef: string, answer: CourseSelfCheckCreate['answer']) {
+  async function save(checkRef: string, answer: CourseSelfCheckCreate['answer'], intentId?: string) {
     if (operation.pending !== null || checkIntent.current || tutorIntent.current ||
       checksQuery.isPending || checksQuery.error || inaccessible) return
     const body: CourseSelfCheckCreate = { expected_content_version: version, check_ref: checkRef,
       answer: Array.isArray(answer) ? [...answer].sort() : answer.trim() }
-    const intent = { body, semantic: JSON.stringify(body), beforeIds: new Set(attempts.map((item) => item.attempt_id)) }
+    // B02：intentId 标识本轮作答。同一轮的网络重试复用同一幂等键；
+    // 「再想一次」开启新轮，相同内容也会作为新的 attempt 保存。
+    const semantic = JSON.stringify(intentId ? { ...body, intent_id: intentId } : body)
+    const intent = { body, semantic, beforeIds: new Set(attempts.map((item) => item.attempt_id)) }
     checkIntent.current = intent
     return submitCheckIntent(intent)
   }

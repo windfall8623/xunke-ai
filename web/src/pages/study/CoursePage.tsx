@@ -8,6 +8,8 @@ import { CourseEvidenceDrawer } from '../../features/courses/CourseEvidenceDrawe
 import { EvidenceNoticeBar } from '../../features/courses/EvidenceNoticeBar'
 import { CourseAgentProgress } from '../../features/courses/CourseAgentProgress'
 import { CourseAssessmentPanel } from '../../features/courses/CourseAssessmentPanel'
+import { CourseRevisionDialog } from '../../features/courses/CourseRevisionDialog'
+import { CourseExportActions } from '../../features/courses/CourseExportActions'
 import { CourseLesson } from '../../features/courses/CourseLesson'
 import { CourseOutline } from '../../features/courses/CourseOutline'
 import { CourseProgress } from '../../features/courses/CourseProgress'
@@ -71,6 +73,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   }, [outlineCollapsed])
 
   const [sourceHidden, setSourceHidden] = useState(false)
+  const [revisionOpen, setRevisionOpen] = useState(false)
   const courseQuery = useQuery({
     queryKey: courseKeys.course(identity, courseId),
     queryFn: ({ signal }) => coursesApi.course(courseId, signal),
@@ -571,6 +574,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
           />
         ) : progressQuery.data ? (
           <CourseProgress
+            courseId={courseId}
             progress={progressQuery.data}
             lessons={lessons}
             reviews={reviewsQuery.error ? [] : reviewsQuery.data || []}
@@ -580,6 +584,28 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         ) : (
           <Loading>正在读取学习进度…</Loading>
         ))}
+      {!!lessonId && lessonQuery.data?.status === 'ready' && (
+        <div className="button-row course-revision-entry">
+          <button type="button" className="button secondary" onClick={() => setRevisionOpen(true)}>
+            修订这一课
+          </button>
+          <CourseExportActions courseId={courseId} />
+        </div>
+      )}
+      {revisionOpen && lessonId && (
+        <CourseRevisionDialog
+          courseId={courseId}
+          lessons={lessons}
+          candidates={lessons.filter((lesson) => lesson.status === 'ready')}
+          courseRevision={course.revision}
+          criteriaRevision={course.criteria_revision}
+          onApplied={() => {
+            setRevisionOpen(false)
+            invalidate(lessonId)
+          }}
+          onClose={() => setRevisionOpen(false)}
+        />
+      )}
       {!!lessons.length && ['ready', 'partial'].includes(course.status) && (
         <CourseAssessmentPanel
           course={course}

@@ -1448,3 +1448,232 @@
   .course-page { scroll-behavior: auto; }
   .course-block-help { transition: none; }
 }
+
+/* B03 就地反馈与纠正 */
+.course-feedback-kind {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 0;
+  padding: 0;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-block-size: 44px;
+  }
+}
+
+.course-feedback-hint {
+  color: var(--color-text-muted, #57606a);
+}
+
+.course-feedback-thread {
+  display: grid;
+  gap: 10px;
+}
+
+.course-feedback-corrections {
+  display: grid;
+  gap: 6px;
+
+  .correction {
+    border-inline-start: 3px solid var(--color-border, #d0d7de);
+    padding-inline-start: 10px;
+
+    &.confirmed {
+      border-inline-start-color: var(--color-success, #1a7f37);
+    }
+  }
+}
+
+.course-feedback-effect {
+  font-size: 0.9em;
+  color: var(--color-text-muted, #57606a);
+}
+
+.course-feedback-error {
+  color: var(--color-danger, #cf222e);
+}
+
+/* B05 学习节奏设置与复习调整 */
+.course-prefs-button {
+  margin-inline-start: auto;
+}
+
+.course-review-adjust {
+  margin-block-start: 6px;
+}
+
+.preferences-form {
+  display: grid;
+  gap: 10px;
+
+  fieldset {
+    border: 0;
+    padding: 0;
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-inline-end: 14px;
+      min-block-size: 44px;
+    }
+  }
+
+  input[type='number'] {
+    max-inline-size: 8rem;
+  }
+}
+
+.preferences-error {
+  color: var(--color-danger, #cf222e);
+}
+
+/* B01 证据可解释目标仪表盘 */
+.course-outcome-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.course-outcome-tally {
+  font-weight: 600;
+}
+
+.course-outcome-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.course-outcome-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+
+  .outcome-badge {
+    margin-inline-start: 8px;
+  }
+
+  .outcome-verified {
+    background: var(--color-success-bg, #dafbe1);
+    color: var(--color-success, #1a7f37);
+  }
+
+  .outcome-needs_practice {
+    background: var(--color-warning-bg, #fff8c5);
+    color: var(--color-warning, #9a6700);
+  }
+}
+
+.course-outcome-evidence-list {
+  display: grid;
+  gap: 14px;
+  padding-inline-start: 18px;
+}
+
+/* B04 安全教学可视化 */
+.lesson-visual {
+  margin-block: 12px;
+  border: 1px solid var(--color-border, #d0d7de);
+  border-radius: 10px;
+  padding: 12px 14px;
+
+  figcaption {
+    font-weight: 600;
+    margin-block-end: 8px;
+  }
+
+  .lesson-visual-flow {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+
+    li {
+      position: relative;
+      padding-inline-start: 20px;
+
+      &::before {
+        content: '↓';
+        position: absolute;
+        inset-inline-start: 0;
+        color: var(--color-text-muted, #57606a);
+      }
+
+      &:first-child::before { content: '▸'; }
+    }
+  }
+
+  .lesson-visual-scroll {
+    overflow-x: auto;
+
+    table {
+      border-collapse: collapse;
+      min-inline-size: 100%;
+
+      th, td {
+        border: 1px solid var(--color-border, #d0d7de);
+        padding: 6px 10px;
+        text-align: start;
+      }
+    }
+  }
+
+  .lesson-visual-fallback {
+    margin-block-start: 8px;
+  }
+}
+
+/* B07 周报与提醒 */
+.weekly-summary-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 0;
+  list-style: none;
+}
+
+/* B06 课程修订 */
+.course-revision-dialog {
+  display: grid;
+  gap: 10px;
+
+  select, textarea {
+    inline-size: 100%;
+  }
+}
+
+/* C02 有效学习记录 */
+.habit-days {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-block: 8px;
+}
+
+.habit-day {
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 4px;
+  background: var(--color-border, #d0d7de);
+
+  &.learning { background: var(--color-success, #1a7f37); }
+  &.rest { background: var(--color-accent, #0969da); opacity: 0.5; }
+  &.today_pending { outline: 2px dashed var(--color-border, #8c959f); }
+}
+
+.habit-rest-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+
+  .habit-rest-day.selected {
+    outline: 2px solid var(--color-accent, #0969da);
+  }
+}

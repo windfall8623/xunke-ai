@@ -55,7 +55,8 @@ describe('saved self checks and teaching feedback', () => {
     first.unmount()
     first.client.clear()
     mount(handler)
-    expect((await firstCheck()).textbox).toHaveValue(courseCheckFixture.answer)
+    // B02：重开后输入为空；旧答案保存成功后经「比较以前的回答」对照。
+    expect((await firstCheck()).textbox).toHaveValue('')
     expect(writes).toBe(1)
   })
 
@@ -156,7 +157,7 @@ describe('saved self checks and teaching feedback', () => {
     const { textbox, item } = await firstCheck()
     await userEvent.click(await item.findByRole('button', { name: '重试这次反馈' }))
     expect(await item.findByText('这次反馈对应原来保存的回答。')).toBeVisible()
-    expect(textbox).toHaveValue(courseCheckFixture.answer)
+    expect(textbox).toHaveValue('')
     expect(turn.check_attempt_id).toBe(courseCheckFixture.attempt_id)
     expect(writes).toEqual([`${turnsPath}/turn-1/retry`])
   })

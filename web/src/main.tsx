@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AppRoutes } from './app/router'
 import { ApiError } from './services/http'
 import './styles/tokens.scss'
+import './styles/course-print.scss'
 
 const client = new QueryClient({
   defaultOptions: {

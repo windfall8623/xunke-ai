@@ -368,6 +368,9 @@ export function CourseLesson({
             <LessonSelfCheck
               checks={lesson.checks}
               tutor={tutor}
+              courseId={lesson.course_id}
+              lessonId={lesson.lesson_id}
+              contentVersion={lesson.content_version}
               onFeedback={(attempt) => {
                 void checkUnderstanding(attempt)
               }}

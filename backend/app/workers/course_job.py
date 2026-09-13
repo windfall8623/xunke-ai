@@ -38,7 +38,10 @@ async def _authorized(job, *, conn=None, lock=False):
             raise conflict("course_task_replaced", "课程生成任务已更新")
     else:
         lesson = await course_read.owned_lesson(job["user_id"], course["course_id"], request["lesson_id"], conn=conn, lock=lock)
-        if lesson["active_task_id"] != job["task_id"] or course["revision"] != request["expected_course_revision"] or lesson["content_json"]:
+        revision_mode = bool(request.get("revision_id"))
+        if lesson["active_task_id"] != job["task_id"] or course["revision"] != request["expected_course_revision"]:
+            raise conflict("course_task_replaced", "课时生成任务已更新")
+        if lesson["content_json"] and not revision_mode:
             raise conflict("course_task_replaced", "课时生成任务已更新")
         if request.get("plan_hash") is not None and draft_hash(await course_read.load_course_plan(course, conn=conn)) != request["plan_hash"]:
             raise conflict("course_criteria_changed", "课程规划已更新")
@@ -273,6 +276,19 @@ async def run_course(job, engine, generator, *, usage_loader, record_summary: Su
             if spec.preload_first_lesson:
                 await _preload_first_lesson(conn, job, course, scope, units, lesson_ids,
                                             course["revision"] + 1)
+        elif (current.get("request") or {}).get("revision_id"):
+            # 修订候选：写回修订记录，当前课时保持原版本可读。
+            from app.services import course_revision_service
+
+            await course_revision_service.mark_revision_candidate(
+                course["course_id"], job["user_id"], request["revision_id"],
+                lesson["lesson_id"], draft, conn=conn,
+            )
+            await execute("UPDATE learning_course_lessons SET generation_task_id=NULL,active_task_id=NULL,"
+                          "revision=revision+1,updated_at=%s WHERE lesson_id=%s AND owner_id=%s",
+                          (stamp, lesson["lesson_id"], job["user_id"]), conn=conn)
+            await execute("UPDATE learning_courses SET updated_at=%s WHERE course_id=%s AND owner_id=%s",
+                          (stamp, course["course_id"], job["user_id"]), conn=conn)
         else:
             await execute(
                 "UPDATE learning_course_lessons SET content_json=%s,evidence_json=%s,status='ready',active_task_id=NULL,"
@@ -284,7 +300,7 @@ async def run_course(job, engine, generator, *, usage_loader, record_summary: Su
         binding = teaching_quality_service.artifact_binding(
             draft=draft, evidence=generated["evidence"], skill_hash=generated["skill_hash"],
             course_id=course["course_id"], lesson_id=lesson["lesson_id"] if lesson else None,
-            content_version=saved_lesson["content_version"] + 1 if saved_lesson else None,
+            content_version=(saved_lesson["content_version"] if (current.get("request") or {}).get("revision_id") else saved_lesson["content_version"] + 1) if saved_lesson else None,
             criteria_revision=agent_input.criteria_revision,
         )
         await teaching_quality_service.seal_quality_run(current, state, binding, conn=conn)

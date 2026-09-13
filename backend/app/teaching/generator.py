@@ -12,6 +12,7 @@ from app.core.values import dump
 from app.llm.responses import response_text
 from app.rag.budget import count_tokens
 from app.rag.errors import BudgetExceeded
+from app.teaching.contracts import strip_invalid_visuals
 from app.teaching.contracts_v2 import CourseCriterionDraft, TeachUnitV2
 from app.teaching.prompts import INPUT_LIMIT, PROMPT_VERSION, system_prompt, teaching_skill
 from app.teaching.protocol import V1, V2, draft_hash, parse_course_draft, parse_lesson_draft
@@ -197,6 +198,8 @@ class CourseGenerator:
                 raise ValueError("invalid_json")
             if decoded.get("schema_version") != version:
                 raise ValueError("unsupported_teach_schema_version")
+            # 可视化是可选增强：先降级无效图形，再走原有正文/引用校验。
+            decoded, visual_warnings = strip_invalid_visuals(decoded)
             draft = parse_course_draft(decoded) if kind == "outline" else parse_lesson_draft(decoded)
             self._validate(draft, kind, spec, unit, material)
             if kind == "outline" and course_criteria and draft.payload.course_criteria != course_criteria:
@@ -207,6 +210,9 @@ class CourseGenerator:
             # Pydantic's traceback can contain rejected input. Only fixed codes
             # may escape this boundary, including on a final failed repair.
             raise TeachingDraftInvalid(validation_codes(exc)) from None
+        for warning in visual_warnings:
+            if warning not in draft.warnings:
+                draft.warnings.append(warning)
         if spec.source_policy == "topic":
             notice = "课程由模型生成，未进行外部资料核验。"
             if notice not in draft.warnings:

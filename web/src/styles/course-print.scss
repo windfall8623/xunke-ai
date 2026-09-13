@@ -1,0 +1,36 @@
+@media print {
+  .sidebar,
+  .topbar,
+  .mobile-tabs,
+  .workspace-footer,
+  .skip-link,
+  .course-export-actions {
+    display: none !important;
+  }
+
+  .course-print {
+    color: #111;
+    background: #fff;
+    max-width: none;
+    padding: 0;
+  }
+
+  .app-layout,
+  .workspace {
+    display: block;
+    min-height: auto;
+  }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .course-print-record {
+    break-inside: avoid;
+  }
+
+  .course-print a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}

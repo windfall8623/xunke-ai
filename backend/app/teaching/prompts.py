@@ -102,6 +102,7 @@ LESSON = (
     'alignments每项{course_criterion_ref:"cc1",explanation_block_refs:["b1"],example_block_refs:["b2"],check_refs:["check1"]}。'
     '每个目标必须有至少一段讲解、一个示例和一道检查；alignment覆盖本课全部目标。引用存在、类型匹配、无重复，且块/检查的反向course_criterion_refs一致。'
     '同一检查可以覆盖多个目标，小结与reference不能替代讲解或示例。'
+    'visual是可选增强：仅当流程顺序、两个以上对象对照或分步推理确实有助理解时，才给个别块加visual（flow/comparison/steps纯文本结构，kind字段必填，含fallback_text）；普通段落省略。visual只能总结正文和证据中已有的事实，不引入新事实。'
     'strict_docs每个正文块包括教学构造示例均引用真实原理依据，不能借例子引入未经支持的结论。'
     '证据不能支持目标时status=insufficient_evidence,payload=null并说明缺口。'
     'next_step按自检表现建议继续练习或回看先修，不宣布已经掌握。'

@@ -497,6 +497,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/attempts/{attempt_id}/reviews': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Review Application Attempt */
+    post: operations['review_application_attempt_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__reviews_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/complete': {
     parameters: {
       query?: never
@@ -525,6 +542,92 @@ export interface paths {
     get: operations['outline_evidence_api_v1_courses__course_id__evidence__source_ref__get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Export Course */
+    get: operations['export_course_api_v1_courses__course_id__export_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/feedback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Feedback */
+    get: operations['list_feedback_api_v1_courses__course_id__feedback_get']
+    put?: never
+    /** Create Feedback */
+    post: operations['create_feedback_api_v1_courses__course_id__feedback_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/feedback/{feedback_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Feedback */
+    patch: operations['update_feedback_api_v1_courses__course_id__feedback__feedback_id__patch']
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/feedback/{feedback_id}/corrections': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Correction */
+    post: operations['create_correction_api_v1_courses__course_id__feedback__feedback_id__corrections_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/feedback/{feedback_id}/reviews': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Review Correction */
+    post: operations['review_correction_api_v1_courses__course_id__feedback__feedback_id__reviews_post']
     delete?: never
     options?: never
     head?: never
@@ -703,6 +806,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/versions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Lesson Versions */
+    get: operations['lesson_versions_api_v1_courses__course_id__lessons__lesson_id__versions_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/lessons/{lesson_id}/versions/{content_version}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Lesson Version */
+    get: operations['lesson_version_api_v1_courses__course_id__lessons__lesson_id__versions__content_version__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/courses/{course_id}/outcomes': {
     parameters: {
       query?: never
@@ -782,6 +919,91 @@ export interface paths {
     get: operations['list_reviews_api_v1_courses__course_id__reviews_get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/reviews/{review_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Adjust Review */
+    patch: operations['adjust_review_api_v1_courses__course_id__reviews__review_id__patch']
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/revision-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Start Revision Jobs */
+    post: operations['start_revision_jobs_api_v1_courses__course_id__revision_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/revision-previews': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Revision Preview */
+    post: operations['create_revision_preview_api_v1_courses__course_id__revision_previews_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/revisions/{revision_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Revision */
+    get: operations['get_revision_api_v1_courses__course_id__revisions__revision_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/revisions/{revision_id}/apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Apply Revision */
+    post: operations['apply_revision_api_v1_courses__course_id__revisions__revision_id__apply_post']
     delete?: never
     options?: never
     head?: never
@@ -2128,6 +2350,41 @@ export interface paths {
     patch: operations['reorder_units_api_v1_study_goals__goal_id__units_order_patch']
     trace?: never
   }
+  '/api/v1/study/habit-preferences': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Habit Preferences */
+    get: operations['get_habit_preferences_api_v1_study_habit_preferences_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Habit Preferences */
+    patch: operations['update_habit_preferences_api_v1_study_habit_preferences_patch']
+    trace?: never
+  }
+  '/api/v1/study/habits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Habits */
+    get: operations['get_habits_api_v1_study_habits_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/study/history': {
     parameters: {
       query?: never
@@ -2143,6 +2400,42 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  '/api/v1/study/notification-preferences': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Notification Preferences */
+    get: operations['get_notification_preferences_api_v1_study_notification_preferences_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Notification Preferences */
+    patch: operations['update_notification_preferences_api_v1_study_notification_preferences_patch']
+    trace?: never
+  }
+  '/api/v1/study/preferences': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Learning Preferences */
+    get: operations['get_learning_preferences_api_v1_study_preferences_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Learning Preferences */
+    patch: operations['update_learning_preferences_api_v1_study_preferences_patch']
     trace?: never
   }
   '/api/v1/study/qa-answers/{answer_id}/practice-context': {
@@ -2177,6 +2470,40 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  '/api/v1/study/reminders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Reminders */
+    get: operations['list_reminders_api_v1_study_reminders_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/study/reminders/{reminder_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Reminder */
+    patch: operations['update_reminder_api_v1_study_reminders__reminder_id__patch']
     trace?: never
   }
   '/api/v1/study/review-quiz-jobs': {
@@ -2351,6 +2678,23 @@ export interface paths {
     head?: never
     /** Update Unit */
     patch: operations['update_unit_api_v1_study_units__unit_id__patch']
+    trace?: never
+  }
+  '/api/v1/study/weekly-summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Weekly Summary */
+    get: operations['weekly_summary_api_v1_study_weekly_summary_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/api/v1/study/wrong-questions': {
@@ -2808,6 +3152,22 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[CourseCorrectionView] */
+    ApiResponse_CourseCorrectionView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseCorrectionView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[CourseEvidenceView] */
     ApiResponse_CourseEvidenceView_: {
       /**
@@ -2816,6 +3176,54 @@ export interface components {
        */
       code: number
       data?: components['schemas']['CourseEvidenceView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseExportView] */
+    ApiResponse_CourseExportView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseExportView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseFeedbackList] */
+    ApiResponse_CourseFeedbackList_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseFeedbackList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseFeedbackView] */
+    ApiResponse_CourseFeedbackView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseFeedbackView'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -2896,6 +3304,38 @@ export interface components {
        */
       code: number
       data?: components['schemas']['CourseQuizLinkView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseReviewView] */
+    ApiResponse_CourseReviewView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseReviewView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseRevisionView] */
+    ApiResponse_CourseRevisionView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseRevisionView'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -3144,6 +3584,22 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[HabitRestPreferences] */
+    ApiResponse_HabitRestPreferences_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['HabitRestPreferences'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[JudgeProfileList] */
     ApiResponse_JudgeProfileList_: {
       /**
@@ -3152,6 +3608,86 @@ export interface components {
        */
       code: number
       data?: components['schemas']['JudgeProfileList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LearningHabitView] */
+    ApiResponse_LearningHabitView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LearningHabitView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LearningPreferencesView] */
+    ApiResponse_LearningPreferencesView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LearningPreferencesView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LearningReminderList] */
+    ApiResponse_LearningReminderList_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LearningReminderList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LearningReminderPreferences] */
+    ApiResponse_LearningReminderPreferences_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LearningReminderPreferences'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LearningReminderView] */
+    ApiResponse_LearningReminderView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LearningReminderView'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -3934,6 +4470,22 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[WeeklyLearningSummary] */
+    ApiResponse_WeeklyLearningSummary_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['WeeklyLearningSummary'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[dict] */
     ApiResponse_dict_: {
       /**
@@ -4367,6 +4919,22 @@ export interface components {
       /** Weight */
       weight: number | string
     }
+    /** ComparisonVisual */
+    ComparisonVisual: {
+      /** Columns */
+      columns: string[]
+      /** Fallback Text */
+      fallback_text: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'comparison'
+      /** Rows */
+      rows: string[][]
+      /** Title */
+      title: string
+    }
     /** CompletionReceipt */
     CompletionReceipt: {
       /** Accuracy */
@@ -4550,6 +5118,29 @@ export interface components {
       /** Task Id */
       task_id: string
     }
+    /**
+     * CourseApplicationRegrade
+     * @description 课程文本应用 attempt 的正式复核：追加新判分头并 supersedes 旧头。
+     */
+    CourseApplicationRegrade: {
+      /**
+       * Comment
+       * @default
+       */
+      comment: string
+      /** Expected Assessment Id */
+      expected_assessment_id: string
+      /** Expected Revision */
+      expected_revision: number
+      /** Score */
+      score?: number | null
+      /**
+       * Status
+       * @default graded
+       * @enum {string}
+       */
+      status: 'graded' | 'needs_review'
+    }
     /** CourseApplicationTaskView */
     CourseApplicationTaskView: {
       /** Application Task Id */
@@ -4599,6 +5190,20 @@ export interface components {
       expected_course_revision: number
       /** Expected Criteria Revision */
       expected_criteria_revision: number
+    }
+    /** CourseAssessmentIssueTarget */
+    CourseAssessmentIssueTarget: {
+      /** Assessment Id */
+      assessment_id?: string | null
+      /** Attempt Id */
+      attempt_id: string
+      /** Course Assessment Id */
+      course_assessment_id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'course_assessment'
     }
     /** CourseAssessmentTask */
     CourseAssessmentTask: {
@@ -4666,6 +5271,60 @@ export interface components {
       teaching_modes: ('guided' | 'fast')[]
       /** Unavailable Reason */
       unavailable_reason?: string | null
+    }
+    /** CourseCorrectionCreate */
+    CourseCorrectionCreate: {
+      /** Expected Revision */
+      expected_revision: number
+      /** Source Refs */
+      source_refs?: string[]
+      /** Supersedes Correction Id */
+      supersedes_correction_id?: string | null
+      /** Text */
+      text: string
+    }
+    /**
+     * CourseCorrectionReview
+     * @description owner + evaluator 对内容纠正的确认或退回；追加新记录，不改旧记录。
+     */
+    CourseCorrectionReview: {
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: 'confirmed' | 'rejected'
+      /** Expected Revision */
+      expected_revision: number
+      /**
+       * Note
+       * @default
+       */
+      note: string
+    }
+    /** CourseCorrectionView */
+    CourseCorrectionView: {
+      /**
+       * Confirmation
+       * @enum {string}
+       */
+      confirmation: 'provisional' | 'confirmed'
+      /** Correction Id */
+      correction_id: string
+      /** Created At */
+      created_at: string
+      /** Feedback Id */
+      feedback_id: string
+      /**
+       * Provenance
+       * @enum {string}
+       */
+      provenance: 'learner_note' | 'model_proposal' | 'human_reviewer'
+      /** Source Refs */
+      source_refs?: string[]
+      /** Supersedes Correction Id */
+      supersedes_correction_id?: string | null
+      /** Text */
+      text: string
     }
     /** CourseCreate */
     CourseCreate: {
@@ -4799,6 +5458,153 @@ export interface components {
       /** Title */
       title: string
     }
+    /** CourseExportCitation */
+    CourseExportCitation: {
+      /** Document Version Id */
+      document_version_id?: string | null
+      /** Export Ref */
+      export_ref: string
+      /** Locator */
+      locator?: string | null
+      /** Title */
+      title: string
+    }
+    /** CourseExportRecord */
+    CourseExportRecord: {
+      /**
+       * Confirmation
+       * @default not_applicable
+       * @enum {string}
+       */
+      confirmation: 'not_applicable' | 'provisional' | 'confirmed'
+      /** Content Version */
+      content_version?: number | null
+      /** Feedback Text */
+      feedback_text?: string | null
+      /**
+       * Help Usage Label
+       * @default 帮助使用情况未记录
+       */
+      help_usage_label: string
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'self_check' | 'quiz_result' | 'application_result' | 'correction'
+      /** Occurred At */
+      occurred_at: string
+      /** Own Answer */
+      own_answer?: string | null
+      /** Source Refs */
+      source_refs?: string[]
+      /** Title */
+      title: string
+    }
+    /** CourseExportSnapshot */
+    CourseExportSnapshot: {
+      /** Course Id */
+      course_id: string
+      /** Criteria Revision */
+      criteria_revision: number
+      /** Generated At */
+      generated_at: string
+      /** Include History */
+      include_history: boolean
+      outcomes: components['schemas']['CourseOutcomeSummary']
+      /** Personal Summary */
+      personal_summary?: string[]
+      /** Records */
+      records?: components['schemas']['CourseExportRecord'][]
+      /** Sources */
+      sources?: components['schemas']['CourseExportCitation'][]
+      /** Title */
+      title: string
+      /** Warnings */
+      warnings?: string[]
+    }
+    /** CourseExportView */
+    CourseExportView: {
+      /** Filename */
+      filename: string
+      /** Generated At */
+      generated_at: string
+      /** Markdown */
+      markdown: string
+      snapshot: components['schemas']['CourseExportSnapshot']
+    }
+    /** CourseFeedbackCreate */
+    CourseFeedbackCreate: {
+      /**
+       * Allow Evaluation Use
+       * @default false
+       */
+      allow_evaluation_use: boolean
+      /** Comment */
+      comment: string
+      /**
+       * Issue Kind
+       * @enum {string}
+       */
+      issue_kind: 'confusion' | 'content_error' | 'grading_review'
+      /** Target */
+      target:
+        | components['schemas']['LessonIssueTarget']
+        | components['schemas']['SelfCheckIssueTarget']
+        | components['schemas']['QuizIssueTarget']
+        | components['schemas']['CourseAssessmentIssueTarget']
+    }
+    /** CourseFeedbackList */
+    CourseFeedbackList: {
+      /** Items */
+      items: components['schemas']['CourseFeedbackView'][]
+      /** Total */
+      total: number
+    }
+    /** CourseFeedbackUpdate */
+    CourseFeedbackUpdate: {
+      /** Expected Revision */
+      expected_revision: number
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'open' | 'resolved'
+    }
+    /** CourseFeedbackView */
+    CourseFeedbackView: {
+      /** Comment */
+      comment: string
+      /** Corrections */
+      corrections?: components['schemas']['CourseCorrectionView'][]
+      /** Course Id */
+      course_id: string
+      /** Created At */
+      created_at: string
+      /** Feedback Id */
+      feedback_id: string
+      /**
+       * Issue Kind
+       * @enum {string}
+       */
+      issue_kind: 'confusion' | 'content_error' | 'grading_review'
+      /** Quiz Feedback Id */
+      quiz_feedback_id?: string | null
+      /** Revision */
+      revision: number
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'open' | 'resolved' | 'rejected'
+      /** Target */
+      target:
+        | components['schemas']['LessonIssueTarget']
+        | components['schemas']['SelfCheckIssueTarget']
+        | components['schemas']['QuizIssueTarget']
+        | components['schemas']['CourseAssessmentIssueTarget']
+      /** Tutor Turn Id */
+      tutor_turn_id?: string | null
+    }
     /** CourseLessonGenerate */
     CourseLessonGenerate: {
       /** Expected Course Revision */
@@ -4808,6 +5614,8 @@ export interface components {
        * @default false
        */
       request_quality_review: boolean
+      /** Revision Id */
+      revision_id?: string | null
     }
     /** CourseLessonSummary */
     CourseLessonSummary: {
@@ -5084,6 +5892,17 @@ export interface components {
       /** Review Id */
       review_id: string
     }
+    /** CourseReviewUpdate */
+    CourseReviewUpdate: {
+      /** Action */
+      action: string
+      /** Due At */
+      due_at?: string | null
+      /** Expected Content Version */
+      expected_content_version: number
+      /** Expected Revision */
+      expected_revision: number
+    }
     /** CourseReviewView */
     CourseReviewView: {
       /** Active Link Id */
@@ -5096,12 +5915,21 @@ export interface components {
       due_at: string
       /** Lesson Id */
       lesson_id: string
+      /** Override Due At */
+      override_due_at?: string | null
+      /**
+       * Paused
+       * @default false
+       */
+      paused: boolean
       /** Reason */
       reason: string
       /** Review Id */
       review_id: string
       /** Revision */
       revision: number
+      /** Rule Due At */
+      rule_due_at?: string | null
       /** Schedule Seq */
       schedule_seq: number
       /**
@@ -5118,6 +5946,61 @@ export interface components {
         | 'source_revoked'
       /** Timezone */
       timezone: string
+    }
+    /** CourseRevisionApply */
+    CourseRevisionApply: {
+      /** Expected Course Revision */
+      expected_course_revision: number
+      /** Expected Revision */
+      expected_revision: number
+    }
+    /** CourseRevisionGenerate */
+    CourseRevisionGenerate: {
+      /** Expected Revision */
+      expected_revision: number
+      /** Revision Id */
+      revision_id: string
+    }
+    /** CourseRevisionPreview */
+    CourseRevisionPreview: {
+      /** Expected Course Revision */
+      expected_course_revision: number
+      /** Expected Criteria Revision */
+      expected_criteria_revision: number
+      /** Instruction */
+      instruction?: string | null
+      /** Lessons */
+      lessons: components['schemas']['LessonRevisionSelection'][]
+    }
+    /** CourseRevisionView */
+    CourseRevisionView: {
+      /** Candidates */
+      candidates?: {
+        [key: string]: unknown
+      }[]
+      /** Course Id */
+      course_id: string
+      /** Error Code */
+      error_code?: string | null
+      /** Expected Course Revision */
+      expected_course_revision: number
+      /** Impacts */
+      impacts?: {
+        [key: string]: unknown
+      }[]
+      /** Lessons */
+      lessons?: {
+        [key: string]: unknown
+      }[]
+      /** Revision */
+      revision: number
+      /** Revision Id */
+      revision_id: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'preview' | 'generating' | 'ready' | 'failed' | 'cancelled' | 'applied'
     }
     /** CourseSelfCheckCreate */
     CourseSelfCheckCreate: {
@@ -5831,6 +6714,20 @@ export interface components {
       /** Status */
       status: string
     }
+    /** FlowVisual */
+    FlowVisual: {
+      /** Fallback Text */
+      fallback_text: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'flow'
+      /** Steps */
+      steps: components['schemas']['VisualStep'][]
+      /** Title */
+      title: string
+    }
     /** FreezeBody */
     FreezeBody: {
       /** Checklist */
@@ -5930,6 +6827,51 @@ export interface components {
     HTTPValidationError: {
       /** Detail */
       detail?: components['schemas']['ValidationError'][]
+    }
+    /** HabitDay */
+    HabitDay: {
+      /** Activity Count */
+      activity_count: number
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'learning' | 'rest' | 'empty' | 'today_pending'
+      /**
+       * Local Date
+       * Format: date
+       */
+      local_date: string
+    }
+    /** HabitMilestone */
+    HabitMilestone: {
+      /** Effective Days */
+      effective_days: number
+      /** Reached */
+      reached: boolean
+      /** Reached On */
+      reached_on?: string | null
+    }
+    /** HabitRestPreferences */
+    HabitRestPreferences: {
+      /**
+       * Effective From
+       * Format: date
+       */
+      effective_from: string
+      /** Revision */
+      revision: number
+      /** Weekly Rest Days */
+      weekly_rest_days?: number[]
+    }
+    /** HabitRestPreferencesUpdate */
+    HabitRestPreferencesUpdate: {
+      /** Effective From */
+      effective_from?: string | null
+      /** Expected Revision */
+      expected_revision: number
+      /** Weekly Rest Days */
+      weekly_rest_days?: number[]
     }
     /** HeartbeatBody */
     HeartbeatBody: {
@@ -6071,6 +7013,159 @@ export interface components {
        */
       unknown_reserved_cost_cny: number | string | null
     }
+    /** LearningHabitView */
+    LearningHabitView: {
+      /** Effective Days Total */
+      effective_days_total: number
+      /** Effective Streak Days */
+      effective_streak_days: number
+      /** Last Effective Local Date */
+      last_effective_local_date?: string | null
+      /**
+       * Local Date
+       * Format: date
+       */
+      local_date: string
+      /** Milestones */
+      milestones?: components['schemas']['HabitMilestone'][]
+      /** Recent Days */
+      recent_days?: components['schemas']['HabitDay'][]
+      /** Rest Days In Streak */
+      rest_days_in_streak: number
+      /**
+       * Rule Version
+       * @default learning-habits-v1
+       * @constant
+       */
+      rule_version: 'learning-habits-v1'
+      /** Timezone */
+      timezone: string
+    }
+    /** LearningPreferencesUpdate */
+    LearningPreferencesUpdate: {
+      /** Daily Minutes */
+      daily_minutes: number
+      /** Daily Review Limit */
+      daily_review_limit: number
+      /** Difficulty */
+      difficulty: string
+      /** Expected Revision */
+      expected_revision: number
+      /** Timezone */
+      timezone: string
+    }
+    /** LearningPreferencesView */
+    LearningPreferencesView: {
+      /** Daily Minutes */
+      daily_minutes: number
+      /** Daily Review Limit */
+      daily_review_limit: number
+      /** Difficulty */
+      difficulty: string
+      /** Revision */
+      revision: number
+      /** Timezone */
+      timezone: string
+    }
+    /** LearningReminderList */
+    LearningReminderList: {
+      /** Items */
+      items: components['schemas']['LearningReminderView'][]
+      /** Total */
+      total: number
+    }
+    /** LearningReminderPreferences */
+    LearningReminderPreferences: {
+      /**
+       * Email Enabled
+       * @default false
+       */
+      email_enabled: boolean
+      /**
+       * Frequency
+       * @default weekly
+       * @enum {string}
+       */
+      frequency: 'daily_due' | 'weekly'
+      /**
+       * In App Enabled
+       * @default false
+       */
+      in_app_enabled: boolean
+      /**
+       * Local Time
+       * @default 09:00
+       */
+      local_time: string
+      /** Paused Until */
+      paused_until?: string | null
+      /** Revision */
+      revision: number
+      /**
+       * Timezone
+       * @default Asia/Shanghai
+       */
+      timezone: string
+    }
+    /** LearningReminderPreferencesUpdate */
+    LearningReminderPreferencesUpdate: {
+      /** Email Enabled */
+      email_enabled: boolean
+      /** Expected Revision */
+      expected_revision: number
+      /**
+       * Frequency
+       * @default weekly
+       * @enum {string}
+       */
+      frequency: 'daily_due' | 'weekly'
+      /** In App Enabled */
+      in_app_enabled: boolean
+      /**
+       * Local Time
+       * @default 09:00
+       */
+      local_time: string
+      /** Paused Until */
+      paused_until?: string | null
+      /**
+       * Timezone
+       * @default Asia/Shanghai
+       */
+      timezone: string
+    }
+    /** LearningReminderUpdate */
+    LearningReminderUpdate: {
+      /**
+       * Action
+       * @enum {string}
+       */
+      action: 'read' | 'snooze'
+      /** Send After */
+      send_after?: string | null
+    }
+    /** LearningReminderView */
+    LearningReminderView: {
+      /** Body */
+      body?: string | null
+      /** Created At */
+      created_at: string
+      /** Due At */
+      due_at?: string | null
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'weekly_summary' | 'due_review' | 'course_event'
+      /** Link Path */
+      link_path?: string | null
+      /** Read At */
+      read_at?: string | null
+      /** Reminder Id */
+      reminder_id: string
+      /** Title */
+      title: string
+    }
     /** LessonBlock */
     LessonBlock: {
       /** Source Refs */
@@ -6087,6 +7182,14 @@ export interface components {
        * @enum {string}
        */
       type: 'explanation' | 'example' | 'reference' | 'recap'
+      /** Visual */
+      visual?:
+        | (
+            | components['schemas']['FlowVisual']
+            | components['schemas']['ComparisonVisual']
+            | components['schemas']['StepsVisual']
+          )
+        | null
     }
     /** LessonCheck */
     LessonCheck: {
@@ -6109,6 +7212,29 @@ export interface components {
       key: string
       /** Text */
       text: string
+    }
+    /** LessonIssueTarget */
+    LessonIssueTarget: {
+      /** Block Index */
+      block_index: number
+      /** Content Version */
+      content_version: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'lesson'
+      /** Lesson Id */
+      lesson_id: string
+    }
+    /** LessonRevisionSelection */
+    LessonRevisionSelection: {
+      /** Expected Content Version */
+      expected_content_version: number
+      /** Instruction */
+      instruction: string
+      /** Lesson Id */
+      lesson_id: string
     }
     /** LoginBody */
     LoginBody: {
@@ -7753,6 +8879,18 @@ export interface components {
       /** Total */
       total: number
     }
+    /** QuizIssueTarget */
+    QuizIssueTarget: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'quiz'
+      /** Question Id */
+      question_id: string
+      /** Quiz Id */
+      quiz_id: string
+    }
     /** QuizSample */
     QuizSample: {
       /** Annotation */
@@ -8300,6 +9438,20 @@ export interface components {
       /** Title */
       title: string
     }
+    /** SelfCheckIssueTarget */
+    SelfCheckIssueTarget: {
+      /** Check Attempt Id */
+      check_attempt_id: string
+      /** Content Version */
+      content_version: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'self_check'
+      /** Lesson Id */
+      lesson_id: string
+    }
     /** SemanticDecisions */
     SemanticDecisions: {
       /** Answer Correctness */
@@ -8485,6 +9637,20 @@ export interface components {
        * Title
        * @default
        */
+      title: string
+    }
+    /** StepsVisual */
+    StepsVisual: {
+      /** Fallback Text */
+      fallback_text: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'steps'
+      /** Steps */
+      steps: components['schemas']['VisualStep'][]
+      /** Title */
       title: string
     }
     /** StudyConceptCreate */
@@ -9370,6 +10536,16 @@ export interface components {
        */
       semantic_status: 'passed' | 'failed' | 'not_evaluated'
     }
+    /** VisualStep */
+    VisualStep: {
+      /**
+       * Detail
+       * @default
+       */
+      detail: string
+      /** Label */
+      label: string
+    }
     /** WebEvidence */
     WebEvidence: {
       /** Evidence Id */
@@ -9426,6 +10602,43 @@ export interface components {
       quote_hash: string
       /** Start Char */
       start_char: number
+    }
+    /** WeeklyLearningCounts */
+    WeeklyLearningCounts: {
+      /** Applications Submitted */
+      applications_submitted: number
+      /** Practices Completed */
+      practices_completed: number
+      /** Quizzes Settled */
+      quizzes_settled: number
+      /** Scheduled Reviews Completed */
+      scheduled_reviews_completed: number
+      /** Self Checks Saved */
+      self_checks_saved: number
+    }
+    /** WeeklyLearningSummary */
+    WeeklyLearningSummary: {
+      /** Confirmed Corrections */
+      confirmed_corrections?: components['schemas']['CourseCorrectionView'][]
+      counts: components['schemas']['WeeklyLearningCounts']
+      /** Course Outcomes */
+      course_outcomes?: components['schemas']['CourseOutcomeSummary'][]
+      /** Next Actions */
+      next_actions?: components['schemas']['CourseTodayItem'][]
+      /** Timezone */
+      timezone: string
+      /** Warnings */
+      warnings?: string[]
+      /**
+       * Week End Exclusive
+       * Format: date
+       */
+      week_end_exclusive: string
+      /**
+       * Week Start
+       * Format: date
+       */
+      week_start: string
     }
     /** CompleteBody */
     app__api__v1__routes__internal_eval__CompleteBody: {
@@ -10087,8 +11300,8 @@ export interface operations {
   today_api_v1_courses_today_get: {
     parameters: {
       query?: {
-        timezone?: string
-        minutes_budget?: number
+        timezone?: string | null
+        minutes_budget?: number | null
       }
       header?: never
       path?: never
@@ -10388,6 +11601,43 @@ export interface operations {
       }
     }
   }
+  review_application_attempt_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__reviews_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        course_assessment_id: string
+        attempt_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseApplicationRegrade']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_dict_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   complete_assessment_api_v1_courses__course_id__assessments__course_assessment_id__complete_post: {
     parameters: {
       query?: never
@@ -10445,6 +11695,222 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_CourseEvidenceView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  export_course_api_v1_courses__course_id__export_get: {
+    parameters: {
+      query?: {
+        format?: string
+        include_history?: boolean
+      }
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseExportView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_feedback_api_v1_courses__course_id__feedback_get: {
+    parameters: {
+      query?: {
+        lesson_id?: string | null
+        check_attempt_id?: string | null
+        course_assessment_id?: string | null
+      }
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseFeedbackList_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_feedback_api_v1_courses__course_id__feedback_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseFeedbackCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseFeedbackView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  update_feedback_api_v1_courses__course_id__feedback__feedback_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        feedback_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseFeedbackUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseFeedbackView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_correction_api_v1_courses__course_id__feedback__feedback_id__corrections_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        feedback_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseCorrectionCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseCorrectionView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  review_correction_api_v1_courses__course_id__feedback__feedback_id__reviews_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        feedback_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseCorrectionReview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseCorrectionView_']
         }
       }
       /** @description Validation Error */
@@ -10886,6 +12352,71 @@ export interface operations {
       }
     }
   }
+  lesson_versions_api_v1_courses__course_id__lessons__lesson_id__versions_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        lesson_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  lesson_version_api_v1_courses__course_id__lessons__lesson_id__versions__content_version__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        lesson_id: string
+        content_version: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   outcomes_api_v1_courses__course_id__outcomes_get: {
     parameters: {
       query?: never
@@ -11034,6 +12565,188 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_list_CourseReviewView__']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  adjust_review_api_v1_courses__course_id__reviews__review_id__patch: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        review_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseReviewUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseReviewView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  start_revision_jobs_api_v1_courses__course_id__revision_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseRevisionGenerate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseRevisionView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_revision_preview_api_v1_courses__course_id__revision_previews_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseRevisionPreview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseRevisionView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_revision_api_v1_courses__course_id__revisions__revision_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        revision_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseRevisionView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  apply_revision_api_v1_courses__course_id__revisions__revision_id__apply_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        revision_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseRevisionApply']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseRevisionView_']
         }
       }
       /** @description Validation Error */
@@ -13941,6 +15654,90 @@ export interface operations {
       }
     }
   }
+  get_habit_preferences_api_v1_study_habit_preferences_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_HabitRestPreferences_']
+        }
+      }
+    }
+  }
+  update_habit_preferences_api_v1_study_habit_preferences_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['HabitRestPreferencesUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_HabitRestPreferences_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_habits_api_v1_study_habits_get: {
+    parameters: {
+      query?: {
+        timezone?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningHabitView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   learning_history_api_v1_study_history_get: {
     parameters: {
       query?: {
@@ -13965,6 +15762,112 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_StudyHistoryList_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_notification_preferences_api_v1_study_notification_preferences_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningReminderPreferences_']
+        }
+      }
+    }
+  }
+  update_notification_preferences_api_v1_study_notification_preferences_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LearningReminderPreferencesUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningReminderPreferences_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_learning_preferences_api_v1_study_preferences_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningPreferencesView_']
+        }
+      }
+    }
+  }
+  update_learning_preferences_api_v1_study_preferences_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LearningPreferencesUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningPreferencesView_']
         }
       }
       /** @description Validation Error */
@@ -14031,6 +15934,61 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_TaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_reminders_api_v1_study_reminders_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningReminderList_']
+        }
+      }
+    }
+  }
+  update_reminder_api_v1_study_reminders__reminder_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        reminder_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LearningReminderUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LearningReminderView_']
         }
       }
       /** @description Validation Error */
@@ -14506,6 +16464,38 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_StudyUnitView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  weekly_summary_api_v1_study_weekly_summary_get: {
+    parameters: {
+      query: {
+        week_start: string
+        timezone?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_WeeklyLearningSummary_']
         }
       }
       /** @description Validation Error */

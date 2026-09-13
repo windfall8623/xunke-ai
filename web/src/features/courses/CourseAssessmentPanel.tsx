@@ -4,7 +4,7 @@ import { ErrorNotice, Loading, formatDate } from '../../components/ui'
 import { courseErrorMessage } from '../../services/courses'
 import type { CourseView } from '../../types/course'
 import { CourseAssessmentRun } from './CourseAssessmentRun'
-import { CourseGoalList } from './CourseGoalList'
+import { CourseOutcomePanel } from './CourseOutcomePanel'
 import { CourseOperationNotice } from './CourseOperationNotice'
 import {
   assessmentFlowState,
@@ -77,25 +77,11 @@ export function CourseAssessmentPanel({
         <Loading>正在读取课程目标结果…</Loading>
       ) : (
         <>
-          {!!tally.total && (
-            <ul className="course-outcome-tally" role="list">
-              <li>
-                已验证 <strong>{tally.verified}</strong>
-              </li>
-              <li>
-                需补学 <strong>{tally.needsPractice}</strong>
-              </li>
-              <li>
-                待验证 <strong>{tally.unverified}</strong>
-              </li>
-              {tally.stale > 0 && (
-                <li>
-                  证据已过期 <strong>{tally.stale}</strong>
-                </li>
-              )}
-            </ul>
-          )}
-          <CourseGoalList goals={goals} showCoverage={!!assessment} onLesson={onLesson} />
+          <CourseOutcomePanel
+            outcomes={controller.outcomes}
+            definitions={course.course_criteria || []}
+            coverage={assessment ? assessment.covered_course_criterion_ids : null}
+          />
         </>
       )}
       {controller.listQuery.error && (

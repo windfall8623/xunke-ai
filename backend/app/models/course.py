@@ -121,6 +121,7 @@ class CourseOutlineUpdate(Contract):
 class CourseLessonGenerate(Contract):
     expected_course_revision: int = Field(ge=1)
     request_quality_review: bool = False
+    revision_id: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class CourseReadUpdate(Contract):
@@ -225,3 +226,38 @@ class CourseProgressView(Contract):
     weak_points: list[CourseWeakPoint] = Field(default_factory=list)
     pending_weak_points: list[CourseWeakPoint] = Field(default_factory=list)
     next_action: CourseNextAction
+
+
+class LessonRevisionSelection(Contract):
+    lesson_id: str = Field(min_length=1, max_length=64)
+    expected_content_version: int = Field(ge=0)
+    instruction: str = Field(min_length=1, max_length=1000)
+
+
+class CourseRevisionPreview(Contract):
+    expected_course_revision: int = Field(ge=1)
+    expected_criteria_revision: int = Field(ge=1)
+    lessons: list[LessonRevisionSelection] = Field(min_length=1, max_length=3)
+    instruction: str | None = Field(default=None, min_length=1, max_length=2000)
+
+
+class CourseRevisionGenerate(Contract):
+    revision_id: str = Field(min_length=1, max_length=64)
+    expected_revision: int = Field(ge=1)
+
+
+class CourseRevisionApply(Contract):
+    expected_course_revision: int = Field(ge=1)
+    expected_revision: int = Field(ge=1)
+
+
+class CourseRevisionView(Contract):
+    revision_id: str
+    course_id: str
+    revision: int = Field(ge=1)
+    status: Literal["preview", "generating", "ready", "failed", "cancelled", "applied"]
+    expected_course_revision: int = Field(ge=1)
+    lessons: list[dict] = Field(default_factory=list, max_length=3)
+    impacts: list[dict] = Field(default_factory=list)
+    candidates: list[dict] = Field(default_factory=list)
+    error_code: str | None = None

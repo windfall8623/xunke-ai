@@ -22,8 +22,8 @@
     "LearningAttemptDraft.schema.json": "eb6b864dbf5d7531e4a128ba7940014376d759f6fec54e6e48f16da2deabde8a",
     "LearningCompletionRef.schema.json": "45601c364d6d5851299905886ff1dc43f5b490d9ab214b06f17d1127f9b3404d",
     "LearningOutcome.schema.json": "5880bd3e855d88dc599174f7150e9ca1f3eb0fee51294e2bc6936494216f7738",
-    "LessonDraft.schema.json": "97bbe8c706d0d3b4d94416d31d235c09b0f71ca3a784effb715bf682a5fe9f8f",
-    "LessonDraftV2.schema.json": "9b8fb429f9fff8dd145a896d73b145fcdb0748e479767ae7718da0ad475788d8",
+    "LessonDraft.schema.json": "ada75318720faa61f52766e2d3cce81c0c230fec1df0eb04bc17e9b23be32432",
+    "LessonDraftV2.schema.json": "84be36036ab1c7db39fc71a44ab9c2c35ce76c366a78ac9bf7823c3ba795f009",
     "MetricValue.schema.json": "c3a433d0d5d3073b61e230e45cd4f3b89c4aef22006f064ff86d366eb2f2ff93",
     "ObjectiveRef.schema.json": "12904cad52b45e6b130cdd6d2afb746121a75cd4f027177ae51e4031b8626cbe",
     "PipelineManifest.schema.json": "cf363055ceb0a43070ad989513c40cfc5ba94513b52148f15a299c1af3446cd3",
@@ -75,7 +75,7 @@
     "TaskEvent.schema.json": "57646e618875c7e6d79c59903030a240301436033a58b0a023d1b74d31ac1410",
     "TeachingQualitySummary.schema.json": "906b8f8db8f8204deb5d3470f32dd4deb648acc97066f8528e93f9f29c8e1045",
     "WebEvidence.schema.json": "b49473859ac844c797e1f5c75be54741918379e44857989f9a12fd924e1a7e2c",
-    "openapi.json": "3b60e6177ca66d96ec1a0e15045eb7498ae5bb49bb8ae1c5506b276be9fd5436"
+    "openapi.json": "99f4a301fddb4a28407ce1dd61233e379278f806e2e8c0b01df716df14de5ded"
   },
   "schema_version": "1"
 }

@@ -189,3 +189,13 @@ export const HELP_USAGE_LABELS = {
   hints: '使用过提示或帮助',
   unknown: '不确定',
 } as const
+
+/** 计划 B01 的四态计数：展示"已验证 n 项 / 共 m 项"，不合成掌握率百分比。 */
+export function countOutcomes(statuses: CourseOutcomeStatus[]) {
+  return {
+    verified: statuses.filter((status) => status === 'verified').length,
+    needs_practice: statuses.filter((status) => status === 'needs_practice').length,
+    unverified: statuses.filter((status) => status === 'unverified').length,
+    stale: statuses.filter((status) => status === 'stale').length,
+  }
+}

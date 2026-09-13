@@ -30,6 +30,9 @@ class CourseReviewView(Contract):
     revision: int
     active_link_id: str | None = None
     reason: str
+    paused: bool = False
+    rule_due_at: str | None = None
+    override_due_at: str | None = None
 
 
 class CourseTodayItem(Contract):

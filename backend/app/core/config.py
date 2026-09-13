@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     experience_events_enabled: bool = True
     content_events_enabled: bool = False
     enable_course_teaching_agents: bool = False
+    enable_course_revisions: bool = False
     course_teaching_review_timeout_seconds: int = Field(default=60, ge=1, le=120)
     course_teaching_repair_timeout_seconds: int = Field(default=90, ge=1, le=90)
     course_teaching_publication_reserve_seconds: int = Field(default=5, ge=1, le=30)

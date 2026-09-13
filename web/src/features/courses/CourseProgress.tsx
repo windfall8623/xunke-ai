@@ -1,14 +1,19 @@
-import { ArrowRight, BookOpen, CalendarClock, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarClock, Settings, Target } from 'lucide-react'
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useIdentityKey } from '../../app/AuthProvider'
 import { StatusBadge, formatDate } from '../../components/ui'
 import { coursePath, withCourseReturn } from '../../services/courseNavigation'
-import { courseReviewTime } from '../../services/courses'
+import { courseKeys, courseReviewTime } from '../../services/courses'
+import { adjustCourseReview } from '../../services/studyPreferences'
 import type {
   CourseLessonSummary,
   CourseNextAction,
   CourseProgressView,
   CourseReviewView,
 } from '../../types/course'
+import { LearningPreferencesDialog } from './LearningPreferencesDialog'
 
 const actionLabels: Record<CourseNextAction['type'], string> = {
   continue_quiz: '继续练习',
@@ -19,18 +24,53 @@ const actionLabels: Record<CourseNextAction['type'], string> = {
 }
 
 export function CourseProgress({
+  courseId,
   progress,
   lessons,
   reviews = [],
   onAction,
   onLesson,
 }: {
+  courseId: string
   progress: CourseProgressView
   lessons: CourseLessonSummary[]
   reviews?: CourseReviewView[]
   onAction: (action: CourseNextAction) => void
   onLesson: (lessonId: string) => void
 }) {
+  const [prefsOpen, setPrefsOpen] = useState(false)
+  const [adjusting, setAdjusting] = useState<string | null>(null)
+  const [adjustError, setAdjustError] = useState<string | null>(null)
+  const client = useQueryClient()
+  const identity = useIdentityKey()
+
+  async function adjust(review: CourseReviewView, action: 'pause' | 'resume' | 'reschedule') {
+    if (adjusting) return
+    setAdjusting(review.review_id)
+    setAdjustError(null)
+    try {
+      await adjustCourseReview(
+        courseId,
+        review.review_id,
+        {
+          expected_revision: review.revision,
+          expected_content_version: review.content_version,
+          action,
+          due_at:
+            action === 'reschedule'
+              ? new Date(Date.now() + 3 * 86400000).toISOString()
+              : undefined,
+        },
+        crypto.randomUUID(),
+      )
+      void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
+      void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+    } catch (cause) {
+      setAdjustError(cause instanceof Error ? cause.message : '调整未完成，请刷新后重试')
+    } finally {
+      setAdjusting(null)
+    }
+  }
   const reviewRuns = progress.review_runs || []
   const titleFor = (id: string) =>
     lessons.find((lesson) => lesson.lesson_id === id)?.title || '相关课时'
@@ -165,18 +205,61 @@ export function CourseProgress({
           <h3>
             <CalendarClock size={17} />
             下次复习建议
+            <button
+              type="button"
+              className="button secondary course-prefs-button"
+              onClick={() => setPrefsOpen(true)}
+            >
+              <Settings size={15} />
+              学习节奏设置
+            </button>
           </h3>
           <p className="tiny muted">
             按课时安排再次检查。当前三题结果用于建议次日复习，不代表独立掌握。
           </p>
+          {adjustError && <p role="alert" className="tiny course-adjust-error">{adjustError}</p>}
           {scheduled.map((review) => (
             <div className="course-quiz-row" key={review.review_id}>
               <div>
                 <strong>{titleFor(review.lesson_id)}</strong>
                 <p className="tiny muted">
                   {courseReviewTime(review)} · {review.timezone}
+                  {review.override_due_at ? ' · 已按你的选择调整' : ''}
                 </p>
                 <p className="tiny muted">{review.reason}</p>
+                {['scheduled', 'ready', 'failed'].includes(review.status) && (
+                  <div className="button-row course-review-adjust">
+                    {review.paused ? (
+                      <button
+                        type="button"
+                        className="button secondary"
+                        disabled={adjusting === review.review_id}
+                        onClick={() => void adjust(review, 'resume')}
+                      >
+                        恢复建议
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={adjusting === review.review_id}
+                          onClick={() => void adjust(review, 'pause')}
+                        >
+                          暂停建议
+                        </button>
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={adjusting === review.review_id}
+                          onClick={() => void adjust(review, 'reschedule')}
+                        >
+                          推迟 3 天
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <Link
                 className="text-link"
@@ -189,6 +272,7 @@ export function CourseProgress({
           ))}
         </div>
       )}
+      {prefsOpen && <LearningPreferencesDialog onClose={() => setPrefsOpen(false)} />}
       {!!reviewRuns.length && (
         <div className="course-review-runs">
           <h3>补练与复习记录</h3>

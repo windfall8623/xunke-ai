@@ -6,9 +6,10 @@ from app.models.teaching_quality import CourseCapabilities
 from app.models.course import (
     CourseCreate, CourseEvidenceView, CourseLessonGenerate, CourseLessonView, CourseList,
     CourseOutlineUpdate, CourseProgressView, CourseQuizCreate, CourseQuizLinkView,
-    CourseReadUpdate, CourseTaskView, CourseView,
+    CourseReadUpdate, CourseRevisionApply, CourseRevisionGenerate, CourseRevisionPreview,
+    CourseRevisionView, CourseTaskView, CourseView,
 )
-from app.services import content_event_stream, course_progress, course_quiz_service, course_read, course_service, course_teaching, task_event_stream
+from app.services import content_event_stream, course_progress, course_quiz_service, course_read, course_revision_service, course_service, course_teaching, task_event_stream
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -114,3 +115,52 @@ async def outline_evidence(course_id: str, source_ref: str, actor=Depends(get_cu
 @router.get("/{course_id}/lessons/{lesson_id}/evidence/{source_ref}", response_model=ApiResponse[CourseEvidenceView])
 async def lesson_evidence(course_id: str, lesson_id: str, source_ref: str, actor=Depends(get_current_actor)):
     return ApiResponse.success(await course_read.read_evidence(actor.owner_id, course_id, source_ref, lesson_id))
+
+
+@router.post("/{course_id}/revision-previews", status_code=201, response_model=ApiResponse[CourseRevisionView])
+async def create_revision_preview(
+    course_id: str, body: CourseRevisionPreview, actor=Depends(get_current_actor),
+    idempotency_key: str = Header(..., min_length=1, max_length=128),
+):
+    return ApiResponse.success(
+        await course_revision_service.create_revision_preview(actor, course_id, body, idempotency_key))
+
+
+@router.post("/{course_id}/revision-jobs", status_code=202, response_model=ApiResponse[CourseRevisionView])
+async def start_revision_jobs(
+    course_id: str, body: CourseRevisionGenerate, actor=Depends(get_current_actor),
+    idempotency_key: str = Header(..., min_length=1, max_length=128),
+):
+    return ApiResponse.success(
+        await course_revision_service.start_revision_jobs(actor, course_id, body, idempotency_key))
+
+
+@router.get("/{course_id}/revisions/{revision_id}", response_model=ApiResponse[CourseRevisionView])
+async def get_revision(course_id: str, revision_id: str, actor=Depends(get_current_actor)):
+    return ApiResponse.success(
+        await course_revision_service.get_revision(actor.owner_id, course_id, revision_id))
+
+
+@router.post("/{course_id}/revisions/{revision_id}/apply", response_model=ApiResponse[CourseRevisionView])
+async def apply_revision(
+    course_id: str, revision_id: str, body: CourseRevisionApply,
+    actor=Depends(get_current_actor),
+    idempotency_key: str = Header(..., min_length=1, max_length=128),
+):
+    return ApiResponse.success(
+        await course_revision_service.apply_revision(actor, course_id, revision_id, body, idempotency_key))
+
+
+@router.get("/{course_id}/lessons/{lesson_id}/versions")
+async def lesson_versions(course_id: str, lesson_id: str, actor=Depends(get_current_actor)):
+    return ApiResponse.success(
+        await course_revision_service.list_lesson_versions(actor.owner_id, course_id, lesson_id))
+
+
+@router.get("/{course_id}/lessons/{lesson_id}/versions/{content_version}")
+async def lesson_version(
+    course_id: str, lesson_id: str, content_version: int, actor=Depends(get_current_actor)
+):
+    return ApiResponse.success(
+        await course_revision_service.get_lesson_version(
+            actor.owner_id, course_id, lesson_id, content_version))
