@@ -19,6 +19,20 @@
   <img src="https://img.shields.io/badge/License-MIT-176B58" alt="MIT License" />
 </p>
 
+## 目录
+
+- [循课 AI 是什么](#循课-ai-是什么)
+- [可以做什么](#可以做什么)
+- [快速开始](#快速开始)
+- [第一次怎样使用](#第一次怎样使用)
+- [系统架构](#系统架构)
+- [Agent 设计：编排、工具、上下文与执行边界](#agent-设计编排工具上下文与执行边界)
+- [Agent 架构详解](#agent-架构详解)
+- [配置与部署](#配置与部署)
+- [使用评测工作台](#使用评测工作台)
+- [常见问题](#常见问题)
+- [参与贡献与许可](#参与贡献与许可)
+
 ## 循课 AI 是什么
 
 循课 AI 面向“手里有资料，却不知道如何系统学习”的个人自学场景。输入一个主题，或上传自己的资料，就能创建课程、逐课学习、围绕内容提问，再通过练习、结业检查与复习记录继续推进。
@@ -54,6 +68,138 @@ flowchart LR
 <a id="design"></a>
 <a id="agent-design"></a>
 
+### 界面一览
+
+| 学习首页：今日主行动、课程与复习 | 课时学习：正文、自检、小结与下一步 |
+| --- | --- |
+| ![学习首页](assets/home-study.png) | ![课时学习](assets/lesson-reading.png) |
+
+| 课程页：结业检查与逐项目标证据 | |
+| --- | --- |
+| ![结业检查与目标证据](assets/outcomes-panel.png) | 截图来自本地运行的真实界面（演示数据）。 |
+
+## 快速开始
+
+准备 **Docker Desktop / Docker Engine、Docker Compose 2.24.4+ 和 Python 3.11**，下载源码后在项目根目录执行。
+
+**1. 生成私有配置**
+
+```shell
+python deploy/init_env.py
+```
+
+脚本创建 `deploy/.env` 并生成独立随机密钥。已有该文件时直接编辑，保留现有数据库与应用密钥。
+
+**2. 配置模型与注册邮箱**
+
+编辑 `deploy/.env`，先完成下面三类配置：
+
+| 服务 | 作用 | 配置入口 |
+| --- | --- | --- |
+| **LLM** | 课程、答疑、练习与讲解 | 选择 `LLM_PROVIDER`，填写对应 API 地址、密钥和模型名 |
+| **Embedding** | 资料向量化与检索；主题课程无需此项 | `DASHSCOPE_API_KEY`、模型、地址与匹配的向量维度 |
+| **SMTP** | 新账号邮箱验证码注册 | QQ / 163 SMTP 地址、发件邮箱与客户端授权码 |
+
+配置示例见下方 [模型与服务配置](#configuration)，所有参数见 [环境变量模板](deploy/env.example)。课程与综合练习在模板中已启用；未配置模型时可以浏览首页和预置题目，已有账号仍可登录，新注册需要 SMTP。
+
+**3. 构建、迁移并启动**
+
+```shell
+docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml build
+docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d --wait mysql
+docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml run --rm migrate
+docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d api rag-owner eval-scorer web
+```
+
+打开 **[http://localhost:18080](http://localhost:18080)**，通过邮箱注册并保存恢复码，即可创建课程。恢复码只展示一次；万一没有保存，还可以在登录页使用「邮箱验证码找回密码」。
+
+<a id="configuration"></a>
+
+## 第一次怎样使用
+
+1. 进入「我的课程」，输入学习主题即可开始；目标、已有基础、每天学习时间和课时数可按需补充。也可以先上传资料，处理完成后选择资料或章节并预览原文。
+2. 选择可用的教学方式。标准教学增加 Planner / Teacher / Reviewer 协作核对，快速生成减少审核等待。默认准备第一课；想先调整纲要标题，可取消自动准备。
+3. 学习时使用段落解释和课内助教，保存自检回答，需要反馈时点击「检查我的理解」。
+4. 完成三题检查，查看解析、错题与本课小结；根据页面主行动继续补练、到期复习或下一课。
+5. 进入课程中的「结业检查与课程目标」，完成一组客观题及文本应用任务。按目标结果回到薄弱课时；暂定文本反馈可用于修改回答，不能当作正式掌握结论。
+
+| 来源模式 | 内容依据 |
+| --- | --- |
+| **主题课程** | 基于当前 LLM 的通用知识，标明未经外部资料核验。 |
+| **资料课程** | 使用选定资料的冻结版本，保留引用，材料不足的课时标明缺口。 |
+
+资料课程与主题课程均不自动联网。当前单份文件上限为 10 MB；PDF 需含可提取文字，扫描件请先进行 OCR。
+
+<details>
+<summary>学习记录、评分与复习如何理解</summary>
+
+- 阅读完成由用户标记；生成课文、已读、已完成检查分别记录。
+- 课堂自检的保存与反馈不计正式成绩、经验值或掌握状态。
+- 课程检查使用单选、多选、判断三类客观题；填空、数值、短解释使用独立的练习与评分流程。
+- 短解释的模型评分在缺少有效校准时为暂定分，授权复核与自评独立保存。
+- 结业检查完成与全部课程目标已验证分别判断；文本应用的当前模型反馈为暂定状态。
+- 教学 Reviewer 审核内容，学习目标状态依据作答与结算证据；两者不能互相替代。
+- 首次成绩与后续补练、复习分别记录。课程当前提供次日复习建议，支持明确选择提前复习。
+- 生成任务可通过 SSE 展示阶段，正文预览需独立开启，均保留结果读取回退；当前采用确定性复习规则。
+
+</details>
+
+<a id="evaluation"></a>
+
+## 系统架构
+
+```mermaid
+flowchart LR
+    subgraph 客户端
+        Web["React 网页"]
+    end
+    subgraph 业务层
+        API["FastAPI · 授权与业务"]
+        Eval["独立评测 worker"]
+    end
+    subgraph 执行层
+        W["Writer × 1"]
+        G["Generation × 2"]
+    end
+    subgraph 存储与加速
+        SQL[("MySQL · 任务 / 学习记录 / 预算")]
+        Q["Qdrant"]
+        R["Redis"]
+        Files[("原文 / 引用 / 原始向量归档")]
+    end
+    LLM["LLM / Embedding"]
+    Web <--> API
+    API <--> SQL
+    SQL --> W
+    SQL --> G
+    W -->|"构建与删除"| Q
+    G -->|"只读检索"| Q
+    W --> Files
+    G --> Files
+    W -.-> LLM
+    G -.-> LLM
+    W -.->|"提交后通知"| R
+    G -.->|"提交后通知"| R
+    R -.->|"唤醒"| API
+    API -->|"SSE 阶段 / 私有正文预览与补读"| Web
+    Eval <--> API
+```
+
+上图为 Qdrant 模式；轻量部署使用单个 RAG owner 与本地 Chroma。两种模式共用业务、证据和任务协议。
+
+| 层次 | 技术与职责 |
+| --- | --- |
+| 交互 | React 19、TypeScript、Vite、TanStack Query：课程、问答、练习与任务状态 |
+| 业务 | FastAPI、Pydantic、MySQL：身份、权限、数据契约、学习记录、任务与预算 |
+| Agent 与模型 | RAG 与教学两张 LangGraph、Planner / Teacher / Reviewer、Teach v2 结构契约；LangChain 适配模型协议 |
+| 检索与上下文 | LlamaIndex、Chroma / Qdrant、中文 BM25 / RRF、可选重排、证据契约与上下文预算 |
+| 任务与加速 | MySQL 租约队列、Redis Lua / Pub/Sub、SSE 游标恢复、可选查询向量缓存 |
+| 运行与评测 | 单 owner 或 writer / generation 分工，独立评测 worker，Docker Compose / Nginx |
+
+LLM、Embedding 与可选重排服务分别配置。Claude 使用原生 Anthropic 协议，也支持 DeepSeek 和 OpenAI 兼容服务。基础部署使用 Chroma；Redis 与 Qdrant 通过独立 Compose 配置启用，无需本地 GPU。已有资料切换向量后端时，请按 [迁移与回退说明](#vector-deployment) 操作。
+
+<a id="quick-start"></a>
+
 ## Agent 设计：编排、工具、上下文与执行边界
 
 循课 AI 将 Agent 应用拆成可单独理解和替换的职责。模型输出先成为内容产物，通过校验后才进入业务系统；工具执行、资料访问和状态更新都有程序约束。
@@ -82,20 +228,28 @@ flowchart LR
 | **Reviewer** | 独立核对当前稿的目标、先修、示例、检查、来源与答案泄露 | 结构化问题与修改建议，绑定当前草稿、计划和规则版本 |
 
 ```mermaid
-flowchart TB
-    P["纲要任务 · Planner"] --> V["基本检查"]
-    S["已保存课程计划"] --> T["课时任务 · Teacher"]
-    T --> V
-    V -->|"标准教学 / 已请求核对"| R["Reviewer 审核当前稿"]
-    V -->|"快速生成且未请求核对"| F["业务事务发布"]
-    R -->|"通过"| F
-    R -->|"存在阻断问题且额度足够"| X["原生成角色返修 · 至多一次"]
-    V -->|"可修复的格式问题且额度足够"| X
-    X --> C["检查新稿；按模式复核新哈希"]
-    C -->|"满足发布条件"| F
-    C -->|"仍有问题或核对不可用"| E["停止并保留失败原因"]
-    R -->|"无法完成必要核对"| E
-    F -. "纲要发布后" .-> S
+sequenceDiagram
+    autonumber
+    actor U as 学习者
+    participant P as Planner
+    participant T as Teacher
+    participant R as Reviewer
+    participant B as 业务层（发布事务）
+    U->>P: 创建课程（标准教学）
+    P-->>B: 结构化纲要 + 计划哈希，核对通过后发布
+    U->>T: 进入新课时
+    T->>T: 读取冻结计划，生成本课候选稿
+    T->>R: 候选稿 + 冻结计划 + 来源片段
+    R-->>B: 六维审核结论（绑定稿/计划/规范哈希）
+    alt 审核通过
+        B->>U: 原子发布正式课文
+    else 存在阻断问题且返修槽可用
+        R->>T: 结构化修改意见（消耗唯一返修槽）
+        T->>R: 新稿（新内容哈希）并重新复核
+        R-->>B: 复核通过后发布
+    else 核对不可用 / 额度不足
+        B->>U: 明确失败原因；旧内容保持可读
+    end
 ```
 
 标准教学（`guided`）对纲要和课文执行教学核对；快速生成（`fast`）默认只做基本检查。**格式修复和内容返修共用一次机会，返修后重新检查新稿，旧报告不能替新内容背书。** 审核超时、调用预算不足或复核仍有问题时，所请求的审核稿不会发布为合格内容。
@@ -152,8 +306,6 @@ flowchart TB
 
 同一套外呼计量记录模型用量，调用前预占预算、结束后结算。超时且费用未知的调用保留预占，等待对账。**任务状态、业务结果与模型费用各自有据可查。**
 
-教学任务还保存阶段占位、冻结策略和草稿身份。新租约可以继续已经确认的阶段结果，但不能重置返修次数或总调用额度；上一外呼结果不明时停止自动恢复，由用户明确重试。最终发布再次检查当前租约、课程计划、来源和草稿绑定。
-
 <details>
 <summary>为什么当前使用 MySQL 任务队列，Redis 在这里适合做什么？</summary>
 
@@ -171,7 +323,7 @@ Qdrant 的物理写入完成后，独立读客户端完整核验向量，业务�
 
 迁移直接复制已有向量，保留逻辑文档与引用标识。由于 Qdrant 的 Cosine 存储会归一化向量，系统额外归档原始 float32 向量，新增资料也可据此恢复到 Chroma。删除按登记清理各后端副本；未确认的远端操作保留待恢复记录。
 
-### 教学反馈与学习事实分别记录
+### 反馈、成绩与掌握状态为什么分开
 
 自检回答可以直接保存，模型反馈按需请求；页面分别显示保存、反馈生成和结果读取状态，网络恢复后可以取回已保存内容。正式题目按题型评分，首次成绩、补练和复习记录分别保存。
 
@@ -181,7 +333,7 @@ Qdrant 的物理写入完成后，独立读客户端完整核验向量，业务�
 
 “今日学习”根据未完成练习、到期复习和课程进度计算建议，查看建议无需调用模型。**该用规则判断的地方使用规则，模型集中处理讲解与生成。**
 
-### 用同一把尺子比较改动
+### 如何评估一次改动值不值得保留
 
 评测冻结资料、标注和运行配置，再比较检索或生成方案。确定性检查、可选模型 Judge 和人工复核各有职责；耗时与费用和质量一起记录，帮助判断一次优化是否值得保留。
 
@@ -190,6 +342,10 @@ Qdrant 的物理写入完成后，独立读客户端完整核验向量，业务�
 <a id="architecture"></a>
 
 ## Agent 架构详解
+
+<details>
+<summary><b>点开查看工程级细节：角色工具白名单、预算数值表、审核绑定、持久化与恢复</b></summary>
+
 
 本节面向想理解或二次开发这套 Agent 的读者，给出编排层的工程细节。所有数值以代码为准（`backend/app/teaching/policy.py`、`graph.py`、`agents.py`）。
 
@@ -273,78 +429,8 @@ Reviewer 的报告不是一句"通过"，而是带绑定头的结构化报告。
 
 真实模型的抽样验收（8 个固定任务、guided/fast 对照、人工按六维盲读）在模型供应商可用时单独执行，不与模拟验收混记。
 
-## 系统架构
 
-```mermaid
-flowchart LR
-    Web["React 网页"] <--> API["FastAPI · 授权与业务"]
-    API <--> SQL["MySQL · 任务 / 学习记录 / 预算"]
-    SQL --> W["Writer × 1"]
-    SQL --> G["Generation × 2"]
-    W -->|"构建与删除"| Q["Qdrant"]
-    G -->|"只读检索"| Q
-    W --> Files["原文 / 引用 / 原始向量归档"]
-    G --> Files
-    W --> LLM["LLM / Embedding"]
-    G --> LLM
-    W -. "提交后通知" .-> R["Redis"]
-    G -. "提交后通知" .-> R
-    R -. "唤醒" .-> API
-    API -->|"SSE 阶段 / 私有正文预览与补读"| Web
-    Eval["独立评测 worker"] <--> API
-```
-
-上图为 Qdrant 模式；轻量部署使用单个 RAG owner 与本地 Chroma。两种模式共用业务、证据和任务协议。
-
-| 层次 | 技术与职责 |
-| --- | --- |
-| 交互 | React 19、TypeScript、Vite、TanStack Query：课程、问答、练习与任务状态 |
-| 业务 | FastAPI、Pydantic、MySQL：身份、权限、数据契约、学习记录、任务与预算 |
-| Agent 与模型 | RAG 与教学两张 LangGraph、Planner / Teacher / Reviewer、Teach v2 结构契约；LangChain 适配模型协议 |
-| 检索与上下文 | LlamaIndex、Chroma / Qdrant、中文 BM25 / RRF、可选重排、证据契约与上下文预算 |
-| 任务与加速 | MySQL 租约队列、Redis Lua / Pub/Sub、SSE 游标恢复、可选查询向量缓存 |
-| 运行与评测 | 单 owner 或 writer / generation 分工，独立评测 worker，Docker Compose / Nginx |
-
-LLM、Embedding 与可选重排服务分别配置。Claude 使用原生 Anthropic 协议，也支持 DeepSeek 和 OpenAI 兼容服务。基础部署使用 Chroma；Redis 与 Qdrant 通过独立 Compose 配置启用，无需本地 GPU。已有资料切换向量后端时，请按 [迁移与回退说明](#vector-deployment) 操作。
-
-<a id="quick-start"></a>
-
-## 快速开始
-
-准备 **Docker Desktop / Docker Engine、Docker Compose 2.24.4+ 和 Python 3.11**，下载源码后在项目根目录执行。
-
-**1. 生成私有配置**
-
-```shell
-python deploy/init_env.py
-```
-
-脚本创建 `deploy/.env` 并生成独立随机密钥。已有该文件时直接编辑，保留现有数据库与应用密钥。
-
-**2. 配置模型与注册邮箱**
-
-编辑 `deploy/.env`，先完成下面三类配置：
-
-| 服务 | 作用 | 配置入口 |
-| --- | --- | --- |
-| **LLM** | 课程、答疑、练习与讲解 | 选择 `LLM_PROVIDER`，填写对应 API 地址、密钥和模型名 |
-| **Embedding** | 资料向量化与检索；主题课程无需此项 | `DASHSCOPE_API_KEY`、模型、地址与匹配的向量维度 |
-| **SMTP** | 新账号邮箱验证码注册 | QQ / 163 SMTP 地址、发件邮箱与客户端授权码 |
-
-配置示例见下方 [模型与服务配置](#configuration)，所有参数见 [环境变量模板](deploy/env.example)。课程与综合练习在模板中已启用；未配置模型时可以浏览首页和预置题目，已有账号仍可登录，新注册需要 SMTP。
-
-**3. 构建、迁移并启动**
-
-```shell
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml build
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d --wait mysql
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml run --rm migrate
-docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.local.yaml up -d api rag-owner eval-scorer web
-```
-
-打开 **[http://localhost:18080](http://localhost:18080)**，通过邮箱注册并保存恢复码，即可创建课程。恢复码只展示一次；万一没有保存，还可以在登录页使用「邮箱验证码找回密码」。
-
-<a id="configuration"></a>
+</details>
 
 ## 配置与部署
 
@@ -463,6 +549,9 @@ QDRANT_GENERATION_WORKERS=2
 
 下面的 PowerShell 示例同时启用 Redis；仅使用 Qdrant 时可去掉 Redis 覆盖文件，并保持 Redis 开关关闭。启用查询缓存时，将 cache 覆盖文件加在 Qdrant 之前；已有 Judge 部署保留对应覆盖文件。后续管理保持相同组合。
 
+<details>
+<summary>迁移与回退完整命令（PowerShell，逐项确认后继续）</summary>
+
 ```powershell
 $xunkeCompose = @('--env-file', 'deploy/.env', '-f', 'deploy/compose.yaml', '-f', 'deploy/compose.local.yaml', '-f', 'deploy/compose.redis.yaml', '-f', 'deploy/compose.qdrant.yaml')
 docker compose @xunkeCompose config --quiet
@@ -490,6 +579,8 @@ docker compose @xunkeCompose run --rm --no-deps vector-migrate python -m scripts
 docker compose @xunkeCompose run --rm --no-deps vector-migrate python -m scripts.migrate_vectors rollback-check
 ```
 
+</details>
+
 检查成功后，设置 `VECTOR_BACKEND=chroma`、`VECTOR_TARGET_REVISION=legacy-v1`，保留 `VECTOR_PROJECTION_REGISTRY_REQUIRED=true`、Qdrant 服务与读写 key，再执行：
 
 ```powershell
@@ -510,37 +601,6 @@ Chroma 恢复单 owner 执行，后续启动继续带 `--scale rag-generation=0`
 更新源码后重新构建镜像，再按“启动 MySQL → 执行增量迁移 → 启动应用”的顺序更新。保留当前项目名与卷；使用同一 Compose 组合的 `ps` 和 `logs --tail 100` 检查服务，反馈问题时提供脱敏错误。
 
 </details>
-
-## 第一次怎样使用
-
-1. 进入「我的课程」，输入学习主题即可开始；目标、已有基础、每天学习时间和课时数可按需补充。也可以先上传资料，处理完成后选择资料或章节并预览原文。
-2. 选择可用的教学方式。标准教学增加 Planner / Teacher / Reviewer 协作核对，快速生成减少审核等待。默认准备第一课；想先调整纲要标题，可取消自动准备。
-3. 学习时使用段落解释和课内助教，保存自检回答，需要反馈时点击「检查我的理解」。
-4. 完成三题检查，查看解析、错题与本课小结；根据页面主行动继续补练、到期复习或下一课。
-5. 进入课程中的「结业检查与课程目标」，完成一组客观题及文本应用任务。按目标结果回到薄弱课时；暂定文本反馈可用于修改回答，不能当作正式掌握结论。
-
-| 来源模式 | 内容依据 |
-| --- | --- |
-| **主题课程** | 基于当前 LLM 的通用知识，标明未经外部资料核验。 |
-| **资料课程** | 使用选定资料的冻结版本，保留引用，材料不足的课时标明缺口。 |
-
-资料课程与主题课程均不自动联网。当前单份文件上限为 10 MB；PDF 需含可提取文字，扫描件请先进行 OCR。
-
-<details>
-<summary>学习记录、评分与复习如何理解</summary>
-
-- 阅读完成由用户标记；生成课文、已读、已完成检查分别记录。
-- 课堂自检的保存与反馈不计正式成绩、经验值或掌握状态。
-- 课程检查使用单选、多选、判断三类客观题；填空、数值、短解释使用独立的练习与评分流程。
-- 短解释的模型评分在缺少有效校准时为暂定分，授权复核与自评独立保存。
-- 结业检查完成与全部课程目标已验证分别判断；文本应用的当前模型反馈为暂定状态。
-- 教学 Reviewer 审核内容，学习目标状态依据作答与结算证据；两者不能互相替代。
-- 首次成绩与后续补练、复习分别记录。课程当前提供次日复习建议，支持明确选择提前复习。
-- 生成任务可通过 SSE 展示阶段，正文预览需独立开启，均保留结果读取回退；当前采用确定性复习规则。
-
-</details>
-
-<a id="evaluation"></a>
 
 ## 使用评测工作台
 
