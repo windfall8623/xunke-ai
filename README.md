@@ -189,6 +189,90 @@ Qdrant 的物理写入完成后，独立读客户端完整核验向量，业务�
 
 <a id="architecture"></a>
 
+## Agent 架构详解
+
+本节面向想理解或二次开发这套 Agent 的读者，给出编排层的工程细节。所有数值以代码为准（`backend/app/teaching/policy.py`、`graph.py`、`agents.py`）。
+
+### 两种任务，两张图
+
+| | 教学协作图（课程纲要 / 课时） | RAG 出题图（资料练习） |
+| --- | --- | --- |
+| 节点 | authorize → planner/teacher → validate → reviewer → repair → revalidate → recheck → finish/stop | prepare → retrieve → assemble → generate → validate → finish |
+| 回路 | 共享唯一返修槽（结构错误与审核返修共用），返修后必经复核 | 覆盖不足补检索（≤2 轮）、校验失败有限再生成（≤2 次） |
+| recursion_limit | 16 | 24 |
+| 状态载体 | TeachingAgentState（请求/候选/审核报告/返修槽计数） | _State（覆盖计划/候选证据/轮次/校验结果） |
+| 持久恢复 | 外层 MySQL 任务租约 + 质量运行检查点（无 LangGraph Checkpointer） | 同左 |
+
+两张图**不共享状态**，各自有显式输入与终止原因；共同的只有预算组件、摘要协议与业务层的发布事务。
+
+### 角色与工具允许列表
+
+工具端口由 worker 按角色注入，模型没有通用文件、SQL、shell 或网络接口；越权调用在进入模型前就被拒绝：
+
+| 角色 | 允许的工具端口 | 产物边界 |
+| --- | --- | --- |
+| Planner | `outline_material`、`validate_outline`、`generate_outline` | CourseDraftV2 + plan_hash；不给旧课改目标、不分配持久 ID |
+| Teacher | `load_frozen_plan`、`lesson_material`、`validate_lesson`、`generate_lesson`、`preview_lesson_blocks` | LessonDraftV2 + draft_hash；复制纲要约束，不扩大来源范围 |
+| Reviewer | `read_candidate`、`read_frozen_sources`、`validate_references`、`review_candidate` | 结构化 findings；不写课文、不调正式评分、不改成绩 |
+
+Teacher 的 `preview_lesson_blocks` 用于正文流：每完成一个通过结构与引用校验的完整块即对外预览，不发送半个 JSON。
+
+### 冻结策略与预算（数值表）
+
+策略在任务排队时冻结（policy_hash 入库），运行中改配置不影响已排队任务：
+
+| 冻结路径 | 初次生成 | 共享返修槽 | Reviewer（初审+复核） | LLM 重排 | LLM 总上限 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| fast 纲要 | 1 | ≤1 | 0 | 0 | 2 |
+| fast 课时 | 1 | ≤1 | 0 | ≤1 | 3 |
+| guided 纲要 | 1 | ≤1 | ≤2 | 0 | 4 |
+| guided 课时 | 1 | ≤1 | ≤2 | ≤1 | 5 |
+
+- 输入按完整消息计数（不是只算候选正文）：初稿上限 12000，Reviewer/返修 16000；输出初稿沿用纲要 3000 / 课时 4500，Reviewer 1200，重排 512。
+- 时间：Reviewer 默认 60s（可配 1–120）、返修 90s、发布预留 5s；启动返修前必须同时满足"两次调用 + 125s 剩余时间"。
+- 缺失 usage 保留 unknown 并标记估算，不视为免费；所有调用进出持久费用账本。
+
+### 审核如何绑定"当前这一稿"
+
+Reviewer 的报告不是一句"通过"，而是带绑定头的结构化报告。发布时逐字段核对：
+
+| 绑定字段 | 防止的问题 |
+| --- | --- |
+| `draft_hash` | 旧报告替新稿背书（改一个字哈希即变） |
+| `plan_hash` | 计划改了还沿用旧审核 |
+| `skill_hash` | 教学规范升级后旧审核失效 |
+| `scope_fingerprint` | 来源范围变化后旧证据引用失效 |
+| `criteria_revision` | 目标版本变化后对齐关系失效 |
+| `policy_hash` | 用篡改的宽松策略骗取通过 |
+| `artifact_hash`（发布时生成） | 公开"已核对"必须匹配当前已发布产物 |
+
+六个维度必须各出现一次；`pass`/`fail` 缺一即报告无效。topic 课程的 `source_support` 可为 not_applicable，但保留"模型知识、未外部核验"提示。
+
+### 终止原因、公开事件与隐私边界
+
+- 终止原因使用**固定错误码**（`budget_exceeded`、`insufficient_evidence`、`course_quality_blocked`、`course_quality_unavailable`、`course_generation_invalid`、`source_revoked` 等），不接受模型自由文本。
+- 公开 SSE 阶段白名单：`planning / teaching / reviewing / revising`，映射为"规划课程 / 编写本课 / 核对教学内容 / 根据反馈修订"；正文与审核原文走独立授权的内容流，公开事件永不出内网。
+- 执行摘要（`GraphExecutionSummary`）记录节点顺序、分支、usage 增量与终止码，供本地诊断与面试演示；字段严格约束，塞入 prompt/摘录等私有字段会被 schema 拒绝。
+
+### 持久化与恢复
+
+| 表 | 用途 |
+| --- | --- |
+| `learning_teaching_quality_runs` | 每任务一条：冻结策略、候选稿私有暂存、最新报告、返修槽与 generation_revision |
+| `learning_teaching_agent_steps` | 每角色调用一条：stage_slot 限 `initial/repair/review_initial/review_recheck`，外呼前占槽（崩溃遗留的槽视为已消耗，恢复时不重放未知调用） |
+
+候选稿是私有暂存而非已发布内容：发布后清空正文只留哈希与报告；失败候选 24 小时内由 owner 维护周期分批清理；课程删除/资料撤销同步清除候选与报告正文。要求审核的路径缺少有效报告就不发布——worker 重启不会把 guided 静默降级成 fast。
+
+### 教学质量如何被评估
+
+结构契约（目标对齐、引用、先修）由确定性校验保证，Reviewer 与真实质量是两回事。项目为此保留三层评估入口：
+
+1. **契约层**：9 个迁移、严格 Pydantic/JSON Schema 与四层类型一致检查进入 CI；
+2. **评审层**：评测工作台冻结数据集运行方案，确定性指标 + 可选模型 Judge（`calibrated` 区分人工校准），已有基线与消融报告；
+3. **效果层**：目标结果投影（A07）给出"已验证/需补学/待验证"证据计数，配合体验事件（首块可见耗时、重试率）与成本观察（E02），按明确分母报告——无样本如实为 null。
+
+真实模型的抽样验收（8 个固定任务、guided/fast 对照、人工按六维盲读）在模型供应商可用时单独执行，不与模拟验收混记。
+
 ## 系统架构
 
 ```mermaid
