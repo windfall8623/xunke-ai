@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Sparkles } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { ErrorNotice, PageHeading, StatusBadge } from '../../components/ui'
@@ -8,6 +8,11 @@ import { Dialog } from '../../components/Dialog'
 import { StudyScopePicker, documentSelectionVersion } from '../../features/study/StudyScopePicker'
 import { DocumentUpload } from '../../features/knowledge/DocumentUpload'
 import { useCourseOperation } from '../../features/courses/useCourseOperation'
+import { CourseCreateOptions, type CourseCreateOptionsValue } from '../../features/courses/CourseCreateOptions'
+import { CourseOperationNotice } from '../../features/courses/CourseOperationNotice'
+import { CourseSourcePreview } from '../../features/courses/CourseSourcePreview'
+import { isUnconfirmedCourseOperation } from '../../features/courses/courseActionState'
+import { previewSelectionKey } from '../../features/courses/courseSourceFacts'
 import { api } from '../../services/api'
 import {
   courseErrorMessage,
@@ -17,8 +22,10 @@ import {
 } from '../../services/courses'
 import { coursePath } from '../../services/courseNavigation'
 import { clearCourseDraft, loadCourseDraft, saveCourseDraft } from '../../services/courseDrafts'
-import type { SourceScope } from '../../types/api'
-import type { CourseCreate, CourseSourcePolicy } from '../../types/course'
+import { recordExperienceEvent } from '../../services/experienceEvents'
+import { ApiError } from '../../services/http'
+import type { DocumentItem, SourceScope } from '../../types/api'
+import type { CourseCreate, CourseSourcePolicy, CourseTeachingMode } from '../../types/course'
 import '../../styles/courses.scss'
 
 export function CourseCreatePage() {
@@ -39,10 +46,39 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
   const [count, setCount] = useState(draft?.lesson_count ?? 6)
   const [timezone, setTimezone] = useState(draft?.timezone || 'Asia/Shanghai')
   const [preload, setPreload] = useState(draft?.preload_first_lesson ?? true)
+  const [teachingMode, setTeachingMode] = useState<CourseTeachingMode>(draft?.teaching_mode || 'guided')
+  const [modeChanged, setModeChanged] = useState(false)
   const [source, setSource] = useState<CourseSourcePolicy>(draft?.source_policy || 'topic')
   const [scope, setScope] = useState<SourceScope | null>(draft?.scope || null)
   const [scopeVersions, setScopeVersions] = useState(draft?.document_versions || {})
   const [uploading, setUploading] = useState(false)
+  const [uploadedDocument, setUploadedDocument] = useState<DocumentItem | null>(null)
+  const [preview, setPreview] = useState<{ docId: string; version: string; selection: string } | null>(null)
+  const [advancedOpen, setAdvancedOpen] = useState(() => !!draft && (
+    !!draft.goal || !!draft.prior_knowledge || draft.daily_minutes !== 20 || draft.lesson_count !== 6 ||
+    draft.timezone !== 'Asia/Shanghai' || !draft.preload_first_lesson
+  ))
+  const advanced = useRef<HTMLDetailsElement>(null)
+  const intent = useRef<{ body: CourseCreate; semantic: string } | null>(null)
+  const viewed = useRef(false)
+  const capabilities = useQuery({
+    queryKey: courseKeys.capabilities(identity),
+    queryFn: ({ signal }) => coursesApi.capabilities(signal),
+    retry: false,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  })
+  const teachingAgentsAvailable = capabilities.isSuccess && !capabilities.error && Array.isArray(capabilities.data.teaching_modes)
+    ? capabilities.data.teaching_modes.includes('guided') : null
+  const effectiveTeachingMode = operation.state.kind === 'unconfirmed' && intent.current?.body.teaching_mode
+    ? intent.current.body.teaching_mode
+    : teachingAgentsAvailable === false ? 'fast' : teachingMode
+  const modeAvailable = teachingAgentsAvailable !== null && capabilities.data?.teaching_modes.includes(effectiveTeachingMode)
+  useEffect(() => {
+    if (viewed.current) return
+    viewed.current = true
+    void recordExperienceEvent({ event_id: crypto.randomUUID(), name: 'course_create_viewed' })
+  }, [])
   const catalog = useQuery({
     queryKey: [identity, 'documents'],
     queryFn: ({ signal }) => api.documents(signal),
@@ -60,6 +96,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
   })
   const changeScope = useCallback(
     (next: SourceScope | null) => {
+      setPreview(null)
       setScope(next)
       setScopeVersions(
         Object.fromEntries(
@@ -81,11 +118,22 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       lesson_count: count,
       timezone,
       preload_first_lesson: preload,
+      teaching_mode: effectiveTeachingMode,
       source_policy: source,
       scope,
       document_versions: scopeVersions,
     })
-  }, [identity, topic, goal, prior, minutes, count, timezone, preload, source, scope, scopeVersions])
+  }, [identity, topic, goal, prior, minutes, count, timezone, preload, effectiveTeachingMode, source, scope, scopeVersions])
+  const previewDocument = preview && source === 'strict_docs' && !catalog.error
+    ? catalog.data?.items.find((document) => document.doc_id === preview.docId && document.status === 'ready' &&
+      documentSelectionVersion(document) === preview.version) : null
+  const previewSelection = preview && scope?.documents.find((selection) =>
+    selection.doc_id === preview.docId && previewSelectionKey(selection) === preview.selection)
+  const activePreview = !!previewDocument && !!previewSelection
+  useEffect(() => {
+    if (preview && !activePreview) setPreview(null)
+  }, [preview, activePreview])
+  const uploaded = uploadedDocument && (catalog.data?.items.find((document) => document.doc_id === uploadedDocument.doc_id) || uploadedDocument)
   const readySelection =
     source === 'topic' ||
     (!catalog.error &&
@@ -100,9 +148,45 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
         ),
       ))
   const pending = operation.pending !== null
+  const unknown = operation.state.kind === 'unconfirmed'
+  const locked = pending || unknown
+  function updateOptions(patch: Partial<CourseCreateOptionsValue>) {
+    if (patch.goal !== undefined) setGoal(patch.goal || '')
+    if (patch.prior_knowledge !== undefined) setPrior(patch.prior_knowledge || '')
+    if (patch.daily_minutes !== undefined) setMinutes(patch.daily_minutes)
+    if (patch.lesson_count !== undefined) setCount(patch.lesson_count)
+    if (patch.timezone !== undefined) setTimezone(patch.timezone)
+    if (patch.preload_first_lesson !== undefined) setPreload(patch.preload_first_lesson)
+  }
+  async function create(saved: { body: CourseCreate; semantic: string }) {
+    await operation.run('create', async (signal) => {
+      try {
+        const key = await keyFor('create', saved.semantic)
+        if (signal.aborted) throw new DOMException('已离开页面', 'AbortError')
+        const task = await coursesApi.create(saved.body, key, signal)
+        if (!task?.course_id || !task.task_id) throw new ApiError('创建结果尚未确认', 0, 'INVALID_RESPONSE')
+        return task
+      } catch (error) {
+        if (!isUnconfirmedCourseOperation(error)) intent.current = null
+        if (error instanceof ApiError && error.status === 409 && String(error.code).toLowerCase() === 'teaching_agents_unavailable') {
+          setModeChanged(true)
+          await capabilities.refetch()
+        }
+        throw error
+      }
+    }, (task) => {
+      intent.current = null
+      keyFor.settle('create', saved.semantic)
+      clearCourseDraft(identity)
+      client.setQueryData(courseKeys.task(identity, task.course_id, task.task_id, task.lesson_id), task)
+      void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+      void recordExperienceEvent({ event_id: crypto.randomUUID(), name: 'course_create_submitted', course_id: task.course_id, task_id: task.task_id })
+      navigate(coursePath(task.course_id))
+    })
+  }
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (pending) return
+    if (locked || !modeAvailable) return
     if (!topic.trim()) {
       operation.setError('请填写要学习的主题。')
       return
@@ -115,6 +199,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       count < 1 ||
       count > 10
     ) {
+      setAdvancedOpen(true)
       operation.setError('每天学习时长须为 5–120 分钟，课时数须为 1–10 节。')
       return
     }
@@ -125,6 +210,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
     try {
       new Intl.DateTimeFormat('zh-CN', { timeZone: timezone.trim() }).format()
     } catch {
+      setAdvancedOpen(true)
       operation.setError('请填写有效的学习时区，例如 Asia/Shanghai。')
       return
     }
@@ -135,29 +221,17 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       daily_minutes: minutes,
       lesson_count: count,
       preload_first_lesson: preload,
+      teaching_mode: effectiveTeachingMode,
+      // guided reviews as part of its mode; fast does not request an extra review pass.
+      request_quality_review: false,
       source_policy: source,
       scope: source === 'strict_docs' ? scope : null,
       timezone: timezone.trim(),
     }
     const semantic = JSON.stringify(body)
-    await operation.run(
-      'create',
-      async (signal) => {
-        const key = await keyFor('create', semantic)
-        if (signal.aborted) throw new DOMException('已离开页面', 'AbortError')
-        return coursesApi.create(body, key, signal)
-      },
-      (task) => {
-        keyFor.settle('create', semantic)
-        clearCourseDraft(identity)
-        client.setQueryData(
-          courseKeys.task(identity, task.course_id, task.task_id, task.lesson_id),
-          task,
-        )
-        void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
-        navigate(coursePath(task.course_id))
-      },
-    )
+    intent.current = { body, semantic }
+    setModeChanged(false)
+    await create(intent.current)
   }
   return (
     <div className="course-create-page">
@@ -174,11 +248,18 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
         <section className="card">
           <form
             className="stack-form course-create-form"
+            onInvalidCapture={(event) => {
+              const field = event.target as HTMLElement
+              if (!field.closest('details') || !advanced.current) return
+              advanced.current.open = true
+              setAdvancedOpen(true)
+              queueMicrotask(() => field.focus())
+            }}
             onSubmit={(event) => {
               void submit(event)
             }}
           >
-            <fieldset disabled={pending} className="course-form-fields">
+            <fieldset disabled={locked} className="course-form-fields">
               <label>
                 学习主题 <span className="muted tiny">必填</span>
                 <textarea
@@ -190,81 +271,6 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                   placeholder="例如：Python 函数入门"
                 />
               </label>
-              <label>
-                希望学会什么
-                <textarea
-                  rows={2}
-                  maxLength={1000}
-                  value={goal}
-                  onChange={(event) => setGoal(event.target.value)}
-                  placeholder="例如：能编写函数，并解释参数和返回值（选填）"
-                />
-              </label>
-              <label>
-                已有基础
-                <textarea
-                  rows={2}
-                  maxLength={1000}
-                  value={prior}
-                  onChange={(event) => setPrior(event.target.value)}
-                  placeholder="例如：会使用变量和循环（选填）"
-                />
-              </label>
-              <div className="course-form-numbers">
-                <label>
-                  每天学习时长（分钟）
-                  <input
-                    type="number"
-                    min={5}
-                    max={120}
-                    step={1}
-                    required
-                    value={Number.isNaN(minutes) ? '' : minutes}
-                    onChange={(event) => setMinutes(event.target.valueAsNumber)}
-                  />
-                </label>
-                <label>
-                  课程节数
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    step={1}
-                    required
-                    value={Number.isNaN(count) ? '' : count}
-                    onChange={(event) => setCount(event.target.valueAsNumber)}
-                  />
-                </label>
-              </div>
-              <label>
-                学习时区
-                <input
-                  required
-                  maxLength={100}
-                  list="xunke-timezones"
-                  value={timezone}
-                  onChange={(event) => setTimezone(event.target.value)}
-                />
-                <datalist id="xunke-timezones">
-                  {['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Taipei', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Seoul', 'UTC', 'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Berlin'].map((zone) => (
-                    <option value={zone} key={zone} />
-                  ))}
-                </datalist>
-                <small className="muted">按此时区安排每日复习，可直接选择常用时区。</small>
-              </label>
-              <label className="check-option">
-                <input
-                  type="checkbox"
-                  checked={preload}
-                  onChange={(event) => setPreload(event.target.checked)}
-                />
-                <span>
-                  创建后立即准备第一课内容
-                  <small className="muted">
-                    纲要生成后马上开始第一课，进入课程即可阅读；勾选后标题在开始生成时固定，想先调整标题请取消勾选。
-                  </small>
-                </span>
-              </label>
               <fieldset className="source-fieldset">
                 <legend>课程来源</legend>
                 <div className="source-choices">
@@ -273,7 +279,7 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                       type="radio"
                       name="course-source"
                       checked={source === 'topic'}
-                      onChange={() => setSource('topic')}
+                      onChange={() => { setSource('topic'); setPreview(null) }}
                     />
                     <Sparkles size={21} />
                     <span>
@@ -302,16 +308,42 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                     value={scope}
                     onChange={changeScope}
                     initialVersions={scopeVersions}
-                    disabled={pending}
+                    disabled={locked}
+                    onPreview={(document, selection) => setPreview({
+                      docId: document.doc_id,
+                      version: documentSelectionVersion(document),
+                      selection: previewSelectionKey(selection),
+                    })}
                   />
+                  {previewDocument && previewSelection && (
+                    <CourseSourcePreview
+                      document={previewDocument}
+                      selection={previewSelection}
+                      onClose={() => setPreview(null)}
+                      onReloadCatalog={() => {
+                        setPreview(null)
+                        void catalog.refetch()
+                      }}
+                    />
+                  )}
+                  {uploaded && <p className="notice" role="status">
+                    已收到：{uploaded.file_name}。{uploaded.status === 'ready'
+                      ? '资料已就绪，请在列表中核对并选择。'
+                      : ['failed', 'needs_reupload'].includes(uploaded.status)
+                        ? '资料处理未完成，请重新上传；课程草稿已保留。'
+                        : '正在处理，完成后请在列表中核对并选择。'}
+                  </p>}
                   {!!catalog.data?.items.some((doc) => doc.status !== 'ready') && (
                     <div className="course-processing-docs">
                       <p className="muted tiny">以下资料暂不能用于创建课程：</p>
                       {catalog.data.items
                         .filter((doc) => doc.status !== 'ready')
                         .map((doc) => (
-                          <div key={doc.doc_id}>
-                            <span>{doc.file_name}</span>
+                          <div key={doc.doc_id} className="course-processing-item">
+                            <span>{doc.file_name}
+                              {['failed', 'needs_reupload'].includes(doc.status) &&
+                                <small className="muted">处理未完成，请重新上传资料。</small>}
+                            </span>
                             <StatusBadge status={doc.status} />
                           </div>
                         ))}
@@ -324,14 +356,50 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
                   <p className="tiny muted">资料不足的课时会标注缺口；补充资料后可创建新课程。</p>
                 </div>
               )}
+              <fieldset className="source-fieldset course-teaching-modes" disabled={locked || teachingAgentsAvailable === null}>
+                <legend>教学方式</legend>
+                <div className="source-choices">
+                  <label className={`choice-card ${effectiveTeachingMode === 'guided' ? 'selected' : ''}`}>
+                    <input type="radio" name="teaching-mode" value="guided"
+                      disabled={teachingAgentsAvailable !== true}
+                      checked={effectiveTeachingMode === 'guided'} onChange={() => setTeachingMode('guided')} />
+                    <span><strong>{teachingAgentsAvailable === false ? '标准教学（暂不可用）' : '标准教学（推荐）'}</strong>
+                      <small>先设计课程，再生成讲解并做教学检查</small></span>
+                  </label>
+                  <label className={`choice-card ${effectiveTeachingMode === 'fast' ? 'selected' : ''}`}>
+                    <input type="radio" name="teaching-mode" value="fast"
+                      disabled={teachingAgentsAvailable !== null && !capabilities.data?.teaching_modes.includes('fast')}
+                      checked={effectiveTeachingMode === 'fast'} onChange={() => setTeachingMode('fast')} />
+                    <span><strong>快速生成</strong><small>直接生成，适合快速了解</small></span>
+                  </label>
+                </div>
+                {teachingAgentsAvailable === false && effectiveTeachingMode === 'fast' && <p className="notice">本课程使用快速生成，未执行教学检查。</p>}
+              </fieldset>
+              {teachingAgentsAvailable === null && (capabilities.isPending
+                ? <p className="muted tiny" role="status">正在确认可用的教学方式…</p>
+                : <ErrorNotice error="暂时无法确认教学方式，请重新读取后创建课程。" onRetry={() => { void capabilities.refetch() }} />)}
+              {modeChanged && <p className="notice" role="status">教学方式的可用状态已变化，请核对上方选择后再次提交。</p>}
+              <details ref={advanced} className="course-create-advanced" open={advancedOpen}
+                onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
+                <summary>调整学习安排 · 每天 {Number.isFinite(minutes) ? minutes : '—'} 分钟 · {Number.isFinite(count) ? count : '—'} 课</summary>
+                <CourseCreateOptions
+                  value={{ goal, prior_knowledge: prior, daily_minutes: minutes, lesson_count: count, timezone, preload_first_lesson: preload }}
+                  onChange={updateOptions}
+                  disabled={locked}
+                />
+              </details>
             </fieldset>
-            <ErrorNotice error={operation.error ? courseErrorMessage(operation.error) : null} />
+            {operation.state.kind === 'idle' && <ErrorNotice error={operation.error ? courseErrorMessage(operation.error) : null} />}
+            <CourseOperationNotice state={operation.state} error={operation.error} disabled={pending}
+              onRecover={unknown && intent.current ? () => { if (intent.current) void create(intent.current) } : undefined}
+              recoveryLabel="重试原创建请求" />
+            {unknown && <p className="tiny muted">表单保留本次提交内容。可先<Link className="text-link" to="/study">查看已创建的课程</Link>；重试使用同一请求标识。</p>}
             <div className="composer-footer">
               <span className="tiny muted">草稿保留在当前浏览器会话中</span>
               <button
                 className="button primary"
                 type="submit"
-                disabled={pending || !topic.trim() || !readySelection}
+                disabled={locked || !modeAvailable || !topic.trim() || !readySelection}
               >
                 {pending ? '正在创建…' : operation.error ? '重试创建课程' : '生成课程纲要'}
                 <ArrowRight size={17} />
@@ -364,7 +432,8 @@ function CourseCreateForm({ identity }: { identity: string | number }) {
       {uploading && (
         <Dialog title="上传课程资料" className="wide-dialog" onClose={() => setUploading(false)}>
           <DocumentUpload
-            onUploaded={() => {
+            onUploaded={(document) => {
+              setUploadedDocument(document)
               void client.invalidateQueries({ queryKey: [identity, 'documents'] })
             }}
           />

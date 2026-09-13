@@ -608,6 +608,14 @@ async def revoke_document(actor, doc_id, *, purpose="production"):
             d["doc_id"] in affected for d in scope.get("documents", [])
         ):
             await job_service.cancel_job(actor.owner_id, job["task_id"])
+    # Purge all retained private previews referencing a revoked source, including
+    # already completed jobs; no source text belongs in the wakeup channel.
+    for removed_id in affected:
+        await execute(
+            "DELETE h FROM task_content_heads h JOIN quiz_tasks q ON q.task_id=h.task_id "
+            "WHERE h.owner_id=%s AND JSON_SEARCH(q.scope_json,'one',%s,NULL,'$.documents[*].doc_id') IS NOT NULL",
+            (actor.owner_id, removed_id),
+        )
     return {"doc_id": doc_id, "status": "deleted", "task_id": deletion["task_id"]}
 
 

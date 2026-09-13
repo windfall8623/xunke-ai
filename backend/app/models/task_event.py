@@ -24,6 +24,7 @@ PERSISTENT_TYPES = frozenset({"phase", "completed", "failed", "cancelled", "sett
 EVENT_KINDS = frozenset({
     "qa", "course_outline", "course_lesson", "course_tutor",
     "quiz", "practice_generate", "practice_grade",
+    "course_application_generate", "course_application_feedback",
 })
 
 # 公开阶段枚举：每个值都映射自现有真实回调阶段，不虚构拆分、百分比或预计完成时间。
@@ -37,6 +38,10 @@ PUBLIC_STAGES = frozenset({
     "validating",
     "saving",
     "grading",
+    "planning",
+    "teaching",
+    "reviewing",
+    "revising",
 })
 
 # 内部阶段 → 公开阶段；未命中的内部阶段不写事件（不伪造）。
@@ -54,6 +59,10 @@ STAGE_ALIASES = {
     "generating_tutor_answer": "generating",
     "saving_course": "saving",
     "saving_tutor_answer": "saving",
+    "preparing_application_sources": "preparing",
+    "generating_application": "generating",
+    "grading_application": "grading",
+    "saving_application": "saving",
 }
 
 RESET_REASONS = frozenset({"attempt_changed", "cursor_expired", "event_gap"})

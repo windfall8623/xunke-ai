@@ -17,6 +17,7 @@ export type SourcePolicy = NonNullable<ApiSchemas['GenerateBody']['source_policy
 export type SourceStatus = ApiSchemas['QuizView']['source_status']
 export type SelectedDocument = ApiSchemas['RequestedDocument']
 export type SourceScope = ApiSchemas['RequestedScope']
+export type SourceExcerpt = ApiSchemas['SourceExcerptView']
 /** These two request fields have server defaults and can be omitted by callers. */
 export type GenerateRequest = Omit<ApiSchemas['GenerateBody'], 'difficulty' | 'generate_images'> &
   Partial<Pick<ApiSchemas['GenerateBody'], 'difficulty' | 'generate_images'>>

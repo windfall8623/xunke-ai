@@ -46,7 +46,7 @@ function StudyHome({ identity }: { identity: string | number }) {
         title="我的学习"
         description="找到原课程，接着读一课、练一组，让每次学习接得上。"
         action={
-          <Link className="button primary" to="/study/courses/new">
+          <Link className="button secondary" to="/study/courses/new">
             <Plus size={17} />
             开始新课程
           </Link>

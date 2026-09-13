@@ -66,10 +66,13 @@ export function CourseOutline({
         <span className="muted tiny">{lessons.length} 节</span>
         {onCollapse && (
           <button
+            id="course-outline-collapse"
             type="button"
             className="text-button"
             onClick={onCollapse}
             aria-label="收起课程目录"
+            aria-expanded={true}
+            aria-controls="course-outline"
             title="收起目录，专注阅读"
           >
             <PanelLeftClose size={15} />

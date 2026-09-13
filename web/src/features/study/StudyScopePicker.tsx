@@ -59,6 +59,7 @@ export function StudyScopePicker({
   value,
   onChange,
   initialVersions,
+  onPreview,
   disabled = false,
 }: {
   scope?: StudyScope
@@ -66,6 +67,7 @@ export function StudyScopePicker({
   value: SourceScope | null
   onChange: (value: SourceScope | null) => void
   initialVersions?: Record<string, string>
+  onPreview?: (document: DocumentItem, selection: SelectedDocument) => void
   disabled?: boolean
 }) {
   const identity = useIdentityKey()
@@ -191,6 +193,16 @@ export function StudyScopePicker({
                   {fixed.section_ids?.length ? `${fixed.section_ids.length} 个章节` : '全文范围'}
                   ；当前目录不替换历史来源。
                 </p>
+              )}
+              {checked && current && matchingCatalog && onPreview && (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={disabled || catalog.isFetching}
+                  onClick={() => onPreview(current, checked)}
+                >
+                  预览已识别内容 · {source.title || '已选资料'}
+                </button>
               )}
               {checked && !!sections.length && (
                 <fieldset className="section-options" disabled={disabled}>

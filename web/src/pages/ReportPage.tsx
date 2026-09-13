@@ -15,7 +15,7 @@ import { useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading, StatusBadge } from '../components/ui'
 import { api } from '../services/api'
 import { providerErrorMessage } from '../services/providerErrors'
-import { courseReturnPath, withCourseReturn } from '../services/courseNavigation'
+import { courseReturnPath, courseSummaryReturnPath, withCourseReturn } from '../services/courseNavigation'
 
 export function ReportPage() {
   const { quizId = '' } = useParams()
@@ -54,6 +54,8 @@ function ReportWorkspace({ quizId, identity }: { quizId: string; identity: strin
   const courseReturn = !quiz.error
     ? courseReturnPath(quiz.data?.course_context, params.get('returnTo'))
     : null
+  const courseSummary = !quiz.error
+    ? courseSummaryReturnPath(quiz.data?.course_context, params.get('returnTo')) : null
   const retry = useMutation({
     mutationFn: () => api.retryReport(quizId),
     onSuccess: () => {
@@ -82,12 +84,14 @@ function ReportWorkspace({ quizId, identity }: { quizId: string; identity: strin
   if (report.isPending) return <Loading>正在读取已确认的学习结果…</Loading>
   if (report.error || !report.data)
     return (
-      <ErrorNotice
-        error={report.error || '报告尚未就绪。请返回练习页确认完成。'}
-        onRetry={() => {
-          void report.refetch()
-        }}
-      />
+      <div className="report-page">
+        <ErrorNotice
+          error={report.error || '报告尚未就绪。请返回练习页核对保存结果。'}
+          onRetry={() => { void report.refetch() }} />
+        <Link className="button secondary" to={courseSummary || withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}`, courseReturn)}>
+          <ArrowLeft size={16} />{courseSummary ? '返回本课小结' : '回看练习记录'}
+        </Link>
+      </div>
     )
   const data = report.data
   const text = data.report
@@ -104,10 +108,10 @@ function ReportWorkspace({ quizId, identity }: { quizId: string; identity: strin
         <ArrowLeft size={16} />
         回看练习
       </Link>
-      {courseReturn && (
-        <Link className="button secondary" to={courseReturn}>
+      {courseSummary && (
+        <Link className="button secondary" to={courseSummary}>
           <BookOpen size={16} />
-          返回课程，查看学习进度
+          返回本课小结
           <ArrowRight size={16} />
         </Link>
       )}

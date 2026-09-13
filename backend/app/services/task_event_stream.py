@@ -113,6 +113,19 @@ def _quiz_reader() -> TaskReader:
     )
 
 
+def _course_application_reader() -> TaskReader:
+    async def authorize(owner: int, task_id: str) -> dict:
+        from app.services.course_application_service import get_application_task
+
+        return await get_application_task(owner, task_id)
+
+    return TaskReader(
+        kinds=frozenset({"course_application_generate", "course_application_feedback"}),
+        authorize=authorize,
+        identity=_course_identity,
+    )
+
+
 def _practice_reader() -> TaskReader:
     from app.services import practice_service
 
@@ -134,6 +147,7 @@ _READERS = {
     "course": _course_reader(),
     "quiz": _quiz_reader(),
     "practice": _practice_reader(),
+    "course_application": _course_application_reader(),
 }
 
 

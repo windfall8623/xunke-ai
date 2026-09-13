@@ -19,9 +19,12 @@ def outputs():
     from app.models.eval_contracts import DatasetManifest, EvalSample
     from app.models.evaluation import MetricValue
     from app.models.task_event import TaskStreamFrame
+    from app.models.content_event import ContentFrame
+    from app.models.teaching_quality import TeachingQualitySummary
     from app.practice.contracts import GradeArtifact, PracticeArtifact, PracticeSpec
     from app.qa.contracts import ChatAnswerArtifact
     from app.teaching.contracts import CourseDraft, LessonDraft
+    from app.teaching.contracts_v2 import CourseDraftV2, LessonDraftV2
     from app.rag import contracts
     from app.rag.evaluation_artifacts import (
         AnswerGradingEvalArtifact,
@@ -57,6 +60,9 @@ def outputs():
             "ChatAnswerArtifact.schema.json": ChatAnswerArtifact.model_json_schema(),
             "CourseDraft.schema.json": CourseDraft.model_json_schema(),
             "LessonDraft.schema.json": LessonDraft.model_json_schema(),
+            "CourseDraftV2.schema.json": CourseDraftV2.model_json_schema(),
+            "LessonDraftV2.schema.json": LessonDraftV2.model_json_schema(),
+            "TeachingQualitySummary.schema.json": TeachingQualitySummary.model_json_schema(),
             "EvaluationArtifact.schema.json": TypeAdapter(
                 EvaluationArtifact
             ).json_schema(),
@@ -64,6 +70,7 @@ def outputs():
             "AnswerGradingEvalArtifact.schema.json": AnswerGradingEvalArtifact.model_json_schema(),
             # 任务阶段 SSE 帧：持久事件/快照/控制帧的公开联合 schema。
             "TaskEvent.schema.json": TypeAdapter(TaskStreamFrame).json_schema(),
+            "ContentFrame.schema.json": ContentFrame.model_json_schema(),
         }
     )
     learning_names = (

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apiFailure, documentFixture, json, learner, quiz, session } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
+import type { SourceExcerpt } from '../types/api'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -122,6 +123,150 @@ describe('source lifecycle and private feedback', () => {
       reason: 'incorrect_answer',
       allow_evaluation_use: false,
     })
+  })
+})
+
+const previewDocument = {
+  ...documentFixture,
+  sections: [...documentFixture.sections, { section_id: 'section-child', title: '空集' }],
+}
+const previewBlocks: SourceExcerpt['blocks'] = [
+  { block_id: 'cover', start_char: 0, end_char: 10, section_id: 'cover', kind: 'page', page: 1 },
+  { block_id: 'selected', start_char: 20, end_char: 50, section_id: 'section-1', kind: 'page', page: 2 },
+  { block_id: 'child', start_char: 70, end_char: 100, section_id: 'section-child', kind: 'page', page: 4 },
+]
+function previewSource(blockId = 'cover'): SourceExcerpt {
+  const block = previewBlocks.find((item) => item.block_id === blockId)!
+  return {
+    doc_id: 'doc-1', version_id: 'version-1', parse_artifact_id: 'parse-1',
+    source_sha256: 'source-hash', canonical_text_hash: 'canonical-hash',
+    block_id: block.block_id,
+    excerpt: { cover: '范围外的封面片段', selected: '集合的元素具有互异性。', child: '空集是任意集合的子集。' }[blockId]!,
+    locator: { ...block, quote_hash: 'quote-hash' },
+    blocks: previewBlocks,
+    sections: [
+      { section_id: 'section-1', title: '第一节 集合基础', level: 1, start_char: 20, end_char: 200 },
+      { section_id: 'section-child', title: '空集', heading_path: ['第一节 集合基础', '空集'], level: 2, start_char: 60, end_char: 140 },
+    ],
+  }
+}
+
+async function selectCourseDocument() {
+  await userEvent.click(await screen.findByRole('radio', { name: /根据我的资料/ }))
+  await userEvent.click(await screen.findByRole('checkbox', { name: documentFixture.file_name }))
+}
+
+describe('course source previews and upload context', () => {
+  it('previews only a selected parent range and its children using immutable source identities', async () => {
+    const reads: URL[] = []
+    renderApp('/study/courses/new', (path) => {
+      if (path.endsWith('/auth/session')) return json(session)
+      if (path.endsWith('/courses/capabilities')) return json({ teaching_modes: ['fast', 'guided'] })
+      if (path.endsWith('/knowledge/documents')) return json({ items: [previewDocument], total: 1 })
+      if (path.includes('/source?')) {
+        const url = new URL(path, 'http://localhost')
+        reads.push(url)
+        return json(previewSource(url.searchParams.get('block_id') || undefined))
+      }
+      return json({})
+    })
+    await selectCourseDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: '第一节 集合基础' }))
+    expect(reads).toHaveLength(0)
+    await userEvent.click(screen.getByRole('button', { name: /预览已识别内容/ }))
+    expect(await screen.findByText('集合的元素具有互异性。')).toBeVisible()
+    expect(screen.queryByText('范围外的封面片段')).not.toBeInTheDocument()
+    expect(screen.getByText('已识别出文字的页码：2、4')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: '查看 第一节 集合基础 / 空集' }))
+    expect(await screen.findByText('空集是任意集合的子集。')).toBeVisible()
+    expect(screen.queryByText('集合的元素具有互异性。')).not.toBeInTheDocument()
+    expect(reads.map((url) => url.searchParams.get('block_id'))).toEqual([null, 'selected', 'child'])
+    expect(reads.every((url) => url.searchParams.get('version_id') === 'version-1' && url.searchParams.get('parse_artifact_id') === 'parse-1')).toBe(true)
+  })
+
+  it('hides a formerly readable excerpt after a source 404 without dropping the draft', async () => {
+    let missing = false
+    renderApp('/study/courses/new', (path) => {
+      if (path.endsWith('/auth/session')) return json(session)
+      if (path.endsWith('/courses/capabilities')) return json({ teaching_modes: ['fast', 'guided'] })
+      if (path.endsWith('/knowledge/documents')) return json({ items: [previewDocument], total: 1 })
+      if (path.includes('/source?')) return missing ? apiFailure(404) : json(previewSource())
+      return json({})
+    })
+    await userEvent.type(await screen.findByLabelText(/学习主题/), '保留课程主题')
+    await selectCourseDocument()
+    await userEvent.click(screen.getByRole('button', { name: /预览已识别内容/ }))
+    await screen.findByText('范围外的封面片段')
+    missing = true
+    await userEvent.click(screen.getByRole('button', { name: '重新读取片段' }))
+    expect(await screen.findByText('这份资料的当前版本暂不可用，请刷新资料列表后重新选择。')).toBeVisible()
+    expect(screen.queryByText('范围外的封面片段')).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/学习主题/)).toHaveValue('保留课程主题')
+  })
+
+  it('closes a preview, removes its private cache and clears selection when the catalog version changes', async () => {
+    let currentDocument = previewDocument
+    const { client } = renderApp('/study/courses/new', (path) => {
+      if (path.endsWith('/auth/session')) return json(session)
+      if (path.endsWith('/courses/capabilities')) return json({ teaching_modes: ['fast', 'guided'] })
+      if (path.endsWith('/knowledge/documents')) return json({ items: [currentDocument], total: 1 })
+      if (path.includes('/source?')) return json(previewSource())
+      return json({})
+    })
+    await selectCourseDocument()
+    await userEvent.click(screen.getByRole('button', { name: /预览已识别内容/ }))
+    await screen.findByText('范围外的封面片段')
+    currentDocument = { ...previewDocument, active_version_id: 'version-2', section_catalog_revision: 'parse-2', document_revision: 2 }
+    await act(async () => { await client.invalidateQueries({ queryKey: [learner.id, 'documents'] }) })
+    expect(await screen.findByText('资料版本已变化，已清除旧选择，请重新确认资料。')).toBeVisible()
+    expect(screen.queryByText('范围外的封面片段')).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: documentFixture.file_name })).not.toBeChecked()
+    await waitFor(() => expect(client.getQueryCache().findAll({ queryKey: [learner.id, 'course-source-preview'] })).toHaveLength(0))
+  })
+
+  it('rejects a source response for a different version before displaying its text', async () => {
+    renderApp('/study/courses/new', (path) => {
+      if (path.endsWith('/auth/session')) return json(session)
+      if (path.endsWith('/courses/capabilities')) return json({ teaching_modes: ['fast', 'guided'] })
+      if (path.endsWith('/knowledge/documents')) return json({ items: [previewDocument], total: 1 })
+      if (path.includes('/source?')) return json({ ...previewSource(), version_id: 'unexpected-version' })
+      return json({})
+    })
+    await selectCourseDocument()
+    await userEvent.click(screen.getByRole('button', { name: /预览已识别内容/ }))
+    expect(await screen.findByText('资料版本与当前选择不一致，请刷新资料列表后重新选择。')).toBeVisible()
+    expect(screen.queryByText('范围外的封面片段')).not.toBeInTheDocument()
+  })
+
+  it('retains the creation draft after upload but requires the processing document to become ready and be selected', async () => {
+    let received = false
+    let uploads = 0
+    const creations: unknown[] = []
+    const document = { ...documentFixture, file_name: '新课程笔记.txt', status: 'processing' }
+    renderApp('/study/courses/new', (path, init) => {
+      if (path.endsWith('/auth/session')) return json(session)
+      if (path.endsWith('/courses/capabilities')) return json({ teaching_modes: ['fast', 'guided'] })
+      if (path.endsWith('/knowledge/documents')) {
+        if (init.method === 'POST') { received = true; uploads++; return json(document, 202) }
+        return json({ items: received ? [document] : [], total: received ? 1 : 0 })
+      }
+      if (path === '/api/v1/courses' && init.method === 'POST') creations.push(init.body)
+      return json({})
+    })
+    await userEvent.type(await screen.findByLabelText(/学习主题/), '结合笔记学习集合')
+    await userEvent.click(screen.getByRole('radio', { name: /快速生成/ }))
+    await userEvent.click(screen.getByRole('radio', { name: /根据我的资料/ }))
+    await userEvent.click(await screen.findByRole('button', { name: '上传资料' }))
+    await userEvent.upload(screen.getByLabelText('选择资料文件'), new File(['学习笔记'], '新课程笔记.txt', { type: 'text/plain' }))
+    await screen.findByText(/上传已收到/)
+    await userEvent.click(screen.getByRole('button', { name: '返回课程草稿' }))
+    expect(screen.getByLabelText(/学习主题/)).toHaveValue('结合笔记学习集合')
+    expect(screen.getByRole('radio', { name: /快速生成/ })).toBeChecked()
+    expect(await screen.findByText(/已收到：新课程笔记.txt/)).toHaveTextContent('正在处理')
+    expect(screen.getByRole('button', { name: '生成课程纲要' })).toBeDisabled()
+    expect(screen.queryByRole('checkbox', { name: '新课程笔记.txt' })).not.toBeInTheDocument()
+    expect(uploads).toBe(1)
+    expect(creations).toEqual([])
   })
 })
 

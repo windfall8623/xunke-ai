@@ -78,6 +78,21 @@ export const api = {
     request<Page<DocumentItem>>('/knowledge/documents', { signal }),
   document: (id: string, signal?: AbortSignal) =>
     request<DocumentItem>(`/knowledge/documents/${segment(id)}`, { signal }),
+  documentSource: (
+    docId: string,
+    ref: { version_id: string; parse_artifact_id: string; block_id?: string },
+    signal?: AbortSignal,
+  ) => {
+    const query = new URLSearchParams({
+      version_id: ref.version_id,
+      parse_artifact_id: ref.parse_artifact_id,
+    })
+    if (ref.block_id) query.set('block_id', ref.block_id)
+    return request<ApiSchemas['SourceExcerptView']>(
+      `/knowledge/documents/${segment(docId)}/source?${query}`,
+      { signal },
+    )
+  },
   upload: (file: File, docId?: string) => {
     const data = new FormData()
     data.append('file', file)

@@ -1,4 +1,5 @@
 import { request } from './http'
+import { trackContentSubmission } from './experienceEvents'
 import type {
   CourseEvidenceView,
   CourseSelfCheckCreate,
@@ -11,6 +12,14 @@ const segment = encodeURIComponent
 const base = (courseId: string, lessonId: string) =>
   `/courses/${segment(courseId)}/lessons/${segment(lessonId)}`
 
+const trackTutorSubmission = async (send: () => Promise<CourseTutorTurnView>) => {
+  const result = await trackContentSubmission(async () => {
+    const turn = await send()
+    return { task_id: turn.task.task_id, turn }
+  })
+  return result.turn
+}
+
 export const askTutor = (
   courseId: string,
   lessonId: string,
@@ -18,12 +27,12 @@ export const askTutor = (
   key: string,
   signal?: AbortSignal,
 ) =>
-  request<CourseTutorTurnView>(`${base(courseId, lessonId)}/tutor-turns`, {
+  trackTutorSubmission(() => request<CourseTutorTurnView>(`${base(courseId, lessonId)}/tutor-turns`, {
     method: 'POST',
     data: body,
     idempotencyKey: key,
     signal,
-  })
+  }))
 
 export const listTutorTurns = (
   courseId: string,
@@ -43,11 +52,11 @@ export const retryTutorTurn = (
   key: string,
   signal?: AbortSignal,
 ) =>
-  request<CourseTutorTurnView>(`${base(courseId, lessonId)}/tutor-turns/${segment(turnId)}/retry`, {
+  trackTutorSubmission(() => request<CourseTutorTurnView>(`${base(courseId, lessonId)}/tutor-turns/${segment(turnId)}/retry`, {
     method: 'POST',
     idempotencyKey: key,
     signal,
-  })
+  }))
 
 export const readTutorEvidence = (
   courseId: string,

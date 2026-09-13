@@ -250,6 +250,7 @@ class OwnerWorker:
         grading_provider=None,
         course_generator=None,
         course_tutor_generator=None,
+        course_application_generator=None,
         worker_id=None,
         role=None,
     ):
@@ -259,6 +260,7 @@ class OwnerWorker:
         self.grading_provider = grading_provider
         self.course_generator = course_generator
         self.course_tutor_generator = course_tutor_generator
+        self.course_application_generator = course_application_generator
         from app.workers.roles import claim_kinds, effective_role
         self.role = effective_role(get_settings(), role)
         self.kinds = claim_kinds(self.role)
@@ -268,18 +270,20 @@ class OwnerWorker:
         self._next_event_purge = 0.0
 
     async def _worker_heartbeat(self):
+        teaching_ready = self.course_generator is not None and getattr(self.course_generator, "reviewer", None) is not None
         if self.role != "owner":
             available = await self.engine.store.projection.healthcheck()
             await execute(
                 "INSERT INTO worker_heartbeats(worker_id,role,heartbeat_at,status_json) VALUES(%s,%s,UTC_TIMESTAMP(6),%s) "
                 "ON DUPLICATE KEY UPDATE heartbeat_at=UTC_TIMESTAMP(6),role=VALUES(role),status_json=VALUES(status_json)",
-                (self.worker_id, "rag_" + self.role, dump({"vector_backend": "qdrant", "vector_available": available})),
+                (self.worker_id, "rag_" + self.role, dump({"vector_backend": "qdrant", "vector_available": available,
+                    "teaching_agents_ready": teaching_ready})),
             )
             return
         await execute(
-            "INSERT INTO worker_heartbeats(worker_id,role,heartbeat_at) VALUES(%s,'rag_owner',UTC_TIMESTAMP(6)) "
-            "ON DUPLICATE KEY UPDATE heartbeat_at=UTC_TIMESTAMP(6),role='rag_owner'",
-            (self.worker_id,),
+            "INSERT INTO worker_heartbeats(worker_id,role,heartbeat_at,status_json) VALUES(%s,'rag_owner',UTC_TIMESTAMP(6),%s) "
+            "ON DUPLICATE KEY UPDATE heartbeat_at=UTC_TIMESTAMP(6),role='rag_owner',status_json=VALUES(status_json)",
+            (self.worker_id, dump({"teaching_agents_ready": teaching_ready})),
         )
 
     async def _monitor(self, job, task, lease_lost):
@@ -327,6 +331,13 @@ class OwnerWorker:
                 self._next_event_purge = time.monotonic() + 300
                 try:
                     await task_event_service.purge_expired_events()
+                    from app.services.content_event_service import purge_content
+                    from app.services.experience_event_service import purge_experience_events
+                    from app.services.teaching_quality_service import purge_expired_quality_candidates
+
+                    await purge_content()
+                    await purge_experience_events()
+                    await purge_expired_quality_candidates()
                 except Exception:  # noqa: BLE001 - 清理失败下一周期重试
                     logger.exception("Task event purge will retry")
             await self.reconcile(task_id=task_id)
@@ -376,9 +387,11 @@ class OwnerWorker:
 
     async def _execute(self, job):
         from app.services.vector_projection_service import execution_receipt
+        from app.services.content_event_service import content_preview
 
         async with execution_receipt(job, self.worker_id):
-            await self._execute_managed(job)
+            async with content_preview(job):
+                await self._execute_managed(job)
 
     async def _execute_managed(self, job):
         # The ContextVar propagates into the provider adapters and the managed
@@ -430,12 +443,28 @@ class OwnerWorker:
             elif job["kind"] in {"course_outline", "course_lesson"}:
                 from app.workers.course_job import run_course
 
-                await run_course(job, self.engine, self.course_generator, usage_loader=_metered_usage)
+                def record_teaching_summary(summary):
+                    self.engine.store.put_json(
+                        _attempt_directory(job) + "/graph-summary.json",
+                        summary.model_dump(mode="json"),
+                    )
+
+                await run_course(
+                    job, self.engine, self.course_generator,
+                    usage_loader=_metered_usage, record_summary=record_teaching_summary,
+                )
             elif job["kind"] == "course_tutor":
                 from app.workers.course_tutor_job import run_course_tutor
 
                 await run_course_tutor(
                     job, actor, self.engine, generator=self.course_tutor_generator,
+                    usage_loader=_metered_usage,
+                )
+            elif job["kind"] in {"course_application_generate", "course_application_feedback"}:
+                from app.workers.course_application_job import run_course_application
+
+                await run_course_application(
+                    job, actor, self.engine, generator=self.course_application_generator,
                     usage_loader=_metered_usage,
                 )
             elif job["kind"] == "report":
@@ -497,14 +526,22 @@ class OwnerWorker:
             if learning_context is not None
             else {}
         )
+        graph_summary = {}
+        directory = _attempt_directory(job)
+
+        def record_graph_summary(summary):
+            graph_summary.update(summary.model_dump(mode="json"))
+            self.engine.store.put_json(directory + "/graph-summary.json", graph_summary)
+
         artifact = await self.engine.generate(
-            spec, actor, context, scope, config, **coverage_options
+            spec, actor, context, scope, config, record_summary=record_graph_summary, **coverage_options
         )
         payload = artifact.model_dump(mode="json")
         payload["usage"] = await _metered_usage(job, payload["usage"])
         directory = _attempt_directory(job)
         evidence_key = self.engine.store.put_json(directory + "/artifact.json", payload)
         debug = {
+            "graph_summary": graph_summary,
             "trace": artifact.trace,
             "usage": payload["usage"],
             "validation": artifact.validation.model_dump(mode="json"),
@@ -585,6 +622,9 @@ class OwnerWorker:
                 ),
                 conn=conn,
             )
+            from app.services.course_assessment_service import publish_assessment_quiz
+
+            await publish_assessment_quiz(conn, actor.owner_id, current, artifact)
             if images:
                 await job_service.enqueue_job(
                     actor.owner_id,
@@ -1012,6 +1052,10 @@ class OwnerWorker:
                     from app.workers.course_tutor_job import reconcile_course_tutor
 
                     await reconcile_course_tutor(job, conn)
+                elif job["kind"] in {"course_application_generate", "course_application_feedback"}:
+                    from app.workers.course_application_job import reconcile_course_application
+
+                    await reconcile_course_application(job, conn)
                 elif job["kind"] == "images" and request.get("quiz_id"):
                     await execute(
                         "UPDATE quiz_sessions SET images_status='failed' WHERE quiz_id=%s AND user_id=%s "
@@ -1064,6 +1108,7 @@ async def _main(args):
             grading_provider=runtime.grading_provider,
             course_generator=runtime.course_generator,
             course_tutor_generator=runtime.course_tutor_generator,
+            course_application_generator=runtime.course_application_generator,
             worker_id=args.worker_id,
             role=role,
         )

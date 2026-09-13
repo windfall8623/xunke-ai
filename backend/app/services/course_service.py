@@ -5,8 +5,10 @@ from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict
 from app.core.security import check_content
 from app.core.values import digest, dump, load, now, uid
+from app.models.course import CourseCreate
 from app.rag.contracts import ResolvedScope
-from app.services import course_read, job_service, source_service
+from app.services import course_read, course_teaching, job_service, source_service
+from app.teaching.protocol import draft_hash
 
 
 class _ReuseTask(Exception):
@@ -23,16 +25,19 @@ async def create_course(actor, body, key):
     require_enabled()
     owner = actor.owner_id
     spec = body.model_dump(mode="json")
-    request_hash = digest(dump(spec))
+    frozen = course_teaching.frozen_request_fields("outline", body)
+    request_hash = digest(dump({"spec": spec, **frozen}))
     old = await job_service.existing_job(owner, "course_outline", key, request_hash)
     if old:
         return await course_read.get_task(owner, old["task_id"])
+    await course_teaching.require_teaching_available(body.teaching_mode, body.request_quality_review)
     if not check_content(body.topic + "\n" + body.goal):
         raise AppError(422, "content_filtered", "请更换课程主题或目标")
     scope = (await source_service.resolve_scope(actor, body.scope)) if body.scope else ResolvedScope(owner_id=owner, namespace="production")
     course_id = uid("course")
     request = dict(course_id=course_id, spec=spec, scope_fingerprint=scope.fingerprint,
-                   pipeline_id=get_settings().rag_pipeline_id)
+                   pipeline_id=get_settings().rag_pipeline_id,
+                   criteria_revision=1, **frozen)
     async with transaction() as conn:
         job = await job_service.enqueue_job(owner, "course_outline", request, key,
                                            scope=scope.model_dump(mode="json"), request_hash=request_hash, conn=conn)
@@ -56,12 +61,18 @@ async def retry_outline(actor, course_id, key):
     owner = actor.owner_id
     row = await course_read.owned_course(owner, course_id)
     scope = await course_read.authorize_course(row)
-    request = dict(course_id=course_id, spec=load(row["spec_json"]), scope_fingerprint=scope.fingerprint,
-                   pipeline_id=get_settings().rag_pipeline_id)
-    request_hash = digest(dump({"course_id": course_id, "operation": "retry_outline"}))
+    spec = CourseCreate.model_validate(load(row["spec_json"]))
+    frozen = course_teaching.frozen_request_fields("outline", spec)
+    request_hash = digest(dump({"course_id": course_id, "operation": "retry_outline",
+                                "teaching_mode": spec.teaching_mode,
+                                "request_quality_review": spec.request_quality_review, **frozen}))
     old = await job_service.existing_job(owner, "course_outline", key, request_hash)
     if old:
         return await course_read.get_task(owner, old["task_id"])
+    await course_teaching.require_teaching_available(spec.teaching_mode, spec.request_quality_review)
+    request = dict(course_id=course_id, spec=spec.model_dump(mode="json"), scope_fingerprint=scope.fingerprint,
+                   pipeline_id=get_settings().rag_pipeline_id,
+                   criteria_revision=row.get("criteria_revision", 1), **frozen)
     try:
         async with transaction() as conn:
             job = await job_service.enqueue_job(owner, "course_outline", request, key, scope=scope.model_dump(mode="json"),
@@ -90,12 +101,20 @@ async def generate_lesson(actor, course_id, lesson_id, body, key):
     owner = actor.owner_id
     course = await course_read.owned_course(owner, course_id)
     scope = await course_read.authorize_course(course)
-    request_hash = digest(dump(dict(course_id=course_id, lesson_id=lesson_id, **body.model_dump())))
+    spec = CourseCreate.model_validate(load(course["spec_json"]))
+    frozen = course_teaching.frozen_request_fields("lesson", spec, request_quality_review=body.request_quality_review)
+    request_hash = digest(dump({"course_id": course_id, "lesson_id": lesson_id, **body.model_dump(), **frozen}))
     old = await job_service.existing_job(owner, "course_lesson", key, request_hash)
     if old:
         return await course_read.get_task(owner, old["task_id"])
+    await course_teaching.require_teaching_available(
+        spec.teaching_mode, body.request_quality_review,
+        schema_version=load(course["outline_json"], {}).get("schema_version"),
+    )
     request = dict(course_id=course_id, lesson_id=lesson_id, expected_course_revision=body.expected_course_revision,
-                   scope_fingerprint=scope.fingerprint, pipeline_id=get_settings().rag_pipeline_id)
+                   scope_fingerprint=scope.fingerprint, pipeline_id=get_settings().rag_pipeline_id,
+                   criteria_revision=course.get("criteria_revision", 1),
+                   plan_hash=draft_hash(await course_read.load_course_plan(course)), **frozen)
     try:
         async with transaction() as conn:
             job = await job_service.enqueue_job(owner, "course_lesson", request, key, scope=scope.model_dump(mode="json"),
@@ -110,6 +129,8 @@ async def generate_lesson(actor, course_id, lesson_id, body, key):
                 raise _ReuseTask(last["task_id"])
             if course["revision"] != body.expected_course_revision:
                 raise conflict()
+            if course.get("criteria_revision", 1) != request["criteria_revision"] or draft_hash(await course_read.load_course_plan(course, conn=conn)) != request["plan_hash"]:
+                raise conflict("course_criteria_changed", "课程目标或纲要已更新")
             if course["status"] not in {"ready", "partial"}:
                 raise conflict("course_not_ready", "请等待课程纲要生成完成")
             if lesson["status"] == "material_gap":
@@ -186,8 +207,10 @@ async def cancel_task(owner, task_id):
 
 
 async def purge_document(owner, doc_id):
+    from app.services.course_assessment_service import purge_course_assessments
     from app.services.course_review_service import purge_course_reviews
     from app.services.course_tutor_service import purge_course_tutor
+    from app.services.teaching_quality_service import purge_quality_content
 
     rows = await fetch_all("SELECT course_id,resolved_scope_json FROM learning_courses WHERE owner_id=%s AND source_policy='strict_docs'", (owner,))
     for row in rows:
@@ -206,3 +229,5 @@ async def purge_document(owner, doc_id):
             )
             await purge_course_tutor(conn, owner, row["course_id"])
             await purge_course_reviews(conn, owner, row["course_id"])
+            await purge_quality_content(owner, row["course_id"], conn=conn)
+            await purge_course_assessments(conn, owner, row["course_id"])

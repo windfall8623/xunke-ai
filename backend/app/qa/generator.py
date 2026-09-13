@@ -225,7 +225,30 @@ class LangChainQaGenerator:
             "generate": self.llm,
             "semantic": self.semantic_llm,
         }[stage]
-        response = await client.ainvoke(messages)
+        from app.llm.streaming import JsonContentDecoder
+        from app.services.content_event_service import current_preview
+
+        preview = current_preview() if stage == "generate" else None
+        decoder, seen = JsonContentDecoder(), set()
+
+        async def on_chunk(chunk):
+            from app.qa.contracts import AnswerBlock
+
+            decoder.feed(chunk)
+            for raw_block in decoder.complete_blocks():
+                try:
+                    block = AnswerBlock.model_validate(raw_block)
+                except ValidationError:
+                    continue
+                if block.kind != "fact" or block.block_id in seen or not set(block.citation_refs) <= set(pack.provided_evidence_ids):
+                    continue
+                seen.add(block.block_id)
+                await preview.block(block.block_id, block.text, block.citation_refs)
+
+        response = (
+            await client.ainvoke_streamed(messages, on_chunk=on_chunk)
+            if preview and callable(getattr(client, "ainvoke_streamed", None)) else await client.ainvoke(messages)
+        )
         try:
             content = response_text(response).strip()
             if count_tokens(content) > 128000:

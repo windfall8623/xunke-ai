@@ -10,6 +10,7 @@ import json
 import re
 
 from app.llm.responses import response_text
+from app.prompts.quiz_prompt import COURSE_CRITERION_RULES
 from app.rag.budget import count_tokens
 from app.rag.contracts import GenerationResult, Usage, ValidationResult
 from app.rag.errors import BudgetExceeded, GenerationValidationFailed
@@ -134,6 +135,8 @@ class LangChainQuizGenerator:
                 for e in pack.evidence
             ],
         }
+        if spec.course_criteria:
+            data["course_criteria"] = [item.model_dump(mode="json") for item in spec.course_criteria]
         if stage == "semantic":
             data["quiz"] = (
                 payload.model_dump(mode="json")
@@ -144,7 +147,8 @@ class LangChainQuizGenerator:
             data["validation_feedback"] = feedback
         return [
             SystemMessage(
-                content=SEMANTIC_SYSTEM if stage == "semantic" else GENERATOR_SYSTEM
+                content=(SEMANTIC_SYSTEM if stage == "semantic" else GENERATOR_SYSTEM)
+                + ("\n" + COURSE_CRITERION_RULES if spec.course_criteria else "")
             ),
             HumanMessage(
                 content=json.dumps(data, ensure_ascii=False, separators=(",", ":"))

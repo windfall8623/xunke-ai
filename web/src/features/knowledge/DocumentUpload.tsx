@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react'
 import { api } from '../../services/api'
 import { evaluationApi } from '../../services/evaluation'
 import { ErrorNotice, Loading } from '../../components/ui'
+import type { DocumentItem } from '../../types/api'
 
 export function DocumentUpload({
   onUploaded,
@@ -11,7 +12,7 @@ export function DocumentUpload({
   docId,
   purpose = 'production',
 }: {
-  onUploaded: () => void
+  onUploaded?: (document: DocumentItem) => void
   disabled?: boolean
   docId?: string
   purpose?: 'production' | 'evaluation'
@@ -23,7 +24,7 @@ export function DocumentUpload({
   const upload = useMutation({
     mutationFn: (file: File) =>
       purpose === 'evaluation' ? evaluationApi.uploadDocument(file) : api.upload(file, docId),
-    onSuccess: () => onUploaded(),
+    onSuccess: (document) => onUploaded?.(document),
   })
   function selectFile(file?: File) {
     setError('')

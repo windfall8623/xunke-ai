@@ -3,6 +3,8 @@ import { ErrorNotice } from '../../components/ui'
 import { providerErrorMessage } from '../../services/providerErrors'
 import type { QaTask } from '../../types/qa'
 import { activeTask } from './useQaSession'
+import { ContentPreview } from '../tasks/ContentPreview'
+import { useContentEvents } from '../tasks/useContentEvents'
 
 // 只映射任务阶段流里的真实公开阶段；不虚构百分比或预计完成时间。
 const stages: Record<string, string> = {
@@ -53,6 +55,7 @@ export function TaskProgress({
   onRetry?: () => void
 }) {
   const running = activeTask(task)
+  const preview = useContentEvents({ kind: 'qa', taskId: task?.task_id, enabled: running, onFinalized: onRefresh })
   return (
     <div className={`qa-task qa-task-${task?.status || 'pending'}`} aria-live="polite">
       <p role="status">
@@ -69,6 +72,7 @@ export function TaskProgress({
         settling && <p className="tiny muted">任务已结束，记录同步中</p>
       )}
       <ErrorNotice error={taskError} onRetry={onRefresh} />
+      {running && <ContentPreview state={preview} />}
       <ErrorNotice error={cancelError} />
       <div className="button-row">
         {running && (

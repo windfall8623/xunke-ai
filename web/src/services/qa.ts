@@ -1,4 +1,5 @@
 import { request } from './http'
+import { trackContentSubmission } from './experienceEvents'
 import type {
   QaEvidence,
   QaFeedback,
@@ -28,12 +29,12 @@ export const qaApi = {
     return request<QaMessageList>(`/qa/sessions/${segment(id)}/messages?${params}`, { signal })
   },
   ask: (id: string, data: QaMessageCreate, key: string, signal?: AbortSignal) =>
-    request<QaTask>(`/qa/sessions/${segment(id)}/messages`, {
+    trackContentSubmission(() => request<QaTask>(`/qa/sessions/${segment(id)}/messages`, {
       method: 'POST',
       data,
       idempotencyKey: key,
       signal,
-    }),
+    })),
   task: (id: string, signal?: AbortSignal) =>
     request<QaTask>(`/qa/tasks/${segment(id)}`, { signal }),
   cancel: (id: string, signal?: AbortSignal) =>

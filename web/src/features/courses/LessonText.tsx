@@ -92,7 +92,7 @@ export function LessonText({ text }: { text: string }) {
     <div className="lesson-text">
       {segments.map((segment, index) =>
         segment.kind === 'code' ? (
-          <pre className="lesson-code" key={index}>
+          <pre className="lesson-code" key={index} tabIndex={0} role="region" aria-label="代码示例，可横向滚动">
             <code>{segment.text}</code>
           </pre>
         ) : (

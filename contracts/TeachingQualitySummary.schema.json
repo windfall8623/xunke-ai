@@ -1,0 +1,72 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifact_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Artifact Hash"
+    },
+    "draft_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Draft Hash"
+    },
+    "level": {
+      "enum": [
+        "outline",
+        "lesson"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "reason_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason Code"
+    },
+    "status": {
+      "enum": [
+        "reviewed",
+        "needs_revision",
+        "unreviewed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "level",
+    "status"
+  ],
+  "title": "TeachingQualitySummary",
+  "type": "object"
+}

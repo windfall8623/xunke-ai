@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.core.auth import get_current_actor
 from app.models.common import ApiResponse
+from app.models.teaching_quality import CourseCapabilities
 from app.models.course import (
     CourseCreate, CourseEvidenceView, CourseLessonGenerate, CourseLessonView, CourseList,
     CourseOutlineUpdate, CourseProgressView, CourseQuizCreate, CourseQuizLinkView,
     CourseReadUpdate, CourseTaskView, CourseView,
 )
-from app.services import course_progress, course_quiz_service, course_read, course_service, task_event_stream
+from app.services import content_event_stream, course_progress, course_quiz_service, course_read, course_service, course_teaching, task_event_stream
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -25,6 +26,22 @@ async def list_courses(page: int = Query(1, ge=1), page_size: int = Query(20, ge
 @router.get("/tasks/{task_id}", response_model=ApiResponse[CourseTaskView])
 async def task(task_id: str, actor=Depends(get_current_actor)):
     return ApiResponse.success(await course_read.get_task(actor.owner_id, task_id))
+
+
+@router.get("/capabilities", response_model=ApiResponse[CourseCapabilities])
+async def capabilities(actor=Depends(get_current_actor)):
+    return ApiResponse.success(await course_teaching.capabilities())
+
+
+@router.get("/tasks/{task_id}/content-events")
+async def content_events(
+    task_id: str, request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    actor=Depends(get_current_actor),
+):
+    return await content_event_stream.content_events_endpoint(
+        request, actor=actor, kind="course", task_id=task_id, last_event_id=last_event_id,
+    )
 
 
 @router.get("/tasks/{task_id}/events")

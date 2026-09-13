@@ -133,12 +133,26 @@ async def _consume_event(preview):
         )
         if quiz is None or quiz["status"] != "settled" or quiz["settled_at"] != event["settled_at"]:
             raise conflict("course_review_settlement_changed", "复习结算记录不完整")
+        # source_scope_json is nullable on quiz_sessions. A quiz stored without a
+        # scope still matches only while the course resolves to no documents.
+        stored_scope = load(quiz["source_scope_json"])
+        scope_changed = (
+            ResolvedScope.model_validate(stored_scope) != scope
+            if stored_scope
+            else bool(scope.documents)
+        )
         if (
             quiz["source_status"] == "source_revoked"
-            or ResolvedScope.model_validate(load(quiz["source_scope_json"])) != scope
+            or scope_changed
             or quiz["source_policy"] != course["source_policy"]
         ):
             await _finish_event(conn, event, "source_revoked")
+            return 1
+        if not quiz["rag_run_id"]:
+            # Legacy settlements without an immutable generation identity can
+            # never pass question verification. Keep their original receipt,
+            # but do not block newer events or create any review-state facts.
+            await _finish_event(conn, event, "quiz_evidence_unavailable")
             return 1
         # Even a late backfilled event still completes its own real batch. It
         # must not, however, replace a schedule based on a newer settlement.

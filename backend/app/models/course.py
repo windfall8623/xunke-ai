@@ -7,6 +7,8 @@ from pydantic import Field, field_validator, model_validator
 from app.learning.contracts import IanaTimezone
 from app.models.learning import TaskView
 from app.models.sources import PublicResolvedScope
+from app.models.course_outcome import CourseCriterion
+from app.models.teaching_quality import TeachingMode, TeachingQualitySummary
 from app.rag.contracts import Contract, DocumentLocator, RequestedScope
 from app.teaching.contracts import LessonBlock, LessonCheck, TeachMission, TeachSource, TeachSourcePolicy, TeachUnit
 
@@ -25,6 +27,8 @@ class CourseCreate(Contract):
     preload_first_lesson: bool = True
     source_policy: TeachSourcePolicy = "topic"
     scope: RequestedScope | None = None
+    teaching_mode: TeachingMode = "fast"
+    request_quality_review: bool = False
 
     @field_validator("topic", "goal", "prior_knowledge", mode="before")
     @classmethod
@@ -49,6 +53,7 @@ class CourseTaskView(Contract):
     error_message: str | None = None
     # 任务关联业务记录是否同步完成；不等于课程展示状态。
     business_settled: bool = False
+    quality_summary: TeachingQualitySummary | None = None
 
 
 class CourseLessonSummary(TeachUnit):
@@ -66,6 +71,10 @@ class CourseView(Contract):
     title: str
     source_policy: TeachSourcePolicy
     source_status: Literal["active", "revoked"]
+    teaching_mode: TeachingMode = "fast"
+    quality_summary: TeachingQualitySummary | None = None
+    criteria_revision: int = Field(default=1, ge=1)
+    course_criteria: list[CourseCriterion] = Field(default_factory=list)
     scope: PublicResolvedScope | None = None
     status: CourseStatus
     revision: int
@@ -111,6 +120,7 @@ class CourseOutlineUpdate(Contract):
 
 class CourseLessonGenerate(Contract):
     expected_course_revision: int = Field(ge=1)
+    request_quality_review: bool = False
 
 
 class CourseReadUpdate(Contract):
@@ -149,6 +159,7 @@ class CourseLessonView(Contract):
     status: LessonStatus
     revision: int
     content_version: int
+    quality_summary: TeachingQualitySummary | None = None
     blocks: list[LessonBlock] = Field(default_factory=list)
     checks: list[LessonCheck] = Field(default_factory=list)
     next_step: str | None = None

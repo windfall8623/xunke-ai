@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     quiz_max_questions: int = 10
     practice_enabled: bool = False
     course_enabled: bool = False
+    experience_events_enabled: bool = True
+    content_events_enabled: bool = False
+    enable_course_teaching_agents: bool = False
+    course_teaching_review_timeout_seconds: int = Field(default=60, ge=1, le=120)
+    course_teaching_repair_timeout_seconds: int = Field(default=90, ge=1, le=90)
+    course_teaching_publication_reserve_seconds: int = Field(default=5, ge=1, le=30)
     course_provider_timeout_seconds: int = Field(default=120, ge=10, le=300)
     course_job_deadline_seconds: int = Field(default=300, ge=30, le=1800)
     practice_short_answer_enabled: bool = False

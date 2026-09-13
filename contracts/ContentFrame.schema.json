@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "ContentBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "text": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "text"
+      ],
+      "title": "ContentBlock",
+      "type": "object"
+    },
+    "ContentPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "new_draft",
+                "attempt_changed",
+                "cursor_expired",
+                "stream_unavailable",
+                "preview_limit",
+                "generation_failed",
+                "source_revoked",
+                "session_expired",
+                "final_result_available",
+                "preview_expired"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "validated_blocks": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ContentBlock"
+              },
+              "maxItems": 30,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validated Blocks"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "enum": [
+                "preview",
+                "structure_and_references_checked"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation"
+        }
+      },
+      "title": "ContentPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "execution_id": {
+      "title": "Execution Id",
+      "type": "string"
+    },
+    "generation_revision": {
+      "minimum": 1,
+      "title": "Generation Revision",
+      "type": "integer"
+    },
+    "payload": {
+      "$ref": "#/$defs/ContentPayload"
+    },
+    "schema_version": {
+      "const": "xunke-content.v1",
+      "default": "xunke-content.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "snapshot",
+        "delta",
+        "block",
+        "reset",
+        "finalized",
+        "unavailable",
+        "revoked"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "execution_id",
+    "generation_revision",
+    "seq",
+    "type"
+  ],
+  "title": "ContentFrame",
+  "type": "object"
+}

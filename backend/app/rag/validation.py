@@ -45,8 +45,14 @@ def validate_quiz_artifact(payload, spec, pack) -> ValidationResult:
     stems = []
     quotas = Counter()
     plan = {t.target_id: t for t in pack.coverage.targets} if pack.coverage else {}
+    course_refs = {item.course_criterion_ref for item in spec.course_criteria}
     for number, question in enumerate(quiz.questions, 1):
         prefix = f"question_{number}:"
+        mapped = question.course_criterion_refs
+        if len(mapped) != len(set(mapped)) or not set(mapped) <= course_refs:
+            errors.append(prefix + "unknown_or_duplicate_course_criterion")
+        if course_refs and not mapped:
+            errors.append(prefix + "missing_course_criterion")
         keys = [o.key for o in question.options]
         answers = question.answer
         if len(set(keys)) != len(keys) or any(

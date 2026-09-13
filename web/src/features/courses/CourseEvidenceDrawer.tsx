@@ -42,7 +42,7 @@ export function CourseEvidenceDrawer({
     }
   }, [query.error, onUnavailable, client, identity, courseId])
   return (
-    <Dialog title="课程原文依据" className="evidence-panel" onClose={onClose}>
+    <Dialog title="课程原文依据" className="evidence-panel course-evidence-dialog" onClose={onClose}>
       {query.isPending ? (
         <Loading>正在读取已保存的原文…</Loading>
       ) : query.error ? (

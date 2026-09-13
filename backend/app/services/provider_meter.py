@@ -9,7 +9,7 @@ from decimal import Decimal
 import httpx
 
 from app.core.config import get_settings
-from app.core.db import execute, fetch_one, transaction
+from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError
 from app.core.values import dump, load, now, uid
 from app.llm.provider_errors import provider_failure
@@ -215,7 +215,7 @@ async def call_external(
             5
             if job["kind"] in {"quiz", "qa", "eval_sample", "practice_generate"}
             else 3
-            if job["kind"] in {"course_lesson", "course_tutor"}
+            if job["kind"] in {"course_lesson", "course_tutor", "course_application_generate"}
             else 2
         )
         daily = s.user_daily_llm_calls
@@ -232,7 +232,7 @@ async def call_external(
                 stage, 1
             )
         )
-        if job["kind"] == "course_tutor" and stage == "reranker":
+        if job["kind"] in {"course_tutor", "course_application_generate"} and stage == "reranker":
             cap = 1
         daily = 2000
         global_daily = 20000
@@ -251,12 +251,22 @@ async def call_external(
         counts.append(
             (
                 f"job:{job['task_id']}:reranker",
-                1 if job["kind"] in {"practice_generate", "course_tutor"} else 2,
+                1 if job["kind"] in {"practice_generate", "course_tutor", "course_application_generate"} else 2,
             )
         )
     logical_id = None
     async with transaction() as conn:
         current = await job_service.locked_job(job, conn)
+        if current["kind"] in {"course_application_generate", "course_application_feedback"}:
+            if current["request"] != job.get("request") or current["scope"] != job.get("scope"):
+                raise AppError(409, "course_application_changed", "课程应用任务范围已变化")
+            logical_id = await _application_limits(
+                current, stage, purpose, input_upper, output_upper, counts, conn,
+            )
+        if current["kind"] in {"course_outline", "course_lesson"}:
+            if current["request"] != job.get("request") or current["scope"] != job.get("scope"):
+                raise AppError(409, "teaching_policy_changed", "教学任务配置已变化")
+            await _teaching_limits(current, stage, purpose, input_upper, output_upper, counts, conn)
         if current["kind"] == "course_tutor":
             from app.teaching.prompts import INPUT_LIMIT
 
@@ -451,6 +461,8 @@ async def call_external(
                         "purpose": purpose,
                         "model": model,
                         "logical_request_id": logical_id,
+                        "estimated_input_tokens": input_upper,
+                        "estimated_output_tokens": output_upper,
                     }
                 ),
             ),
@@ -502,6 +514,7 @@ async def call_external(
             "output_tokens": output_tokens,
             "input_token_details": usage["input_token_details"],
             "estimated_input_tokens": input_upper,
+            "estimated_output_tokens": output_upper,
             "cost_cny": actual,
             "reserved_cost_cny": cost,
             "cost_status": "estimated" if actual is not None else "unknown",
@@ -542,6 +555,8 @@ async def call_external(
             "logical_request_id": logical_id,
             "error_code": failure.code if failure else None,
             "error_type": type(exc).__name__,
+            "estimated_input_tokens": input_upper,
+            "estimated_output_tokens": output_upper,
             "latency_ms": round((time.monotonic() - started) * 1000),
         }
         async with transaction() as conn:
@@ -564,6 +579,87 @@ async def call_external(
             )
             raise failure from exc
         raise
+
+
+async def _application_limits(job, stage, purpose, input_upper, output_upper, counts, conn):
+    from app.services.course_application_service import authorize_application_job
+
+    await authorize_application_job(job["user_id"], job, conn=conn)
+    feedback = job["kind"] == "course_application_feedback"
+    role = "course_application_feedback" if feedback else "course_application_generate"
+    if job["mode"] != "production" or (
+        feedback and (stage != "llm" or purpose != role)
+        or not feedback and (
+            stage not in {"llm", "embedding", "reranker"}
+            or stage == "llm" and purpose not in {role, "reranker"}
+        )
+    ):
+        raise AppError(409, "course_application_call_forbidden", "应用任务只能调用授权的生成、反馈与资料检索")
+    previous = await fetch_one(
+        "SELECT call_id FROM provider_calls WHERE operation_id=%s AND status IN ('unknown','reserved') LIMIT 1",
+        (job["task_id"],), conn=conn,
+    )
+    if previous:
+        raise AppError(409, "course_application_call_outcome_unknown", "上次调用结果尚未确认，请显式重试该任务")
+    if stage == "llm":
+        if input_upper > 16000 or output_upper > (1600 if feedback else 4096):
+            raise AppError(422, "course_application_input_too_large", "应用任务超出本次上下文或输出上限")
+        if purpose == role:
+            counts.append((f"job:{job['task_id']}:{role}", 2))
+    if stage in {"llm", "reranker"}:
+        counts.append((f"job:{job['task_id']}:application_model_calls", 2 if feedback else 3))
+    logical_id = job["request"].get("attempt_id" if feedback else "course_assessment_id")
+    if not isinstance(logical_id, str) or not 1 <= len(logical_id) <= 64:
+        raise AppError(409, "course_application_changed", "应用任务业务身份不完整")
+    return logical_id
+
+
+async def _teaching_limits(job, stage, purpose, input_upper, output_upper, counts, conn):
+    """Durable task/role ceilings survive attempts and share one repair slot."""
+    from app.teaching.policy import policy_from_job
+
+    try:
+        policy = policy_from_job(job)
+    except (ValueError, TypeError) as exc:
+        raise AppError(409, "teaching_policy_changed", "教学任务的冻结配置无效") from exc
+    task_key = f"job:{job['task_id']}"
+    previous = await fetch_all(
+        "SELECT status,stage,usage_json FROM provider_calls WHERE operation_id=%s",
+        (job["task_id"],), conn=conn,
+    )
+    if any(row["status"] in {"unknown", "reserved"} for row in previous):
+        raise AppError(409, "teaching_call_outcome_unknown", "上一次调用结果尚未确认，不能自动重新生成")
+    if stage not in {"llm", "embedding", "reranker"}:
+        raise AppError(409, "teaching_call_forbidden", "教学任务只能使用课程生成与授权资料检索")
+    if stage == "llm":
+        initial_purpose = "course_" + policy.kind
+        allowed = {initial_purpose, "course_teaching_repair", "reranker"}
+        if policy.review_enabled:
+            allowed.add("course_teaching_review")
+        if purpose not in allowed:
+            raise AppError(409, "teaching_call_forbidden", "教学任务调用的角色与冻结策略不符")
+        for index, (key, cap) in enumerate(counts):
+            if key == task_key + ":llm":
+                counts[index] = (key, policy.max_llm_calls)
+            elif key == task_key + ":reranker":
+                counts[index] = (key, policy.max_reranker_calls)
+        if purpose != "reranker":
+            is_review = purpose == "course_teaching_review"
+            limit = policy.review_input_limit if is_review else policy.repair_input_limit if purpose == "course_teaching_repair" else policy.generation_input_limit
+            if input_upper > limit or output_upper > (policy.review_output_limit if is_review else policy.generation_output_limit):
+                raise AppError(422, "course_scope_too_large", "教学请求超出冻结的上下文范围")
+            counts.append((task_key + ":" + purpose, policy.max_review_calls if is_review else 1))
+        used_input, used_output = 0, 0
+        for row in previous:
+            if row["stage"] != "llm":
+                continue
+            usage = load(row["usage_json"], {})
+            used_input += usage.get("input_tokens") if type(usage.get("input_tokens")) is int else usage.get("estimated_input_tokens", policy.generation_input_limit)
+            used_output += usage.get("output_tokens") if type(usage.get("output_tokens")) is int else usage.get("estimated_output_tokens", policy.generation_output_limit)
+        if used_input + input_upper > policy.max_input_tokens or used_output + output_upper > policy.max_output_tokens:
+            raise AppError(429, "budget_exceeded", "本次教学任务已达到 token 预算")
+    elif stage == "reranker":
+        counts[:] = [(key, policy.max_reranker_calls if key == task_key + ":reranker" else cap) for key, cap in counts]
 
 
 class MeteredChat:
@@ -592,7 +688,7 @@ class MeteredChat:
             output_upper=self.output_upper,
         )
 
-    async def ainvoke(self, messages):
+    def _input_upper(self, messages):
         from app.rag.budget import count_tokens
 
         input_upper = 32
@@ -606,13 +702,29 @@ class MeteredChat:
         bound_kwargs = getattr(self.llm, "kwargs", {})
         if isinstance(bound_kwargs, dict) and bound_kwargs.get("tools"):
             input_upper += count_tokens(dump(bound_kwargs["tools"]))
+        return input_upper
+
+    async def ainvoke(self, messages):
         return await call_external(
             "llm",
             lambda: self.llm.ainvoke(messages),
-            input_upper=input_upper,
+            input_upper=self._input_upper(messages),
             output_upper=self.output_upper,
             purpose=self.purpose,
             model=self.model_name,
+        )
+
+    async def ainvoke_streamed(self, messages, *, on_chunk):
+        # Choose compatibility before making a paid call; never retry a failed
+        # stream through ainvoke as an invisible second invocation.
+        if not callable(getattr(self.llm, "astream", None)) or getattr(self.llm, "disable_streaming", False) is True:
+            return await self.ainvoke(messages)
+        from app.llm.streaming import collect_stream
+
+        return await call_external(
+            "llm", lambda: collect_stream(self.llm, messages, on_chunk),
+            input_upper=self._input_upper(messages), output_upper=self.output_upper,
+            purpose=self.purpose, model=self.model_name,
         )
 
 

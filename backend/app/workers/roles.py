@@ -1,6 +1,9 @@
 """Disjoint claim sets for one index writer and independent learning workers."""
 
-GENERATION_KINDS = frozenset({"qa", "course_outline", "course_lesson", "course_tutor"})
+GENERATION_KINDS = frozenset({
+    "qa", "course_outline", "course_lesson", "course_tutor",
+    "course_application_generate", "course_application_feedback",
+})
 
 
 def effective_role(settings, requested=None):

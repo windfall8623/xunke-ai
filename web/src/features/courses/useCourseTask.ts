@@ -42,16 +42,19 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     refetchIntervalInBackground: false,
   })
   const task = query.data || initial
-  const settle = useSettleWatch(task, () => {
-    // 调和收尾完成：业务记录（课程/课时/进度）可能已更新，做一次最终刷新。
-    if (!task) return
+  function refreshBusiness() {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
-    if (task.lesson_id)
-      void client.invalidateQueries({
-        queryKey: courseKeys.lesson(identity, courseId, task.lesson_id),
-      })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
+    if (task?.lesson_id)
+      void client.invalidateQueries({ queryKey: courseKeys.lesson(identity, courseId, task.lesson_id) })
+  }
+  const settle = useSettleWatch(task, () => {
+    // 调和收尾完成：业务记录（课程/课时/进度）可能已更新，做一次最终刷新。
+    if (!task) return
+    refreshBusiness()
   })
   settleStateRef.current = settle
   const handleTaskEvent = (event: TaskEvent) => {
@@ -86,6 +89,8 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
     if (task.lesson_id)
       void client.invalidateQueries({
         queryKey: courseKeys.lesson(identity, courseId, task.lesson_id),
@@ -107,6 +112,9 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     cancel,
     cancelling: operation.pending !== null,
     cancelError: operation.error,
+    cancelState: operation.state,
     settling: settle.active,
+    settleExpired: settle.expired,
+    refreshBusiness,
   }
 }

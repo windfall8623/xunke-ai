@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test'
 import { documentFixture, learner, questions, quiz } from '../src/test/fixtures'
+import { courseCheckFixture, courseFixture, courseLessonFixture, courseProgressFixture, courseTodayFixture } from '../src/test/courseFixtures'
+import type { CourseSelfCheckView } from '../src/types/course'
 
 type ObjectData = Record<string, unknown>
 export async function installTestApi(
   page: Page,
-  options: { guest?: boolean; evaluator?: boolean; longName?: boolean } = {},
+  options: { guest?: boolean; evaluator?: boolean; longName?: boolean; courses?: boolean } = {},
 ) {
   const baseDataset = {
     dataset_id: 'data-1',
@@ -104,6 +106,9 @@ export async function installTestApi(
     ],
     result,
     datasetReviews: [] as ObjectData[],
+    courseLesson: { ...courseLessonFixture,
+      title: options.longName ? `${courseLessonFixture.title}：${'阅读、思考与应用中的变量可见范围'.repeat(5)}` : courseLessonFixture.title },
+    courseChecks: [] as CourseSelfCheckView[],
   }
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url())
@@ -157,6 +162,41 @@ export async function installTestApi(
     }
     if (!state.authenticated) return fail(401, '登录已失效')
     if (method !== 'GET') state.mutationHeaders.push(request.headers())
+    if (path === '/experience/events') return respond({ accepted: true, event_id: data.event_id })
+    if (options.courses) {
+      const course = { ...courseFixture, source_policy: 'strict_docs',
+        title: options.longName ? `${courseFixture.title}：${'从理解到应用'.repeat(6)}` : courseFixture.title,
+        lessons: courseFixture.lessons?.map((lesson) => lesson.lesson_id === 'lesson-1'
+          ? { ...lesson, title: state.courseLesson.title, read_at: state.courseLesson.read_at } : lesson) }
+      if (path === '/courses') return respond({ items: [course], total: 1, page: 1, page_size: 6 })
+      if (path === '/courses/today') return respond(courseTodayFixture)
+      if (path === '/courses/course-1') return respond(course)
+      if (path === '/courses/course-1/progress') return respond(courseProgressFixture)
+      if (path === '/courses/course-1/reviews') return respond([])
+      if (path === '/courses/course-1/lessons/lesson-1') return respond(state.courseLesson)
+      if (path === '/courses/course-1/lessons/lesson-1/progress') {
+        state.courseLesson = { ...state.courseLesson, revision: state.courseLesson.revision + 1,
+          read_at: data.read ? '2026-09-13T02:00:00Z' : null }
+        return respond(state.courseLesson)
+      }
+      if (path === '/courses/course-1/lessons/lesson-1/self-check-attempts') {
+        if (method === 'POST') {
+          const saved = { ...courseCheckFixture, attempt_id: `attempt-${state.courseChecks.length + 1}`,
+            check_ref: String(data.check_ref), answer: data.answer as CourseSelfCheckView['answer'] }
+          state.courseChecks.push(saved)
+          return respond(saved, 201)
+        }
+        return respond(state.courseChecks)
+      }
+      if (path === '/courses/course-1/lessons/lesson-1/tutor-turns') return respond([])
+      if (path === '/courses/course-1/lessons/lesson-1/evidence/source-1') return respond({
+        course_id: 'course-1', lesson_id: 'lesson-1', source_ref: 'source-1', title: '变量作用域的已保存资料片段',
+        locator: { page: 2, section_title: '函数作用域' },
+        excerpt: `${'局部变量只在定义它的函数中可见。'.repeat(24)}\nhttps://example.invalid/${'long-reference-'.repeat(18)}`,
+      })
+      if (['/study/spaces', '/study/reviews', '/study/history'].includes(path))
+        return respond({ items: [], total: 0, page: 1, page_size: 6 })
+    }
     if (path === '/auth/logout' || path === '/auth/change-password') {
       state.authenticated = false
       return respond(null)

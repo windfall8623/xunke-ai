@@ -19,6 +19,15 @@ from app.services import qa_read, qa_service, task_event_stream
 router = APIRouter(prefix="/qa", tags=["knowledge-qa"])
 
 
+@router.get("/tasks/{task_id}/content-events")
+async def content_events(task_id: str, request: Request,
+                         last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+                         actor=Depends(get_current_actor)):
+    from app.services.content_event_stream import content_events_endpoint
+
+    return await content_events_endpoint(request, actor=actor, kind="qa", task_id=task_id, last_event_id=last_event_id)
+
+
 @router.post("/sessions", status_code=201, response_model=ApiResponse[QaSessionView])
 async def create_session(body: QaSessionCreate, actor=Depends(get_current_actor)):
     return ApiResponse.success(await qa_service.create_session(actor, body))

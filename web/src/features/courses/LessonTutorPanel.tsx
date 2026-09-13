@@ -8,12 +8,15 @@ import {
   courseErrorMessage,
   courseSourceRevoked,
   courseTaskErrorMessage,
-  courseTaskPending,
 } from '../../services/courses'
 import { courseTutorKeys, readTutorEvidence } from '../../services/courseTutor'
-import type { CourseLessonView, CourseTutorCreate } from '../../types/course'
+import type { CourseLessonView, CourseSourcePolicy, CourseTutorCreate } from '../../types/course'
 import { locatorLabel } from '../evidence/EvidencePanel'
 import type { LessonTutorController } from './useLessonTutor'
+import { teachingFeedbackState } from './courseActionState'
+import { CourseOperationNotice } from './CourseOperationNotice'
+import { ContentPreview } from '../tasks/ContentPreview'
+import { useContentEvents } from '../tasks/useContentEvents'
 
 type AskMode = Exclude<NonNullable<CourseTutorCreate['mode']>, 'check'>
 export type LessonTutorContext = { mode: AskMode; blockIndex: number | null }
@@ -21,6 +24,7 @@ const modeLabels = { explain: '讲解', example: '换个例子', hint: '给我�
 
 export function LessonTutorPanel({
   lesson,
+  sourcePolicy,
   tutor,
   context,
   selectedTurnId,
@@ -28,6 +32,7 @@ export function LessonTutorPanel({
   onUnavailable,
 }: {
   lesson: CourseLessonView
+  sourcePolicy: CourseSourcePolicy
   tutor: LessonTutorController
   context: LessonTutorContext
   selectedTurnId?: string
@@ -39,6 +44,12 @@ export function LessonTutorPanel({
   const [blockIndex, setBlockIndex] = useState<number | null>(context.blockIndex)
   const [evidence, setEvidence] = useState<{ turnId: string; sourceRef: string } | null>(null)
   const block = blockIndex === null ? null : lesson.blocks?.[blockIndex]
+  const previewTurn = sourcePolicy === 'topic' && tutor.activeTurn?.mode !== 'check'
+    ? tutor.activeTurn : undefined
+  const preview = useContentEvents({ kind: 'course', taskId: previewTurn?.task.task_id,
+    enabled: !!previewTurn && !tutor.inaccessible,
+    onFinalized: () => { void tutor.refreshFeedback() } })
+  useEffect(() => { if (preview.status === 'revoked') onUnavailable() }, [preview.status, onUnavailable])
   useEffect(() => {
     if (selectedTurnId)
       document.getElementById(`tutor-turn-${selectedTurnId}`)?.scrollIntoView({ block: 'nearest' })
@@ -59,7 +70,7 @@ export function LessonTutorPanel({
       <p className="tiny muted">
         {lesson.title} · 回答和进度会保存在这一课。关闭面板后可接着阅读。
       </p>
-      {tutor.query.error || tutor.inaccessible ? (
+      {(tutor.query.error && !tutor.turns.length) || tutor.inaccessible ? (
         <ErrorNotice
           error={courseErrorMessage(tutor.query.error || tutor.error || tutor.checksQuery.error)}
           onRetry={() => {
@@ -90,7 +101,7 @@ export function LessonTutorPanel({
               {turn.mode === 'check' && (
                 <p className="tiny muted">根据这次已保存的自检回答给出反馈，不计正式成绩。</p>
               )}
-              {courseTaskPending(turn.task) ? (
+              {teachingFeedbackState(turn) === 'preparing' ? (
                 <div className="lesson-tutor-task" role="status">
                   <Loading>
                     {turn.task.status === 'pending'
@@ -98,6 +109,7 @@ export function LessonTutorPanel({
                       : '正在整理讲解与反馈…'}
                   </Loading>
                   <p className="tiny muted">可以关闭面板或离开页面，稍后回来继续查看。</p>
+                  {previewTurn?.turn_id === turn.turn_id && <ContentPreview state={preview} />}
                   <button
                     type="button"
                     className="button secondary"
@@ -108,9 +120,18 @@ export function LessonTutorPanel({
                     {tutor.pending === 'cancel' ? '正在取消…' : '取消这次回答'}
                   </button>
                 </div>
-              ) : turn.task.status === 'completed' && turn.answer ? (
+              ) : teachingFeedbackState(turn) === 'ready' ? (
                 <div className="lesson-tutor-answer">
                   <p>{turn.answer}</p>
+                </div>
+              ) : teachingFeedbackState(turn) === 'syncing' ? (
+                <div className="lesson-tutor-task" role="status">
+                  <p>{tutor.query.error ? '结果读取暂未完成，请刷新反馈。' : '反馈已生成，正在读取。'}</p>
+                  <button type="button" className="button secondary"
+                    disabled={tutor.query.isFetching}
+                    onClick={() => { void tutor.refreshFeedback() }}>
+                    <RefreshCw size={16} />刷新反馈
+                  </button>
                 </div>
               ) : (
                 <div className="lesson-tutor-task">
@@ -119,6 +140,9 @@ export function LessonTutorPanel({
                       ? '这次回答已取消，之前的内容仍会保留。'
                       : courseTaskErrorMessage(turn.task)}
                   </p>
+                  {turn.task.business_settled !== true && (
+                    <p className="tiny muted" role="status">任务已结束，记录同步中；可刷新反馈核对结果。</p>
+                  )}
                   {['failed', 'cancelled'].includes(turn.task.status) && (
                     <button
                       type="button"
@@ -129,8 +153,12 @@ export function LessonTutorPanel({
                       }}
                     >
                       <RefreshCw size={16} />
-                      {tutor.pending === 'retry' ? '正在重试…' : '重试这次回答'}
+                      {tutor.pending === 'retry' ? '正在重试…' : '重试这次反馈'}
                     </button>
+                  )}
+                  {turn.task.business_settled !== true && (
+                    <button type="button" className="text-button" disabled={tutor.query.isFetching}
+                      onClick={() => { void tutor.refreshFeedback() }}>刷新反馈</button>
                   )}
                 </div>
               )}
@@ -163,7 +191,18 @@ export function LessonTutorPanel({
           ))}
         </div>
       )}
-      <ErrorNotice error={tutor.error ? courseErrorMessage(tutor.error) : null} />
+      {tutor.query.error && !!tutor.turns.length && (
+        <p className="notice" role="status">结果读取暂未完成，已保存的内容仍会保留。请刷新反馈。</p>
+      )}
+      <CourseOperationNotice state={tutor.operationState} error={tutor.error}
+        onRecover={tutor.requestRecovery ? () => { void tutor.recoverTutorRequest() } : undefined}
+        recoveryLabel="核对反馈请求" disabled={tutor.pending !== null} />
+      {tutor.requestRecovery?.checked && (
+        <button type="button" className="button secondary" disabled={tutor.pending !== null}
+          onClick={() => { void tutor.recoverTutorRequest(true) }}>
+          <RefreshCw size={16} />重试原反馈请求
+        </button>
+      )}
       <form
         className="stack-form lesson-tutor-composer"
         onSubmit={(event) => {
@@ -223,6 +262,8 @@ export function LessonTutorPanel({
               ? '正在提交…'
               : tutor.activeTurn
                 ? '正在准备上一条回答'
+                : tutor.syncing
+                  ? '正在读取上一条反馈'
                 : '请助教帮助我'}
             <ArrowRight size={16} />
           </button>
@@ -231,7 +272,7 @@ export function LessonTutorPanel({
             className="text-button"
             disabled={tutor.query.isFetching}
             onClick={() => {
-              void tutor.query.refetch()
+              void tutor.refreshFeedback()
             }}
           >
             刷新对话
@@ -283,7 +324,7 @@ function TutorEvidence({
     if (courseSourceRevoked(query.error)) onUnavailable()
   }, [query.error, onUnavailable])
   return (
-    <Dialog title="这条回答的原文依据" className="evidence-panel" onClose={onClose}>
+    <Dialog title="这条回答的原文依据" className="evidence-panel course-evidence-dialog" onClose={onClose}>
       {query.error ? (
         <ErrorNotice
           error={courseErrorMessage(query.error)}

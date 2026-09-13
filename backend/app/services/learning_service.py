@@ -37,6 +37,12 @@ async def _locked_quiz_for_write(conn, owner, quiz_id, *, answer=False):
         # partial source locks. This also locks space before the quiz root.
         origin = await learning_events._locked_origin(conn, owner, "quiz", quiz_id)
         return origin.row, origin
+    from app.services.course_assessment_service import authorize_assessment_quiz
+
+    # Completion quizzes have a frozen course_assessment identity, not a
+    # lesson_link. Re-authorize that session and lock course roots before the
+    # quiz so a revoked source or stale session cannot answer or settle.
+    await authorize_assessment_quiz(owner, quiz_id, conn=conn, for_write=True)
     quiz = await owned_quiz(owner, quiz_id, conn=conn, lock=True)
     if answer:
         await learning_scopes.require_quiz_sources(owner, quiz, conn=conn)
@@ -52,6 +58,18 @@ async def get_detail(owner, quiz_id, *, conn=None):
     if available:
         try:
             course_context = await course_context_for_quiz(owner, quiz_id, conn=conn)
+        except AppError as exc:
+            if exc.code != "source_revoked":
+                raise
+            available = False
+    if available:
+        try:
+            from app.services.course_assessment_service import authorize_assessment_quiz
+
+            # Lesson-linked quizzes and completion quizzes are distinct
+            # identities. Re-authorize a frozen assessment on every read;
+            # ordinary course quizzes keep returning None here.
+            await authorize_assessment_quiz(owner, quiz_id, conn=conn)
         except AppError as exc:
             if exc.code != "source_revoked":
                 raise

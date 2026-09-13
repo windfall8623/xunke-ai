@@ -205,6 +205,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/courses/application-tasks/{task_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Application Task */
+    get: operations['application_task_api_v1_courses_application_tasks__task_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/application-tasks/{task_id}/cancel': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Cancel Application Task */
+    post: operations['cancel_application_task_api_v1_courses_application_tasks__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/application-tasks/{task_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Application Task Events */
+    get: operations['application_task_events_api_v1_courses_application_tasks__task_id__events_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/capabilities': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Capabilities */
+    get: operations['capabilities_api_v1_courses_capabilities_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/courses/tasks/{task_id}': {
     parameters: {
       query?: never
@@ -233,6 +301,23 @@ export interface paths {
     put?: never
     /** Cancel */
     post: operations['cancel_api_v1_courses_tasks__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/tasks/{task_id}/content-events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Content Events */
+    get: operations['content_events_api_v1_courses_tasks__task_id__content_events_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -287,6 +372,142 @@ export interface paths {
     get: operations['course_api_v1_courses__course_id__get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessment-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Assessment */
+    post: operations['create_assessment_api_v1_courses__course_id__assessment_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Assessments */
+    get: operations['list_assessments_api_v1_courses__course_id__assessments_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Assessment */
+    get: operations['assessment_api_v1_courses__course_id__assessments__course_assessment_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/application-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Application */
+    post: operations['create_application_api_v1_courses__course_id__assessments__course_assessment_id__application_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/applications/{application_task_id}/attempts': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Submit Application */
+    post: operations['submit_application_api_v1_courses__course_id__assessments__course_assessment_id__applications__application_task_id__attempts_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/attempts/{attempt_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Application Attempt */
+    get: operations['application_attempt_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/attempts/{attempt_id}/feedback-jobs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Application Feedback */
+    post: operations['application_feedback_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__feedback_jobs_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/assessments/{course_assessment_id}/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Complete Assessment */
+    post: operations['complete_assessment_api_v1_courses__course_id__assessments__course_assessment_id__complete_post']
     delete?: never
     options?: never
     head?: never
@@ -476,6 +697,23 @@ export interface paths {
     put?: never
     /** Retry Turn */
     post: operations['retry_turn_api_v1_courses__course_id__lessons__lesson_id__tutor_turns__turn_id__retry_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/courses/{course_id}/outcomes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Outcomes */
+    get: operations['outcomes_api_v1_courses__course_id__outcomes_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -924,6 +1162,23 @@ export interface paths {
     put?: never
     /** Resume Run */
     post: operations['resume_run_api_v1_eval_runs__run_id__resume_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/experience/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Record */
+    post: operations['record_api_v1_experience_events_post']
     delete?: never
     options?: never
     head?: never
@@ -1523,6 +1778,23 @@ export interface paths {
     put?: never
     /** Cancel */
     post: operations['cancel_api_v1_qa_tasks__task_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/qa/tasks/{task_id}/content-events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Content Events */
+    get: operations['content_events_api_v1_qa_tasks__task_id__content_events_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -2472,6 +2744,70 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[CourseApplicationAttemptView] */
+    ApiResponse_CourseApplicationAttemptView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseApplicationAttemptView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseApplicationJobView] */
+    ApiResponse_CourseApplicationJobView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseApplicationJobView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseAssessmentView] */
+    ApiResponse_CourseAssessmentView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseAssessmentView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseCapabilities] */
+    ApiResponse_CourseCapabilities_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseCapabilities'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[CourseEvidenceView] */
     ApiResponse_CourseEvidenceView_: {
       /**
@@ -2512,6 +2848,22 @@ export interface components {
        */
       code: number
       data?: components['schemas']['CourseList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[CourseOutcomeSummary] */
+    ApiResponse_CourseOutcomeSummary_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['CourseOutcomeSummary'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -2736,6 +3088,22 @@ export interface components {
        */
       code: number
       data?: components['schemas']['EmailCodeView'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[ExperienceEventReceipt] */
+    ApiResponse_ExperienceEventReceipt_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['ExperienceEventReceipt'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -3585,6 +3953,23 @@ export interface components {
        */
       message: string
     }
+    /** ApiResponse[list[CourseAssessmentView]] */
+    ApiResponse_list_CourseAssessmentView__: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      /** Data */
+      data?: components['schemas']['CourseAssessmentView'][] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
     /** ApiResponse[list[CourseReviewView]] */
     ApiResponse_list_CourseReviewView__: {
       /**
@@ -3642,6 +4027,8 @@ export interface components {
       answer: string[]
       /** Citation Refs */
       citation_refs?: string[]
+      /** Course Criterion Refs */
+      course_criterion_refs?: string[]
       /**
        * Coverage Target Id
        * @default null
@@ -4056,6 +4443,230 @@ export interface components {
        */
       status: 'estimated' | 'unknown' | 'not_applicable'
     }
+    /** CourseApplicationAnswer */
+    CourseApplicationAnswer: {
+      /** Answer */
+      answer: string
+      /** Expected Revision */
+      expected_revision: number
+      /**
+       * Help Usage
+       * @default unknown
+       * @enum {string}
+       */
+      help_usage: 'none' | 'hints' | 'unknown'
+    }
+    /** CourseApplicationAttemptView */
+    CourseApplicationAttemptView: {
+      /** Answer */
+      answer: string
+      /** Application Task Id */
+      application_task_id: string
+      /** Attempt Id */
+      attempt_id: string
+      /** Course Assessment Id */
+      course_assessment_id: string
+      /** Course Id */
+      course_id: string
+      feedback?: components['schemas']['CourseApplicationFeedbackView'] | null
+      feedback_task?: components['schemas']['CourseAssessmentTask'] | null
+      /** Feedback Task Id */
+      feedback_task_id?: string | null
+      /**
+       * Help Usage
+       * @enum {string}
+       */
+      help_usage: 'none' | 'hints' | 'unknown'
+      /**
+       * Help Usage Source
+       * @enum {string}
+       */
+      help_usage_source: 'learner_declaration' | 'unknown'
+      /** Question Version */
+      question_version: string
+      /** Revision */
+      revision: number
+      /** Saved At */
+      saved_at: string
+    }
+    /** CourseApplicationFeedbackView */
+    CourseApplicationFeedbackView: {
+      /** Assessment Id */
+      assessment_id: string
+      /**
+       * Confirmation
+       * @enum {string}
+       */
+      confirmation: 'confirmed' | 'provisional'
+      /** Created At */
+      created_at: string
+      /** Criterion Results */
+      criterion_results?: {
+        [key: string]: unknown
+      }[]
+      /** Feedback */
+      feedback?: string | null
+      /** Score */
+      score?: string | null
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'graded' | 'needs_review' | 'failed' | 'cancelled'
+      /** Supersedes Assessment Id */
+      supersedes_assessment_id?: string | null
+    }
+    /** CourseApplicationJobView */
+    CourseApplicationJobView: {
+      /** Application Task Id */
+      application_task_id?: string | null
+      /** Attempt Id */
+      attempt_id?: string | null
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
+      /** Course Assessment Id */
+      course_assessment_id: string
+      /** Course Id */
+      course_id: string
+      /** Error Code */
+      error_code?: string | null
+      /** Error Message */
+      error_message?: string | null
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'course_application_generate' | 'course_application_feedback'
+      /** Stage */
+      stage: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+      /** Task Id */
+      task_id: string
+    }
+    /** CourseApplicationTaskView */
+    CourseApplicationTaskView: {
+      /** Application Task Id */
+      application_task_id: string
+      /** Course Criterion Ids */
+      course_criterion_ids?: string[]
+      /** Latest Attempt Id */
+      latest_attempt_id?: string | null
+      /** Prompt */
+      prompt: string
+      /** Public Expectations */
+      public_expectations: string[]
+      /**
+       * Response Format
+       * @default text
+       * @constant
+       */
+      response_format: 'text'
+      /** Revision */
+      revision: number
+      /**
+       * Source Policy
+       * @enum {string}
+       */
+      source_policy: 'topic' | 'strict_docs'
+      /** Source Refs */
+      source_refs?: string[]
+      /** Support Quotes */
+      support_quotes?: string[]
+    }
+    /** CourseAssessmentComplete */
+    CourseAssessmentComplete: {
+      /** Expected Revision */
+      expected_revision: number
+      /**
+       * Help Usage
+       * @default unknown
+       * @enum {string}
+       */
+      help_usage: 'none' | 'hints' | 'unknown'
+    }
+    /** CourseAssessmentCreate */
+    CourseAssessmentCreate: {
+      /** Course Criterion Ids */
+      course_criterion_ids?: string[]
+      /** Expected Course Revision */
+      expected_course_revision: number
+      /** Expected Criteria Revision */
+      expected_criteria_revision: number
+    }
+    /** CourseAssessmentTask */
+    CourseAssessmentTask: {
+      /**
+       * Business Settled
+       * @default false
+       */
+      business_settled: boolean
+      /** Error Code */
+      error_code?: string | null
+      /** Error Message */
+      error_message?: string | null
+      /** Stage */
+      stage: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+      /** Task Id */
+      task_id: string
+    }
+    /** CourseAssessmentView */
+    CourseAssessmentView: {
+      application_generation_task?: components['schemas']['CourseAssessmentTask'] | null
+      /** Application Generation Task Id */
+      application_generation_task_id?: string | null
+      /** Application Task Ids */
+      application_task_ids?: string[]
+      /** Applications */
+      applications?: components['schemas']['CourseApplicationTaskView'][]
+      /** Course Assessment Id */
+      course_assessment_id: string
+      /** Course Id */
+      course_id: string
+      /** Covered Course Criterion Ids */
+      covered_course_criterion_ids?: string[]
+      /** Criteria Revision */
+      criteria_revision: number
+      /** Quiz Id */
+      quiz_id?: string | null
+      /**
+       * Quiz Settled
+       * @default false
+       */
+      quiz_settled: boolean
+      /** Quiz Status */
+      quiz_status?: string | null
+      /** Revision */
+      revision: number
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'generating' | 'ready' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+      task?: components['schemas']['CourseAssessmentTask'] | null
+      /** Task Id */
+      task_id?: string | null
+      /** Uncovered Course Criterion Ids */
+      uncovered_course_criterion_ids?: string[]
+    }
+    /** CourseCapabilities */
+    CourseCapabilities: {
+      /** Teaching Modes */
+      teaching_modes: ('guided' | 'fast')[]
+      /** Unavailable Reason */
+      unavailable_reason?: string | null
+    }
     /** CourseCreate */
     CourseCreate: {
       /**
@@ -4083,6 +4694,11 @@ export interface components {
        * @default
        */
       prior_knowledge: string
+      /**
+       * Request Quality Review
+       * @default false
+       */
+      request_quality_review: boolean
       scope?: components['schemas']['RequestedScope'] | null
       /**
        * Source Policy
@@ -4091,12 +4707,83 @@ export interface components {
        */
       source_policy: 'topic' | 'strict_docs'
       /**
+       * Teaching Mode
+       * @default fast
+       * @enum {string}
+       */
+      teaching_mode: 'guided' | 'fast'
+      /**
        * Timezone
        * @default Asia/Shanghai
        */
       timezone: string
       /** Topic */
       topic: string
+    }
+    /** CourseCriterion */
+    CourseCriterion: {
+      /** Course Criterion Id */
+      course_criterion_id: string
+      /** Course Criterion Ref */
+      course_criterion_ref: string
+      /** Criteria Revision */
+      criteria_revision: number
+      /** Description */
+      description: string
+      /**
+       * Evidence Type
+       * @enum {string}
+       */
+      evidence_type: 'recognition' | 'recall' | 'application' | 'explanation' | 'creation'
+      /** Expectation */
+      expectation: string
+      /** Lesson Ids */
+      lesson_ids?: string[]
+      /**
+       * Origin
+       * @enum {string}
+       */
+      origin: 'generated_v2' | 'legacy_unmapped'
+    }
+    /** CourseCriterionOutcome */
+    CourseCriterionOutcome: {
+      /** Course Criterion Id */
+      course_criterion_id: string
+      /** Criteria Revision */
+      criteria_revision: number
+      /** Evidence Refs */
+      evidence_refs?: components['schemas']['CourseEvidenceRef'][]
+      /** Reason */
+      reason: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'unverified' | 'needs_practice' | 'verified' | 'stale'
+      /** Title */
+      title: string
+    }
+    /** CourseEvidenceRef */
+    CourseEvidenceRef: {
+      /** Assessment Id */
+      assessment_id?: string | null
+      /** Attempt Id */
+      attempt_id?: string | null
+      /** Content Version */
+      content_version?: number | null
+      /** Lesson Id */
+      lesson_id?: string | null
+      /** Occurred At */
+      occurred_at: string
+      /** Origin Id */
+      origin_id: string
+      /**
+       * Origin Kind
+       * @enum {string}
+       */
+      origin_kind: 'quiz' | 'practice' | 'course_application' | 'self_check'
+      /** Question Version */
+      question_version?: string | null
     }
     /** CourseEvidenceView */
     CourseEvidenceView: {
@@ -4116,6 +4803,11 @@ export interface components {
     CourseLessonGenerate: {
       /** Expected Course Revision */
       expected_course_revision: number
+      /**
+       * Request Quality Review
+       * @default false
+       */
+      request_quality_review: boolean
     }
     /** CourseLessonSummary */
     CourseLessonSummary: {
@@ -4195,6 +4887,7 @@ export interface components {
       next_step?: string | null
       /** Objective */
       objective?: string | null
+      quality_summary?: components['schemas']['TeachingQualitySummary'] | null
       /** Quiz Links */
       quiz_links?: components['schemas']['CourseQuizLinkView'][]
       /** Read At */
@@ -4248,6 +4941,15 @@ export interface components {
        * @enum {string}
        */
       type: 'continue_quiz' | 'review_lesson' | 'learn_lesson' | 'practice_lesson' | 'view_summary'
+    }
+    /** CourseOutcomeSummary */
+    CourseOutcomeSummary: {
+      /** Course Id */
+      course_id: string
+      /** Criteria */
+      criteria?: components['schemas']['CourseCriterionOutcome'][]
+      /** Criteria Revision */
+      criteria_revision: number
     }
     /** CourseOutlineUpdate */
     CourseOutlineUpdate: {
@@ -4464,6 +5166,7 @@ export interface components {
       kind: 'course_outline' | 'course_lesson' | 'course_tutor'
       /** Lesson Id */
       lesson_id?: string | null
+      quality_summary?: components['schemas']['TeachingQualitySummary'] | null
       /**
        * Stage
        * @default queued
@@ -4580,10 +5283,17 @@ export interface components {
     /** CourseView */
     CourseView: {
       active_task?: components['schemas']['CourseTaskView'] | null
+      /** Course Criteria */
+      course_criteria?: components['schemas']['CourseCriterion'][]
       /** Course Id */
       course_id: string
       /** Created At */
       created_at: string
+      /**
+       * Criteria Revision
+       * @default 1
+       */
+      criteria_revision: number
       latest_task?: components['schemas']['CourseTaskView'] | null
       /** Lessons */
       lessons?: components['schemas']['CourseLessonSummary'][]
@@ -4593,6 +5303,7 @@ export interface components {
        * @default false
        */
       outline_editable: boolean
+      quality_summary?: components['schemas']['TeachingQualitySummary'] | null
       /** Resume Lesson Id */
       resume_lesson_id?: string | null
       /** Revision */
@@ -4615,6 +5326,12 @@ export interface components {
        * @enum {string}
        */
       status: 'generating' | 'ready' | 'partial' | 'failed' | 'cancelled' | 'source_revoked'
+      /**
+       * Teaching Mode
+       * @default fast
+       * @enum {string}
+       */
+      teaching_mode: 'guided' | 'fast'
       /** Title */
       title: string
       /** Updated At */
@@ -4963,6 +5680,43 @@ export interface components {
       usage?: components['schemas']['Usage']
       /** Warnings */
       warnings?: string[]
+    }
+    /** ExperienceEventInput */
+    ExperienceEventInput: {
+      /** Course Id */
+      course_id?: string | null
+      /** Elapsed Ms */
+      elapsed_ms?: number | null
+      /** Event Id */
+      event_id: string
+      /** Helpful */
+      helpful?: boolean | null
+      /** Lesson Id */
+      lesson_id?: string | null
+      /**
+       * Name
+       * @enum {string}
+       */
+      name:
+        | 'course_create_viewed'
+        | 'course_create_submitted'
+        | 'lesson_opened'
+        | 'learning_session_finished'
+        | 'task_retry_clicked'
+        | 'response_helpfulness_submitted'
+        | 'content_first_visible'
+        | 'content_stream_interrupted'
+      /** Task Id */
+      task_id?: string | null
+    }
+    /** ExperienceEventReceipt */
+    ExperienceEventReceipt: {
+      /** Accepted */
+      accepted: boolean
+      /** Event Id */
+      event_id: string
+      /** Received At */
+      received_at?: string | null
     }
     /** FailBody */
     FailBody: {
@@ -6808,6 +7562,11 @@ export interface components {
        */
       answer: string[]
       /**
+       * Course Criterion Refs
+       * @description 仅课程检查使用，由服务端提供的局部课程目标引用
+       */
+      course_criterion_refs?: string[]
+      /**
        * Difficulty
        * @description 难度
        * @enum {string}
@@ -8444,6 +9203,27 @@ export interface components {
       /** Title */
       title: string
     }
+    /** TeachingQualitySummary */
+    TeachingQualitySummary: {
+      /** Artifact Hash */
+      artifact_hash?: string | null
+      /** Draft Hash */
+      draft_hash?: string | null
+      /**
+       * Level
+       * @enum {string}
+       */
+      level: 'outline' | 'lesson'
+      /** Reason Code */
+      reason_code?: string | null
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'reviewed' | 'needs_revision' | 'unreviewed'
+      /** Warnings */
+      warnings?: string[]
+    }
     /** UpdateProfileRequest */
     UpdateProfileRequest: {
       /** Avatar Url */
@@ -9061,6 +9841,121 @@ export interface operations {
       }
     }
   }
+  application_task_api_v1_courses_application_tasks__task_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseApplicationJobView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  cancel_application_task_api_v1_courses_application_tasks__task_id__cancel_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseApplicationJobView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  application_task_events_api_v1_courses_application_tasks__task_id__events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  capabilities_api_v1_courses_capabilities_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseCapabilities_']
+        }
+      }
+    }
+  }
   task_api_v1_courses_tasks__task_id__get: {
     parameters: {
       query?: never
@@ -9110,6 +10005,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_CourseTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  content_events_api_v1_courses_tasks__task_id__content_events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -9206,6 +10134,285 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_CourseView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_assessment_api_v1_courses__course_id__assessment_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseAssessmentCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseAssessmentView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_assessments_api_v1_courses__course_id__assessments_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_list_CourseAssessmentView__']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  assessment_api_v1_courses__course_id__assessments__course_assessment_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        course_assessment_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseAssessmentView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_application_api_v1_courses__course_id__assessments__course_assessment_id__application_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        course_assessment_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseAssessmentView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  submit_application_api_v1_courses__course_id__assessments__course_assessment_id__applications__application_task_id__attempts_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        course_assessment_id: string
+        application_task_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseApplicationAnswer']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseApplicationAttemptView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  application_attempt_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+        course_assessment_id: string
+        attempt_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseApplicationAttemptView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  application_feedback_api_v1_courses__course_id__assessments__course_assessment_id__attempts__attempt_id__feedback_jobs_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        course_assessment_id: string
+        attempt_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseApplicationAttemptView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  complete_assessment_api_v1_courses__course_id__assessments__course_assessment_id__complete_post: {
+    parameters: {
+      query?: never
+      header: {
+        'idempotency-key': string
+      }
+      path: {
+        course_id: string
+        course_assessment_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseAssessmentComplete']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseAssessmentView_']
         }
       }
       /** @description Validation Error */
@@ -9666,6 +10873,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_CourseTutorTurnView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  outcomes_api_v1_courses__course_id__outcomes_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_CourseOutcomeSummary_']
         }
       }
       /** @description Validation Error */
@@ -10668,6 +11906,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_RunView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  record_api_v1_experience_events_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExperienceEventInput']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_ExperienceEventReceipt_']
         }
       }
       /** @description Validation Error */
@@ -11969,6 +13240,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ApiResponse_QaTaskView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  content_events_api_v1_qa_tasks__task_id__content_events_get: {
+    parameters: {
+      query?: never
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */

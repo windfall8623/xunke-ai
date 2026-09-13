@@ -11,7 +11,7 @@ import inspect
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
@@ -19,6 +19,8 @@ from app.rag.budget import BudgetLedger, count_tokens
 from app.rag.context import assemble_evidence
 from app.rag.contracts import (
     CoveragePlan,
+    Evidence,
+    EvidencePack,
     GenerationResult,
     PipelineConfig,
     QuizArtifact,
@@ -27,6 +29,8 @@ from app.rag.contracts import (
     ResolvedScope,
     RetrievalResult,
     ValidationResult,
+    Usage,
+    WebEvidence,
     stable_hash,
 )
 from app.rag.coverage import bind_coverage, missing_coverage, plan_coverage
@@ -39,6 +43,14 @@ from app.rag.errors import (
     ScopeRevoked,
 )
 from app.rag.scope import evidence_in_scope, normalize_spec, require_execution_scope
+from app.rag.graph_trace import (
+    GraphBranch,
+    GraphStatus,
+    GraphSummaryRecorder,
+    SummarySink,
+    emit_summary,
+    terminal_reason_for,
+)
 from app.rag.retrieval import rrf_merge
 from app.rag.validation import validate_quiz_artifact
 
@@ -88,22 +100,23 @@ class PipelinePorts:
     estimate_llm_cost: Callable | None = None
     prompt_token_count: Callable | None = None
     rerank_candidates: Callable | None = None
+    record_summary: SummarySink | None = None
 
 
 class _State(TypedDict, total=False):
     round: int
     attempt: int
-    plan: Any
-    candidates: list
-    web_evidence: list
+    plan: CoveragePlan
+    candidates: list[Evidence]
+    web_evidence: list[WebEvidence]
     web_attempted: bool
     warnings: list[str]
-    retrieval_configs: list[dict]
-    pack: Any
-    payload: Any
-    validation: Any
+    retrieval_configs: list[dict[str, object]]
+    pack: EvidencePack | None
+    payload: object
+    validation: ValidationResult | None
     generation_error: bool
-    artifact: Any
+    artifact: QuizArtifact | None
 
 
 async def _await_if_needed(value):
@@ -191,23 +204,34 @@ async def generate_quiz_artifact(
     """Execute at most two retrieval rounds, two generations, five total LLM calls."""
     from langgraph.graph import END, START, StateGraph
 
-    spec = normalize_spec(spec)
-    config = config or PipelineConfig()
-    scope = resolved_scope or ResolvedScope(
-        owner_id=actor.owner_id, namespace=context.storage_namespace
+    recorder = (
+        GraphSummaryRecorder("rag_quiz", context.run_id)
+        if ports.record_summary is not None else None
     )
-    require_execution_scope(actor, context, scope)
-    if spec.source_policy == "topic" and scope.documents:
-        raise ScopeRevoked("Topic execution cannot carry a private library scope")
-    if spec.source_policy != "topic":
-        requested = {d.doc_id for d in spec.scope.documents}
-        if requested != {d.doc_id for d in scope.documents}:
-            raise ScopeRevoked("Resolved source selection does not match the request")
-    fixed = (
-        _fixed_plan(spec, scope, coverage_plan, config)
-        if coverage_plan is not None
-        else None
-    )
+    try:
+        spec = normalize_spec(spec)
+        config = config or PipelineConfig()
+        scope = resolved_scope or ResolvedScope(
+            owner_id=actor.owner_id, namespace=context.storage_namespace
+        )
+        require_execution_scope(actor, context, scope)
+        if spec.source_policy == "topic" and scope.documents:
+            raise ScopeRevoked("Topic execution cannot carry a private library scope")
+        if spec.source_policy != "topic":
+            requested = {d.doc_id for d in spec.scope.documents}
+            if requested != {d.doc_id for d in scope.documents}:
+                raise ScopeRevoked("Resolved source selection does not match the request")
+        fixed = (
+            _fixed_plan(spec, scope, coverage_plan, config)
+            if coverage_plan is not None
+            else None
+        )
+    except Exception as exc:
+        if recorder is not None:
+            emit_summary(ports.record_summary, recorder.finish(
+                status="failed", terminal_reason=terminal_reason_for(exc), usage=Usage()
+            ))
+        raise
     limits = context.budget.model_copy(
         update={
             "max_llm_calls": min(context.budget.max_llm_calls, config.max_llm_calls)
@@ -224,7 +248,7 @@ async def generate_quiz_artifact(
         # Private excerpt/prompt text is never added to public stage records.
         trace.append({"stage": stage, **values})
 
-    async def prepare(state):
+    async def prepare(state: _State) -> _State:
         await auth()
         plan = (
             fixed
@@ -249,10 +273,15 @@ async def generate_quiz_artifact(
             "web_attempted": False,
             "warnings": [],
             "retrieval_configs": [],
+            "pack": None,
+            "payload": None,
+            "validation": None,
+            "artifact": None,
         }
 
-    async def retrieve(state):
+    async def retrieve(state: _State) -> _State:
         await auth()
+        assert isinstance(state["plan"], CoveragePlan)
         round_number = state["round"] + 1
         evidence = list(state["candidates"])
         configurations = list(state["retrieval_configs"])
@@ -268,7 +297,10 @@ async def generate_quiz_artifact(
             round_candidates, round_rankings = {}, []
             queries = state["plan"].subqueries
             if round_number > 1:
-                missing = missing_coverage(state.get("pack").coverage)
+                pack = state["pack"]
+                assert isinstance(pack, EvidencePack)
+                assert isinstance(pack.coverage, CoveragePlan)
+                missing = missing_coverage(pack.coverage)
                 queries = [target.title for target in missing] or queries
             for query in queries[: config.max_subqueries]:
                 await auth()
@@ -345,8 +377,9 @@ async def generate_quiz_artifact(
             "warnings": warnings,
         }
 
-    async def assemble(state):
+    async def assemble(state: _State) -> _State:
         await auth()
+        assert isinstance(state["plan"], CoveragePlan)
         web_evidence = state["web_evidence"]
         attempted = state["web_attempted"]
         warnings = list(state["warnings"])
@@ -405,25 +438,31 @@ async def generate_quiz_artifact(
             "warnings": warnings,
         }
 
-    def after_assemble(state):
+    def after_assemble(state: _State) -> str:
         pack = state["pack"]
+        assert isinstance(pack, EvidencePack)
+        assert isinstance(pack.coverage, CoveragePlan)
         if spec.source_policy != "topic" and (
             not pack.evidence or missing_coverage(pack.coverage)
         ):
             return "retrieve"
         return "generate"
 
-    def reserve_llm(state, stage):
+    def reserve_llm(state: _State, stage: str) -> None:
         # Includes request/coverage and framing; generator validates its actual prompt
         # window too. No excerpt is cropped or generated ID accepted here.
+        pack = state["pack"]
+        assert isinstance(pack, EvidencePack)
+        assert isinstance(pack.coverage, CoveragePlan)
+        validation = state.get("validation")
         serialized = json.dumps(
             {
                 "spec": spec.model_dump(mode="json"),
                 "evidence": [
                     {"id": e.evidence_id, "text": e.excerpt}
-                    for e in state["pack"].evidence
+                    for e in pack.evidence
                 ],
-                "coverage": state["pack"].coverage.model_dump(mode="json"),
+                "coverage": pack.coverage.model_dump(mode="json"),
                 "payload": state.get("payload") if stage == "semantic" else None,
             },
             ensure_ascii=False,
@@ -432,10 +471,10 @@ async def generate_quiz_artifact(
             ports.prompt_token_count(
                 stage,
                 spec,
-                state["pack"],
-                state["pack"].coverage,
+                pack,
+                pack.coverage,
                 state.get("payload"),
-                state["validation"].errors if state.get("validation") else None,
+                validation.errors if validation is not None else None,
             )
             if ports.prompt_token_count
             else count_tokens(serialized) + 1500
@@ -451,8 +490,11 @@ async def generate_quiz_artifact(
         )
         ledger.reserve("llm", input_tokens=input_tokens, estimated_cost_usd=estimate)
 
-    async def generate(state):
+    async def generate(state: _State) -> _State:
         await auth()
+        pack = state["pack"]
+        assert isinstance(pack, EvidencePack)
+        assert isinstance(pack.coverage, CoveragePlan)
         if config.reranker.provider == "llm" and (
             limits.max_llm_calls - ledger.usage.llm_calls
             < 1 + int(config.require_semantic_validation)
@@ -463,13 +505,14 @@ async def generate_quiz_artifact(
         attempt = state["attempt"] + 1
         reserve_llm(state, "generate")
         started = time.monotonic()
-        feedback = state["validation"].errors if state.get("validation") else None
+        previous_validation = state.get("validation")
+        feedback = previous_validation.errors if previous_validation is not None else None
         try:
             generated = await asyncio.wait_for(
                 ports.generate(
                     spec,
-                    state["pack"],
-                    state["pack"].coverage,
+                    pack,
+                    pack.coverage,
                     attempt,
                     feedback=feedback,
                 ),
@@ -505,19 +548,21 @@ async def generate_quiz_artifact(
         traced(
             "generate",
             attempt=attempt,
-            provided_evidence_ids=state["pack"].provided_evidence_ids,
+            provided_evidence_ids=pack.provided_evidence_ids,
             provider_failed=error,
         )
         return {"attempt": attempt, "payload": payload, "generation_error": error}
 
-    async def validate(state):
+    async def validate(state: _State) -> _State:
         await auth()
+        pack = state["pack"]
+        assert isinstance(pack, EvidencePack)
         if state["generation_error"]:
             validation = ValidationResult(
                 passed=False, errors=["generator_unavailable"]
             )
         else:
-            validation = validate_quiz_artifact(state["payload"], spec, state["pack"])
+            validation = validate_quiz_artifact(state["payload"], spec, pack)
         if validation.passed and config.require_semantic_validation:
             if ports.semantic_validator is None:
                 raise GenerationValidationFailed(
@@ -528,7 +573,7 @@ async def generate_quiz_artifact(
                 semantic = await asyncio.wait_for(
                     ports.semantic_validator(
                         QuizPayload.model_validate(state["payload"]),
-                        state["pack"],
+                        pack,
                         spec,
                     ),
                     timeout=ledger.remaining_seconds,
@@ -571,21 +616,29 @@ async def generate_quiz_artifact(
             )
         return {"validation": validation}
 
-    def after_validate(state):
-        if state["validation"].passed:
+    def after_validate(state: _State) -> str:
+        validation = state["validation"]
+        assert isinstance(validation, ValidationResult)
+        if validation.passed:
             return "finish"
         if state["attempt"] >= config.max_generation_attempts:
             raise GenerationValidationFailed(
                 "Generated quiz failed validation after the bounded attempts",
-                details={"validation_errors": state["validation"].errors},
+                details={"validation_errors": validation.errors},
             )
         return "generate"
 
-    async def finish(state):
+    async def finish(state: _State) -> _State:
         await auth()
-        pack = state["pack"].model_copy(update={"usage": ledger.snapshot()})
+        original_pack, payload, validation = (
+            state["pack"], state["payload"], state["validation"]
+        )
+        assert isinstance(original_pack, EvidencePack)
+        assert isinstance(validation, ValidationResult)
+        assert isinstance(payload, dict)
+        pack = original_pack.model_copy(update={"usage": ledger.snapshot()})
         artifact = QuizArtifact(
-            **state["payload"],
+            **payload,
             artifact_id="artifact_"
             + stable_hash([context.run_id, config.pipeline_config_hash])[:32],
             run_id=context.run_id,
@@ -596,7 +649,7 @@ async def generate_quiz_artifact(
             pipeline_version=config.pipeline_version,
             pipeline_config_hash=config.pipeline_config_hash,
             usage=ledger.snapshot(),
-            validation=state["validation"],
+            validation=validation,
             effective_config={
                 "pipeline": config.model_dump(mode="json"),
                 "retrieval": state["retrieval_configs"],
@@ -615,6 +668,64 @@ async def generate_quiz_artifact(
             )
         return {"artifact": artifact}
 
+    def observed_node(stage: str, function: Callable[[_State], Awaitable[_State]]):
+        if recorder is None:
+            return function
+
+        async def observed(state: _State) -> _State:
+            recorder.begin(
+                stage, ledger.snapshot(),
+                retrieval_round=state.get("round", 0) + int(stage == "retrieve"),
+                generation_attempt=state.get("attempt", 0) + int(stage == "generate"),
+            )
+            try:
+                result = await function(state)
+            except (Exception, asyncio.CancelledError) as exc:
+                recorder.end(
+                    stage, ledger.snapshot(),
+                    status="cancelled" if isinstance(exc, asyncio.CancelledError) else "failed",
+                    branch="stop", error_code=terminal_reason_for(exc),
+                )
+                raise
+            # Conditional edges close these visits after the actual routing
+            # decision, including validation's terminal exception.
+            if stage not in {"assemble", "validate"}:
+                recorder.end(
+                    stage, ledger.snapshot(), status="completed",
+                    branch="stop" if stage == "finish" else "next",
+                    retrieval_round=result.get("round", state.get("round", 0)),
+                    generation_attempt=result.get("attempt", state.get("attempt", 0)),
+                )
+            return result
+
+        return observed
+
+    def observed_route(stage: str, route: Callable[[_State], str]):
+        if recorder is None:
+            return route
+
+        async def observed(state: _State) -> str:
+            try:
+                destination = route(state)
+            except Exception as exc:
+                recorder.end(
+                    stage, ledger.snapshot(), status="failed", branch="stop",
+                    error_code=terminal_reason_for(exc),
+                )
+                raise
+            branch: GraphBranch = "next"
+            if stage == "assemble" and destination == "retrieve":
+                branch = "retry_retrieval"
+            elif stage == "validate" and destination == "generate":
+                branch = "retry_generation"
+            recorder.end(
+                stage, ledger.snapshot(), status="completed", branch=branch,
+                retrieval_round=state["round"], generation_attempt=state["attempt"],
+            )
+            return destination
+
+        return observed
+
     graph = StateGraph(_State)
     for name, function in [
         ("prepare", prepare),
@@ -624,31 +735,49 @@ async def generate_quiz_artifact(
         ("validate", validate),
         ("finish", finish),
     ]:
-        graph.add_node(name, function)
+        graph.add_node(name, observed_node(name, function))
     graph.add_edge(START, "prepare")
     graph.add_edge("prepare", "retrieve")
     graph.add_edge("retrieve", "assemble")
     graph.add_conditional_edges(
-        "assemble", after_assemble, {"retrieve": "retrieve", "generate": "generate"}
+        "assemble", observed_route("assemble", after_assemble),
+        {"retrieve": "retrieve", "generate": "generate"}
     )
     graph.add_edge("generate", "validate")
     graph.add_conditional_edges(
-        "validate", after_validate, {"generate": "generate", "finish": "finish"}
+        "validate", observed_route("validate", after_validate),
+        {"generate": "generate", "finish": "finish"}
     )
     graph.add_edge("finish", END)
+    execution_status: GraphStatus = "failed"
+    execution_reason = "unexpected_error"
     try:
         result = await asyncio.wait_for(
             graph.compile().ainvoke({}, config={"recursion_limit": 24}),
             timeout=ledger.remaining_seconds,
         )
-        return result["artifact"]
+        artifact = result["artifact"]
+        assert isinstance(artifact, QuizArtifact)
+        execution_status, execution_reason = "completed", "completed"
+        return artifact
     except RagError as exc:
+        execution_reason = terminal_reason_for(exc)
         exc.details.update(
             usage=ledger.snapshot().model_dump(mode="json"), stage_trace=trace
         )
         raise
     except asyncio.TimeoutError as exc:
+        execution_reason = "budget_exceeded"
         raise BudgetExceeded(
             "Pipeline deadline exceeded",
             details={"usage": ledger.snapshot().model_dump(mode="json")},
         ) from exc
+    except asyncio.CancelledError:
+        execution_status, execution_reason = "cancelled", "cancelled"
+        raise
+    finally:
+        if recorder is not None:
+            emit_summary(ports.record_summary, recorder.finish(
+                status=execution_status, terminal_reason=execution_reason,
+                usage=ledger.snapshot(),
+            ))

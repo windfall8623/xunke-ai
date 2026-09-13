@@ -1,6 +1,10 @@
 import type { ApiSchemas } from './api'
 
 export type CourseCreate = ApiSchemas['CourseCreate']
+export type CourseTeachingMode = CourseCreate['teaching_mode']
+export type CourseCapabilities = ApiSchemas['CourseCapabilities']
+export type TeachingQualitySummary = ApiSchemas['TeachingQualitySummary']
+export type TeachingQualityStatus = TeachingQualitySummary['status']
 export type CourseTaskView = ApiSchemas['CourseTaskView']
 export type CourseSource = ApiSchemas['TeachSource']
 export type CourseMission = ApiSchemas['TeachMission']
@@ -28,3 +32,23 @@ export type CourseReviewView = ApiSchemas['CourseReviewView']
 export type CourseTodayView = ApiSchemas['CourseTodayView']
 export type CourseTodayItem = NonNullable<CourseTodayView['items']>[number]
 export type LessonCheck = ApiSchemas['LessonCheck']
+
+// A07：课程目标身份与只读结果投影。
+export type CourseCriterion = ApiSchemas['CourseCriterion']
+export type CourseCriterionOutcome = ApiSchemas['CourseCriterionOutcome']
+export type CourseOutcomeStatus = CourseCriterionOutcome['status']
+export type CourseEvidenceRef = ApiSchemas['CourseEvidenceRef']
+export type CourseOutcomeSummary = ApiSchemas['CourseOutcomeSummary']
+export type CourseAssessmentCreate = ApiSchemas['CourseAssessmentCreate']
+export type CourseAssessmentComplete = ApiSchemas['CourseAssessmentComplete']
+export type CourseAssessmentView = ApiSchemas['CourseAssessmentView']
+export type CourseAssessmentStatus = CourseAssessmentView['status']
+export type CourseAssessmentTask = ApiSchemas['CourseAssessmentTask']
+export type CourseHelpUsage = CourseAssessmentComplete['help_usage']
+
+// A08：课程文本应用任务、不可变回答与模型反馈。
+export type CourseApplicationTaskView = ApiSchemas['CourseApplicationTaskView']
+export type CourseApplicationAnswer = ApiSchemas['CourseApplicationAnswer']
+export type CourseApplicationAttemptView = ApiSchemas['CourseApplicationAttemptView']
+export type CourseApplicationFeedbackView = ApiSchemas['CourseApplicationFeedbackView']
+export type CourseApplicationJobView = ApiSchemas['CourseApplicationJobView']

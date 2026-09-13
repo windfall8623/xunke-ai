@@ -19,6 +19,14 @@
           "title": "Citation Refs",
           "type": "array"
         },
+        "course_criterion_refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Course Criterion Refs",
+          "type": "array"
+        },
         "coverage_target_id": {
           "anyOf": [
             {

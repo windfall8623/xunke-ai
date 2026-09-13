@@ -1,14 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, BookOpen, PanelLeftOpen, Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { CourseEvidenceDrawer } from '../../features/courses/CourseEvidenceDrawer'
 import { EvidenceNoticeBar } from '../../features/courses/EvidenceNoticeBar'
+import { CourseAgentProgress } from '../../features/courses/CourseAgentProgress'
+import { CourseAssessmentPanel } from '../../features/courses/CourseAssessmentPanel'
 import { CourseLesson } from '../../features/courses/CourseLesson'
 import { CourseOutline } from '../../features/courses/CourseOutline'
 import { CourseProgress } from '../../features/courses/CourseProgress'
+import { CourseQualityNotice } from '../../features/courses/CourseQualityNotice'
 import { CourseTaskStatus } from '../../features/courses/CourseTaskStatus'
 import { useCourseOperation } from '../../features/courses/useCourseOperation'
 import {
@@ -19,7 +22,7 @@ import {
   courseTaskPending,
   createCourseSubmissionKeys,
 } from '../../services/courses'
-import { coursePath, withCourseReturn } from '../../services/courseNavigation'
+import { coursePath, scrollCourseSection, withCourseReturn } from '../../services/courseNavigation'
 import { ApiError } from '../../services/http'
 import type {
   CourseLessonSummary,
@@ -46,17 +49,26 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   const operation = useCourseOperation()
   const keyFor = useMemo(() => createCourseSubmissionKeys(identity, courseId), [identity, courseId])
   const [evidence, setEvidence] = useState<{ sourceRef: string; lessonId?: string } | null>(null)
+  const focusOutlineControl = useRef(false)
   const [outlineCollapsed, setOutlineCollapsed] = useState(() => {
-    const saved = localStorage.getItem('xunke.outlineCollapsed')
-    if (saved !== null) return saved === '1'
+    try {
+      const saved = localStorage.getItem('xunke.outlineCollapsed')
+      if (saved !== null) return saved === '1'
+    } catch { /* Optional reading preference; a blocked store must not block the lesson. */ }
     return window.innerWidth < 1200
   })
   function toggleOutline() {
+    focusOutlineControl.current = true
     setOutlineCollapsed((current) => {
-      localStorage.setItem('xunke.outlineCollapsed', current ? '0' : '1')
+      try { localStorage.setItem('xunke.outlineCollapsed', current ? '0' : '1') } catch { /* Optional preference. */ }
       return !current
     })
   }
+  useEffect(() => {
+    if (!focusOutlineControl.current) return
+    focusOutlineControl.current = false
+    document.getElementById(outlineCollapsed ? 'course-outline-toggle' : 'course-outline-collapse')?.focus({ preventScroll: true })
+  }, [outlineCollapsed])
 
   const [sourceHidden, setSourceHidden] = useState(false)
   const courseQuery = useQuery({
@@ -167,12 +179,10 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   }, [lessonId, course?.resume_lesson_id, revoked, courseQuery.error, setParams])
   useEffect(() => {
     if (
-      ['#course-practice', '#course-review'].includes(location.hash) &&
+      ['#course-practice', '#course-review', '#lesson-summary'].includes(location.hash) &&
       lessonQuery.data?.status === 'ready'
     )
-      document
-        .getElementById(location.hash.slice(1))
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollCourseSection(location.hash.slice(1), 'start', true)
   }, [location.hash, lessonQuery.data?.lesson_id, lessonQuery.data?.status])
   function invalidate(affectedLesson?: string) {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
@@ -217,7 +227,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
     }
     invalidate(task.lesson_id || undefined)
   }
-  function generateLesson(id: string) {
+  function generateLesson(id: string, requestQualityReview = false) {
     if (!course || revoked) return
     const summary = lessons.find((lesson) => lesson.lesson_id === id)
     if (
@@ -231,6 +241,8 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
     const semantic = JSON.stringify({
       lesson_id: id,
       expected_course_revision: course.revision,
+      // 显式核对请求属于这次任务的一部分，必须进入幂等指纹。
+      request_quality_review: requestQualityReview,
       retry_of:
         previous && ['failed', 'cancelled'].includes(previous.status) ? previous.task_id : null,
     })
@@ -239,7 +251,14 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
       async (signal) => {
         const key = await keyFor('lesson', semantic)
         if (signal.aborted) throw new DOMException('已离开页面', 'AbortError')
-        return coursesApi.generateLesson(courseId, id, course.revision, key, signal)
+        return coursesApi.generateLesson(
+          courseId,
+          id,
+          course.revision,
+          key,
+          signal,
+          requestQualityReview,
+        )
       },
       rememberTask,
     )
@@ -298,9 +317,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
           `${returnTo}${['practice_lesson', 'review_lesson'].includes(action.type) ? '#course-practice' : ''}`,
         )
     } else
-      document
-        .getElementById('course-progress-stats')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      scrollCourseSection('course-progress-stats', 'center')
   }
   if (courseQuery.isPending) return <Loading>正在恢复课程与学习进度…</Loading>
   if (revoked)
@@ -348,8 +365,6 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   const availableLessons = lessons.filter(
     (lesson) => lesson.availability !== 'material_gap' && lesson.status !== 'source_revoked',
   )
-  const currentIndex = availableLessons.findIndex((lesson) => lesson.lesson_id === lessonId)
-  const nextLesson = currentIndex >= 0 ? availableLessons[currentIndex + 1] : undefined
   return (
     <div className="course-page">
       <Link to="/study" className="back-link">
@@ -387,13 +402,23 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         onRetry={() => invalidate(lessonId || undefined)}
       />
       {showOutlineTask && (
-        <CourseTaskStatus
-          courseId={courseId}
-          task={outlineTask}
-          onRetry={retryOutline}
-          disabled={operation.pending !== null}
-        />
+        <>
+          <CourseTaskStatus
+            courseId={courseId}
+            task={outlineTask}
+            onRetry={retryOutline}
+            disabled={operation.pending !== null}
+          />
+          <CourseAgentProgress task={outlineTask} teachingMode={course.teaching_mode} />
+        </>
       )}
+      {course.status === 'ready' || course.status === 'partial' ? (
+        <CourseQualityNotice
+          summary={course.quality_summary}
+          level="outline"
+          teachingMode={course.teaching_mode}
+        />
+      ) : null}
       {!outlineTask && ['failed', 'cancelled'].includes(course.status) && (
         <div className="card">
           <EmptyState
@@ -415,19 +440,24 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
       )}
       {!!lessons.length && (
         <div className={`course-workspace${outlineCollapsed ? ' outline-collapsed' : ''}`}>
-          {outlineCollapsed ? (
+          <div className="course-outline-column">
+          {outlineCollapsed && (
             <button
+              id="course-outline-toggle"
               type="button"
               className="outline-rail"
               onClick={toggleOutline}
               aria-label="展开课程目录"
+              aria-expanded={false}
+              aria-controls="course-outline"
               title="展开课程目录"
             >
               <PanelLeftOpen size={16} />
               <span>课程目录</span>
             </button>
-          ) : (
-            <div>
+          )}
+            <div id="course-outline" hidden={outlineCollapsed}>
+              {!outlineCollapsed &&
               <CourseOutline
                 course={course}
                 selectedLessonId={lessonId}
@@ -437,8 +467,9 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
                 disabled={operation.pending !== null}
                 onCollapse={toggleOutline}
               />
+              }
             </div>
-          )}
+          </div>
           <div className="course-main">
             {lessonId ? (
               lessonQuery.error ? (
@@ -451,12 +482,39 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
               ) : !lessonQuery.data ? (
                 <Loading>正在读取这一课…</Loading>
               ) : (
+                <>
+                <CourseAgentProgress
+                  task={lessonQuery.data.active_task || lessonQuery.data.latest_task}
+                  teachingMode={course.teaching_mode}
+                />
+                {lessonQuery.data.status === 'ready' && (
+                  <CourseQualityNotice
+                    summary={lessonQuery.data.quality_summary}
+                    level="lesson"
+                    teachingMode={course.teaching_mode}
+                  />
+                )}
+                {['not_generated', 'failed', 'cancelled'].includes(lessonQuery.data.status) &&
+                  course.teaching_mode === 'fast' && (
+                    <CourseQualityNotice
+                      summary={null}
+                      level="lesson"
+                      teachingMode="fast"
+                      onRequestReview={() => generateLesson(lessonId, true)}
+                      requestPending={operation.pending === `lesson:${lessonId}`}
+                      requestDisabled={operation.pending !== null}
+                    />
+                  )}
                 <CourseLesson
                   key={`${lessonQuery.data.lesson_id}:${lessonQuery.data.content_version}`}
                   lesson={lessonQuery.data}
+                  sourcePolicy={course.source_policy}
                   pendingWeakPoints={
                     progressQuery.error ? [] : progressQuery.data?.pending_weak_points || []
                   }
+                  progressState={progressQuery.error ? 'unconfirmed' : progressQuery.isPending ? 'loading' : 'confirmed'}
+                  nextAction={!progressQuery.error ? progressQuery.data?.next_action : undefined}
+                  onNextAction={nextAction}
                   reviews={reviewsQuery.error ? [] : reviewsQuery.data || []}
                   reviewsError={reviewsQuery.error}
                   onReloadReviews={() => {
@@ -464,10 +522,10 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
                   }}
                   onGenerate={() => generateLesson(lessonId)}
                   onEvidence={(sourceRef) => setEvidence({ sourceRef, lessonId })}
-                  onNext={nextLesson ? () => selectLesson(nextLesson) : undefined}
                   onUnavailable={hideSource}
                   generating={operation.pending === `lesson:${lessonId}`}
                 />
+                </>
               )
             ) : (
               <section className="card course-intro">
@@ -522,6 +580,18 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         ) : (
           <Loading>正在读取学习进度…</Loading>
         ))}
+      {!!lessons.length && ['ready', 'partial'].includes(course.status) && (
+        <CourseAssessmentPanel
+          course={course}
+          onUnavailable={hideSource}
+          onLesson={(id) => {
+            const selected = lessons.find((lesson) => lesson.lesson_id === id)
+            if (selected) selectLesson(selected)
+            else navigate(coursePath(courseId, id))
+          }}
+          onEvidence={(sourceRef) => setEvidence({ sourceRef })}
+        />
+      )}
       {evidence && (
         <CourseEvidenceDrawer
           courseId={courseId}

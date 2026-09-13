@@ -110,7 +110,7 @@ export function CourseProgress({
         </div>
         <button
           type="button"
-          className="button primary"
+          className="button secondary"
           onClick={() => onAction(progress.next_action)}
         >
           {actionLabels[progress.next_action.type]}

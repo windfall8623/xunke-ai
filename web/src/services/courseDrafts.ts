@@ -1,5 +1,5 @@
 import type { SourceScope } from '../types/api'
-import type { CourseSourcePolicy } from '../types/course'
+import type { CourseSourcePolicy, CourseTeachingMode } from '../types/course'
 
 /** A local form draft, never a copy of a server response or document contents. */
 export type CourseDraft = {
@@ -11,6 +11,7 @@ export type CourseDraft = {
   timezone: string
   preload_first_lesson: boolean
   source_policy: CourseSourcePolicy
+  teaching_mode: CourseTeachingMode
   scope: SourceScope | null
   document_versions: Record<string, string>
 }
@@ -71,6 +72,7 @@ export function loadCourseDraft(identity: string | number): CourseDraft | null {
       timezone: shortText(draft.timezone, 100) || 'Asia/Shanghai',
       preload_first_lesson: draft.preload_first_lesson !== false,
       source_policy: draft.source_policy === 'strict_docs' ? 'strict_docs' : 'topic',
+      teaching_mode: draft.teaching_mode === 'fast' ? 'fast' : 'guided',
       scope: documents.length ? { type: 'selected_documents', documents } : null,
       document_versions: Object.fromEntries(
         documents.flatMap((doc) => {

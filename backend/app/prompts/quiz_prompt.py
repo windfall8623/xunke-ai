@@ -1,5 +1,7 @@
 """出题 Prompt V1"""
 
+from app.prompts.rag_prompt import COURSE_CRITERION_RULES as COURSE_CRITERION_RULES
+
 QUIZ_SYSTEM_PROMPT = "你是一名专业的 AI 学习教练。你只能输出合法 JSON，不要输出任何 JSON 之外的内容，包括 markdown、注释、说明文字。当提供了参考资料时，必须优先基于参考资料出题，确保知识的准确性和时效性。"
 
 QUIZ_HUMAN_PROMPT = """请根据用户提供的学习内容生成一组用于小程序闯关答题的题目。

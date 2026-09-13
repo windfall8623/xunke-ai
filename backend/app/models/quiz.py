@@ -19,6 +19,10 @@ class Question(BaseModel):
     knowledge_point: str = Field(description="知识点标签")
     difficulty: Literal["easy", "medium", "hard"] = Field(description="难度")
     image_url: str | None = Field(default=None, description="AI 生成的题目配图 URL（可选）")
+    course_criterion_refs: list[str] = Field(
+        default_factory=list, max_length=3, exclude_if=lambda value: not value,
+        description="仅课程检查使用，由服务端提供的局部课程目标引用",
+    )
 
 
 class QuizOutput(BaseModel):

@@ -10,16 +10,24 @@ from app.services import course_read
 from app.services.course_service import require_enabled
 from app.services.course_tutor_service import authorized_lesson, check_lesson_version, latest_turn_for_attempt
 from app.teaching.contracts import LessonCheck
+from app.teaching.contracts_v2 import LessonCheckV2
+from app.teaching.protocol import HISTORICAL_V1, V1, V2
 
 
 def lesson_check(lesson, check_ref):
-    checks = (load(lesson["content_json"], {}).get("payload") or {}).get("checks", [])
+    content = load(lesson["content_json"], {})
+    checks = (content.get("payload") or {}).get("checks", [])
     matches = [item for item in checks if item.get("check_ref") == check_ref]
     if not matches:
         raise not_found()
     if len(matches) != 1:
         raise conflict("course_check_ambiguous", "本课自检标识不唯一，暂时无法保存")
-    return LessonCheck.model_validate(matches[0])
+    model = {V1: LessonCheck, HISTORICAL_V1: LessonCheck, V2: LessonCheckV2}.get(content.get("schema_version"))
+    if model is None:
+        raise conflict("course_check_schema_invalid", "本课自检格式暂不支持，请刷新后重试")
+    # Retain v2 goal references in the saved-attempt context passed to the
+    # tutor and compared again by its fenced publication transaction.
+    return model.model_validate(matches[0])
 
 
 def validate_check_answer(check, answer):
