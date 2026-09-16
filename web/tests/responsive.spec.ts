@@ -8,7 +8,7 @@ test('learning pages reflow from 360 to 1440 pixels with long content', async ({
   for (const width of [360, 390, 768, 1280, 1440]) {
     await page.setViewportSize({ width, height: 960 })
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /今天，想学点什么/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '接着上次，继续探索。' })).toBeVisible()
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > innerWidth + 1,
     )

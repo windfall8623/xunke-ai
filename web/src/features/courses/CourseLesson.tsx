@@ -243,7 +243,7 @@ export function CourseLesson({
   const canGenerate = ['not_generated', 'failed', 'cancelled'].includes(lesson.status)
   return (
     <article className="course-lesson" aria-label="当前课时">
-      <header className="card course-lesson-heading">
+      <header className="course-lesson-heading">
         <div className="section-line">
           <span className="eyebrow">这一课</span>
           {lesson.read_at && (
@@ -297,9 +297,13 @@ export function CourseLesson({
       ) : (
         <>
           <EvidenceNoticeBar warnings={lesson.warnings || []} />
-          <section className="card course-lesson-body">
+          <section className="course-lesson-body" aria-label="课文">
             {lesson.blocks?.map((block, index) => (
-              <section className={`course-block course-block-${block.type}`} key={index}>
+              <section
+                className={`course-block course-block-${block.type}`}
+                aria-label={`${blockLabels[block.type]} ${index + 1}`}
+                key={index}
+              >
                 <div className="section-line">
                   <h3>{blockLabels[block.type]}</h3>
                   {block.synthetic && <span className="badge">示意示例</span>}
@@ -476,9 +480,13 @@ export function CourseLesson({
                         disabled={pending}
                         onClick={() =>
                           link.kind === 'scheduled_review'
-                            ? document
-                                .getElementById('course-review')
-                                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                            ? document.getElementById('course-review')?.scrollIntoView({
+                                behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)')
+                                  .matches
+                                  ? 'auto'
+                                  : 'smooth',
+                                block: 'center',
+                              })
                             : createQuiz(link.kind, link.parent_link_id || undefined)
                         }
                       >

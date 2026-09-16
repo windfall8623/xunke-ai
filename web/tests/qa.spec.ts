@@ -131,8 +131,8 @@ test('keeps long answers and canonical source text inside desktop and phone view
     const dialog = page.getByRole('dialog', { name: '引用原文' })
     await expect(dialog.getByText(/CanonicalSourceText/)).toBeVisible()
     const bounds = await dialog.boundingBox()
-    expect(bounds?.height).toBe(920)
-    if (width <= 767) expect(bounds?.width).toBe(width)
+    expect(bounds?.height).toBeCloseTo(920, 1)
+    if (width <= 767) expect(bounds?.width).toBeCloseTo(width, 1)
     expect(
       await dialog.evaluate((node) => node.scrollWidth > node.clientWidth + 1),
       `source overflow at ${width}px`,

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { ReviewQueue } from '../../features/study/ReviewQueue'
@@ -253,19 +253,13 @@ function Reviews({ spaceId, conceptId }: { spaceId?: string; conceptId?: string 
 
 export function StudyNavigation() {
   return (
-    <nav className="button-row" aria-label="学习功能">
-      <Link className="button secondary" to="/study">
+    <nav className="study-navigation" aria-label="学习功能">
+      <NavLink to="/study" end>
         课程与空间
-      </Link>
-      <Link className="button secondary" to="/study/reviews">
-        复习安排
-      </Link>
-      <Link className="button secondary" to="/study/wrong-questions">
-        错题本
-      </Link>
-      <Link className="button secondary" to="/study/history">
-        学习历史
-      </Link>
+      </NavLink>
+      <NavLink to="/study/reviews">复习安排</NavLink>
+      <NavLink to="/study/wrong-questions">错题本</NavLink>
+      <NavLink to="/study/history">学习历史</NavLink>
     </nav>
   )
 }

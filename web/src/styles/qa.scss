@@ -2,86 +2,100 @@
   min-width: 0;
   .page-heading {
     align-items: center;
+    margin-bottom: var(--space-6);
+  }
+  .empty-glyph {
+    background: var(--primary-soft);
+    color: var(--primary);
   }
 }
 .qa-layout {
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: 208px minmax(0, 1fr);
+  gap: var(--space-6);
   align-items: start;
 }
 .qa-main {
   min-width: 0;
 }
-.qa-session-sidebar.card {
-  padding: 20px 14px;
+.qa-session-sidebar {
+  padding: var(--space-5) var(--space-3) var(--space-5) 0;
+  border-right: 1px solid var(--border);
   position: sticky;
-  top: 20px;
+  top: var(--space-5);
 }
 .qa-sessions-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin: 0 6px 16px;
+  gap: var(--space-2);
+  margin: 0 var(--space-2) var(--space-4);
   h2 {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
   }
 }
 .qa-session-links {
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
   a {
     display: grid;
-    gap: 8px;
-    border-radius: 10px;
-    padding: 13px 12px;
+    gap: var(--space-2);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
     overflow-wrap: anywhere;
     border: 1px solid transparent;
-    &.active {
-      background: #eef0fc;
-      border-color: #dfe4fa;
-      color: var(--primary-dark);
-    }
     &:hover {
-      background: #f6f7fc;
+      background: var(--surface);
+    }
+    &.active {
+      background: var(--primary-soft);
+      border-color: var(--primary-border);
+      color: var(--primary-dark);
     }
   }
   strong {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     line-height: 1.7;
   }
   span {
     color: var(--muted);
-    font-size: 0.65rem;
+    font-size: var(--text-xs);
   }
 }
 .qa-pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 14px;
-  margin-top: 16px;
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
   border-top: 1px solid var(--border);
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 .qa-session-toggle.button {
   display: none;
 }
 .qa-new-session.card {
-  padding: 28px;
+  padding: var(--space-7);
+  box-shadow: none;
+}
+.qa-new-session-icon {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.qa-new-session .card-heading p {
+  font-size: var(--text-sm);
 }
 .qa-scope-form,
 .qa-feedback-form {
   display: grid;
-  gap: 18px;
+  gap: var(--space-5);
   min-width: 0;
   > label {
     display: grid;
-    gap: 8px;
-    font-size: 0.82rem;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
   }
   > p {
     margin-bottom: 0;
@@ -91,7 +105,7 @@
     align-items: start;
     small {
       display: block;
-      margin-top: 7px;
+      margin-top: var(--space-2);
       color: var(--muted);
       line-height: 1.8;
     }
@@ -106,6 +120,12 @@
   }
   .checkbox-row {
     overflow-wrap: anywhere;
+    font-size: var(--text-sm);
+  }
+  .checkbox-row small,
+  .section-options legend {
+    color: var(--muted);
+    font-size: var(--text-xs);
   }
   fieldset {
     border: 0;
@@ -113,9 +133,15 @@
   > button {
     justify-self: start;
   }
+  input,
+  select,
+  textarea {
+    background: var(--surface);
+    border-color: var(--border);
+  }
 }
 .qa-document-option {
-  padding: 12px 8px;
+  padding: var(--space-3) var(--space-2);
   border-bottom: 1px solid var(--border);
   &:last-child {
     border-bottom: 0;
@@ -126,17 +152,20 @@
 }
 .qa-conversation.card {
   padding: 0;
-  overflow: hidden;
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: none;
 }
 .qa-conversation-heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  padding: 25px 28px 18px;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-7) var(--space-4);
   h2 {
-    margin-bottom: 5px;
+    margin-bottom: var(--space-1);
     overflow-wrap: anywhere;
+    font-size: var(--text-lg);
   }
   > div:first-child {
     min-width: 0;
@@ -146,34 +175,39 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .qa-scope-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 28px 20px;
+  gap: var(--space-2);
+  padding: 0 var(--space-7) var(--space-5);
   border-bottom: 1px solid var(--border);
   > span {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.68rem;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    font-size: var(--text-xs);
     line-height: 1.7;
-    color: var(--muted);
+    color: var(--ink-soft);
     overflow-wrap: anywhere;
     min-width: 0;
   }
 }
 .qa-load-history.text-button {
-  margin: 20px auto 0;
+  margin: var(--space-5) auto 0;
   display: flex;
 }
 .qa-messages {
   display: grid;
-  gap: 24px;
-  padding: 26px 28px;
+  gap: var(--space-7);
+  padding: var(--space-7);
   min-width: 0;
+  max-width: 82ch;
+  margin-inline: auto;
 }
 .qa-message {
   min-width: 0;
@@ -183,74 +217,84 @@
     white-space: pre-wrap;
     margin-bottom: 0;
     line-height: 1.95;
-    font-size: 0.88rem;
+    font-size: var(--text-md);
   }
 }
 .qa-message-label {
-  font-size: 0.68rem;
-  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
   > span {
-    font-size: 0.6rem;
-    color: #8d96a7;
+    font-weight: 400;
+    color: var(--muted);
   }
 }
 .qa-message-user {
-  padding: 16px 19px;
-  border-radius: 14px 14px 3px 14px;
-  background: #f0f3fb;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md) var(--radius-md) var(--space-1) var(--radius-md);
+  background: var(--bg);
   justify-self: end;
-  max-width: 92%;
+  max-width: 90%;
   min-width: min(180px, 90%);
+  .qa-message-label {
+    margin-bottom: var(--space-2);
+  }
 }
 .qa-message-assistant {
-  padding: 3px 0 7px;
+  padding-block: var(--space-1) var(--space-2);
+  > .qa-message-label {
+    color: var(--primary);
+  }
 }
 .qa-message-revoked {
   color: var(--muted);
-  background: #f4f5f7;
-  padding: 16px 18px;
-  border-radius: 10px;
+  background: var(--bg);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
 }
 .qa-answer-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
   > .tiny {
-    font-size: 0.6rem;
+    font-size: var(--text-xs);
   }
 }
 .qa-outcome.badge {
-  background: #edf7f2;
-  color: #357760;
+  background: var(--success-soft);
+  color: var(--success);
 }
 .qa-outcome-insufficient_evidence.badge,
 .qa-outcome-needs_clarification.badge,
 .qa-outcome-partial.badge {
-  background: #fff5e6;
-  color: #90642a;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .qa-outcome-conflicting_sources.badge {
-  background: #fbf0ee;
-  color: #a15b47;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 .qa-answer-block {
   min-width: 0;
-  margin-bottom: 18px;
+  margin-bottom: var(--space-6);
 }
 .qa-block-notice {
-  color: #64718a;
+  color: var(--muted);
 }
 .qa-citations {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 10px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--primary-border);
 }
 .qa-citation {
   display: inline-flex;
@@ -258,101 +302,127 @@
   gap: 6px;
   max-width: 100%;
   text-align: left;
-  border: 1px solid #dfe5f0;
-  background: #fafbff;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.66rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
   line-height: 1.6;
-  color: #5c6e94;
+  color: var(--primary-dark);
   > svg {
-    margin-top: 2px;
+    margin-top: 3px;
   }
   > span {
     min-width: 0;
     overflow-wrap: anywhere;
   }
   &:hover {
-    background: #eef1fc;
-    border-color: #c6cff1;
+    background: var(--primary-soft);
+    border-color: var(--primary-border);
   }
 }
 .qa-answer-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 17px;
-  border-top: 1px solid #f0f2f7;
-  padding-top: 13px;
-  margin-top: 8px;
+  gap: var(--space-5);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+  margin-top: var(--space-2);
   .text-button {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
+    color: var(--ink-soft);
+  }
+  .text-button:hover {
+    color: var(--primary);
   }
 }
 .qa-task {
-  padding: 16px 18px;
-  background: #f7f8fc;
-  border-radius: 10px;
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
   p {
-    margin-bottom: 10px;
-    font-size: 0.8rem;
+    margin-bottom: var(--space-3);
+    font-size: var(--text-sm);
   }
   p[role='status'] {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: var(--space-2);
   }
   .button-row {
-    margin-top: 10px;
+    margin-top: var(--space-3);
   }
   &.qa-task-failed {
-    background: #fff3f0;
-    color: #a75246;
+    background: var(--danger-soft);
+    color: var(--danger);
   }
 }
 .qa-composer {
   display: grid;
-  gap: 11px;
-  padding: 22px 28px 24px;
-  border-top: 1px solid var(--border);
-  background: #fdfdff;
-  > label {
-    font-size: 0.77rem;
-    font-weight: 600;
+  gap: var(--space-3);
+  margin: var(--space-2) var(--space-6) var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  &:focus-within {
+    border-color: var(--primary);
   }
   textarea {
     width: 100%;
     resize: vertical;
-    min-height: 100px;
+    min-height: 112px;
     max-height: 320px;
-    font-size: 0.84rem;
+    font-size: var(--text-md);
     line-height: 1.8;
+    background: var(--bg);
+    border-color: var(--border);
+    &::placeholder {
+      color: var(--muted);
+    }
   }
   .notice {
     margin: 0;
+  }
+}
+.qa-composer-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  > span {
+    color: var(--muted);
+    font-size: var(--text-xs);
   }
 }
 .qa-composer-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
   > span {
-    font-size: 0.64rem;
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
   }
 }
 .qa-uncertain {
   display: block;
   p {
-    margin: 0 0 8px;
+    margin: 0 0 var(--space-2);
   }
 }
 .qa-revoked {
   display: grid;
   justify-items: center;
   text-align: center;
-  gap: 10px;
-  padding: 40px 24px;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
   color: var(--muted);
   > h3,
   > p {
@@ -368,49 +438,56 @@
   height: 100dvh;
   max-height: 100dvh;
   border: 0;
+  border-left: 1px solid var(--border);
   border-radius: 0;
+  background: var(--surface);
   .dialog-header {
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--surface);
     z-index: 1;
   }
   .dialog-body {
     min-width: 0;
-    padding-bottom: 45px;
+    padding-bottom: var(--space-8);
   }
   .evidence-heading h3,
   .evidence-heading p {
     overflow-wrap: anywhere;
   }
   .evidence-heading p {
-    margin: 4px 0;
+    margin: var(--space-1) 0;
   }
-  .evidence-quote p {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    line-height: 2;
+  .evidence-quote {
+    background: var(--bg);
+    border-color: var(--primary-border);
+    color: var(--ink);
+    p {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 2;
+      font-size: var(--text-md);
+    }
   }
-}
-.document-actions {
-  flex-wrap: wrap;
 }
 @media (max-width: 1100px) {
   .qa-layout {
-    grid-template-columns: 190px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 184px minmax(0, 1fr);
+    gap: var(--space-4);
   }
-  .qa-session-sidebar.card {
-    padding: 18px 10px;
+  .qa-session-sidebar {
+    padding: var(--space-4) var(--space-3) var(--space-4) 0;
   }
   .qa-conversation-heading {
-    padding-inline: 20px;
+    padding-inline: var(--space-5);
     flex-wrap: wrap;
   }
   .qa-scope-summary,
-  .qa-messages,
+  .qa-messages {
+    padding-inline: var(--space-5);
+  }
   .qa-composer {
-    padding-inline: 20px;
+    margin-inline: var(--space-4);
   }
   .qa-keyboard-hint {
     display: none;
@@ -423,9 +500,13 @@
   .qa-session-toggle.button {
     display: inline-flex;
   }
-  .qa-session-sidebar.card {
+  .qa-session-sidebar {
     display: none;
     position: static;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: var(--space-4);
     &.is-open {
       display: block;
     }
@@ -438,77 +519,81 @@
 @media (max-width: 767px) {
   .qa-page .page-heading {
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 22px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
     h1 {
-      font-size: 1.6rem;
+      font-size: var(--text-2xl);
     }
   }
   .qa-page .page-heading .button {
-    font-size: 0.75rem;
-    padding: 10px 13px;
+    font-size: var(--text-xs);
+    padding: var(--space-3);
   }
   .qa-new-session.card {
-    padding: 21px 18px;
+    padding: var(--space-5) var(--space-4);
   }
   .qa-scope-form .document-options {
     max-height: 44vh;
   }
   .qa-conversation-heading {
-    padding: 20px 17px 14px;
-    gap: 12px;
+    padding: var(--space-5) var(--space-4) var(--space-3);
+    gap: var(--space-3);
     h2 {
-      font-size: 1rem;
+      font-size: var(--text-md);
     }
   }
   .qa-heading-actions {
-    gap: 14px;
+    gap: var(--space-3);
     .text-button {
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
     }
   }
   .qa-scope-summary {
-    padding: 0 17px 16px;
+    padding: 0 var(--space-4) var(--space-4);
   }
   .qa-messages {
-    padding: 21px 17px;
-    gap: 21px;
-  }
-  .qa-message > p,
-  .qa-message .qa-answer-block > p {
-    font-size: 0.83rem;
+    padding: var(--space-6) var(--space-4);
+    gap: var(--space-6);
   }
   .qa-message-user {
     max-width: 96%;
-    padding: 14px;
+    padding: var(--space-3) var(--space-4);
   }
   .qa-composer {
-    padding: 18px 17px 21px;
+    padding: var(--space-4);
+    margin: var(--space-1) var(--space-3) var(--space-4);
     textarea {
       font-size: 16px;
     }
   }
   .qa-composer-footer .button {
-    font-size: 0.76rem;
-    padding: 12px 14px;
+    font-size: var(--text-xs);
+    padding: var(--space-3);
   }
   .qa-answer-actions {
-    gap: 13px;
+    gap: var(--space-4);
+    .text-button {
+      min-height: 40px;
+    }
   }
   .qa-evidence-drawer.dialog {
     width: 100%;
     .dialog-body {
-      padding-inline: 21px;
+      padding-inline: var(--space-5);
     }
     .evidence-quote {
-      padding: 20px 17px;
+      padding: var(--space-5) var(--space-4);
     }
   }
-  .app-layout .mobile-tabs a {
-    min-width: 0;
-    flex: 1;
-    span {
-      white-space: nowrap;
-    }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qa-page *,
+  .qa-page *::before,
+  .qa-page *::after,
+  .qa-evidence-drawer *,
+  .qa-evidence-drawer {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

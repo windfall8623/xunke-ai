@@ -40,10 +40,9 @@ function StudyHome({ identity }: { identity: string | number }) {
     retry: false,
   })
   return (
-    <div className="stack-form" style={{ minWidth: 0 }}>
+    <div className="study-home">
       <PageHeading
-        eyebrow="循课 · 持续学习"
-        title="我的学习"
+        title="我的课程"
         description="找到原课程，接着读一课、练一组，让每次学习接得上。"
         action={
           <Link className="button primary" to="/study/courses/new">
@@ -55,7 +54,9 @@ function StudyHome({ identity }: { identity: string | number }) {
       <StudyNavigation />
       <CourseTodayCard />
       <CourseListSection showCreate={false} />
-      <StudyActivitySummary />
+      <div className="study-activity-grid">
+        <StudyActivitySummary />
+      </div>
       <div className="section-line">
         <h2>学习空间</h2>
         <button className="button secondary" onClick={() => setCreating(true)}>
@@ -96,19 +97,9 @@ function StudyHome({ identity }: { identity: string | number }) {
           新建空间后，可以整理学习目标；也可以从一条有依据的问答直接创建。
         </EmptyState>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gap: 16,
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18rem), 1fr))',
-          }}
-        >
+        <div className="study-space-grid">
           {spaces.data.items.map((space) => (
-            <article
-              className="card"
-              key={space.space_id}
-              style={{ minWidth: 0, overflowWrap: 'anywhere' }}
-            >
+            <article className="study-space-card" key={space.space_id}>
               <span className="badge">{space.status === 'archived' ? '已归档' : '进行中'}</span>
               <h2>
                 <Link to={`/study/spaces/${encodeURIComponent(space.space_id)}`}>

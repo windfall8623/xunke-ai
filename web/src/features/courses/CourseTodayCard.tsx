@@ -53,13 +53,15 @@ export function CourseTodayCard() {
     <section className="card course-today-card" aria-label="今日学习建议">
       <div className="section-line course-today-heading">
         <div>
-          <span className="eyebrow">
-            <CalendarCheck size={15} />
+          <h2>
+            <CalendarCheck size={17} />
             今日学习
-          </span>
-          <h2>从这一小步开始</h2>
-          <p className="tiny muted">
-            {query.data?.local_date || localDate} · {timezone}
+          </h2>
+          <p className="tiny muted course-today-date">
+            <time dateTime={query.data?.local_date || localDate}>
+              {query.data?.local_date || localDate}
+            </time>
+            <span className="course-today-timezone">{timezone}</span>
           </p>
         </div>
         <div className="button-row">
@@ -103,18 +105,20 @@ export function CourseTodayCard() {
                 const path = courseTodayPath(item)
                 return (
                   <li
-                    className="course-today-item"
+                    className={`course-today-item${index === 0 ? ' is-current' : ''}`}
                     key={`${item.kind}:${item.quiz_id || item.task_id || item.review_id || item.review_task_id || item.lesson_id || index}`}
                   >
                     <span className="course-today-number">{index + 1}</span>
                     <div className="course-today-content">
-                      <span className="badge">{labels[item.kind]}</span>
+                      <div className="course-today-item-meta">
+                        <span className="course-today-kind">{labels[item.kind]}</span>
+                        <span className="course-today-duration">
+                          <Clock3 size={12} />
+                          预计 {item.estimated_minutes} 分钟
+                        </span>
+                      </div>
                       <h3>{item.title}</h3>
                       <p className="muted">{item.reason}</p>
-                      <p className="tiny muted">
-                        <Clock3 size={13} />
-                        预计 {item.estimated_minutes} 分钟
-                      </p>
                     </div>
                     {path ? (
                       <Link className={`button ${index === 0 ? 'primary' : 'secondary'}`} to={path}>
@@ -140,7 +144,9 @@ export function CourseTodayCard() {
               ))}
             </div>
           )}
-          <p className="tiny muted">预计时长用于安排节奏，实际进度以已保存的阅读与作答为准。</p>
+          <p className="tiny muted course-today-footnote">
+            时长仅供安排，进度以已保存的阅读与作答为准。
+          </p>
         </>
       ) : null}
     </section>

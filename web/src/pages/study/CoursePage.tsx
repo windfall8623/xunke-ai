@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
+import { CourseCover, CourseReadingProgress } from '../../features/courses/CourseCover'
 import { CourseEvidenceDrawer } from '../../features/courses/CourseEvidenceDrawer'
 import { EvidenceNoticeBar } from '../../features/courses/EvidenceNoticeBar'
 import { CourseLesson } from '../../features/courses/CourseLesson'
@@ -170,9 +171,12 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
       ['#course-practice', '#course-review'].includes(location.hash) &&
       lessonQuery.data?.status === 'ready'
     )
-      document
-        .getElementById(location.hash.slice(1))
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({
+        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      })
   }, [location.hash, lessonQuery.data?.lesson_id, lessonQuery.data?.status])
   function invalidate(affectedLesson?: string) {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
@@ -298,9 +302,12 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
           `${returnTo}${['practice_lesson', 'review_lesson'].includes(action.type) ? '#course-practice' : ''}`,
         )
     } else
-      document
-        .getElementById('course-progress-stats')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document.getElementById('course-progress-stats')?.scrollIntoView({
+        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'center',
+      })
   }
   if (courseQuery.isPending) return <Loading>正在恢复课程与学习进度…</Loading>
   if (revoked)
@@ -356,17 +363,20 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         <ArrowLeft size={16} />
         我的课程
       </Link>
-      <PageHeading
-        eyebrow="循课 · 一课一步"
-        title={course.title}
-        description={course.mission?.goal || '正在整理这门课程的学习目标。'}
-        action={
-          <Link to="/study/courses/new" className="button secondary">
-            <Plus size={16} />
-            新课程
-          </Link>
-        }
-      />
+      <div className="course-book-heading">
+        <CourseCover course={course} compact />
+        <PageHeading
+          title={course.title}
+          description={course.mission?.goal || '正在整理这门课程的学习目标。'}
+          action={
+            <Link to="/study/courses/new" className="button secondary">
+              <Plus size={16} />
+              新课程
+            </Link>
+          }
+        />
+      </div>
+      <CourseReadingProgress lessons={lessons} />
       <div className="course-source-label">
         <span className="badge">
           {course.source_policy === 'topic' ? '主题课程' : '仅依据所选资料'}

@@ -24,9 +24,8 @@ export function QaPage() {
   return (
     <div className="qa-page">
       <PageHeading
-        eyebrow="问有所据，答有出处"
         title="知识库问答"
-        description="带着问题读资料，让每个回答都有出处。"
+        description="从资料中寻找答案，沿着引用核对原文。"
         action={
           <button
             className="button secondary qa-session-toggle"
@@ -43,7 +42,8 @@ export function QaPage() {
       <div className="qa-layout">
         <aside
           id="qa-session-sidebar"
-          className={`card qa-session-sidebar ${sessionsOpen ? 'is-open' : ''}`}
+          aria-label="问答会话"
+          className={`qa-session-sidebar ${sessionsOpen ? 'is-open' : ''}`}
         >
           <SessionList onChoose={() => setSessionsOpen(false)} />
         </aside>
@@ -81,7 +81,7 @@ function NewSession({ docId }: { docId: string | null }) {
   return (
     <section className="card qa-new-session">
       <div className="card-heading">
-        <span className="icon-tile indigo">
+        <span className="icon-tile qa-new-session-icon">
           <MessageCircle size={23} />
         </span>
         <div>
@@ -376,9 +376,13 @@ function Conversation({ sessionId }: { sessionId: string }) {
         </>
       )}
       <form className="qa-composer" onSubmit={submit}>
-        <label htmlFor="qa-question">你的问题</label>
+        <div className="qa-composer-heading">
+          <label htmlFor="qa-question">你的问题</label>
+          <span id="qa-question-help">回答中的引用可打开原文核对</span>
+        </div>
         <textarea
           id="qa-question"
+          aria-describedby="qa-question-help qa-question-count"
           rows={3}
           maxLength={2000}
           placeholder={
@@ -414,7 +418,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
         )}
         <ErrorNotice error={qa.submitError} />
         <div className="qa-composer-footer">
-          <span className="tiny muted">
+          <span className="tiny muted" id="qa-question-count">
             {qa.hidden ? 0 : qa.question.length} / 2000{' '}
             <span className="qa-keyboard-hint">· Enter 发送，Shift+Enter 换行</span>
           </span>

@@ -7,6 +7,7 @@ import { EmptyState, ErrorNotice, Loading, formatDate } from '../../components/u
 import { courseErrorMessage, courseKeys, coursesApi } from '../../services/courses'
 import { coursePath } from '../../services/courseNavigation'
 import type { CourseStatus } from '../../types/course'
+import { CourseCover, CourseReadingProgress, courseReadingProgress } from './CourseCover'
 import '../../styles/courses.scss'
 
 const statusLabels: Record<CourseStatus, string> = {
@@ -110,53 +111,44 @@ function CourseList({
         <div className="course-card-grid">
           {query.data.items.map((course) => {
             const revoked = course.source_status === 'revoked' || course.status === 'source_revoked'
-            const read = (course.lessons || []).filter((lesson) => lesson.read_at).length
-            const available = (course.lessons || []).filter(
-              (lesson) => lesson.availability !== 'material_gap',
-            ).length
+            const { read, total: available } = courseReadingProgress(course.lessons)
+            const path = coursePath(course.course_id, revoked ? null : course.resume_lesson_id)
             return (
-              <article className="card course-card" key={course.course_id}>
-                <div className="course-card-meta">
-                  <span className="badge">
+              <article className="course-card" key={course.course_id}>
+                <CourseCover course={course} to={path} />
+                <div className="course-card-details">
+                  <div className="course-card-meta">
+                    <span className="tiny muted">
+                      {revoked ? '资料已失效' : statusLabels[course.status]}
+                    </span>
+                    <span className="tiny muted">{formatDate(course.updated_at)}</span>
+                  </div>
+                  <p className="muted course-card-goal">
                     {revoked
-                      ? '资料已失效'
-                      : course.source_policy === 'topic'
-                        ? '主题课程'
-                        : '资料课程'}
-                  </span>
-                  <span className="tiny muted">{formatDate(course.updated_at)}</span>
-                </div>
-                <h3>
-                  <Link to={coursePath(course.course_id, revoked ? null : course.resume_lesson_id)}>
-                    {revoked ? '资料已失效的课程' : course.title}
-                  </Link>
-                </h3>
-                <p className="muted course-card-goal">
-                  {revoked
-                    ? '相关内容已隐藏，请重新选择资料创建课程。'
-                    : course.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
-                </p>
-                <div className="course-card-footer">
-                  <span className="tiny muted">
-                    {revoked
-                      ? ''
-                      : available
-                        ? `已读 ${read} / ${available} 节`
-                        : statusLabels[course.status]}
-                  </span>
-                  <Link
-                    className="text-link"
-                    to={coursePath(course.course_id, revoked ? null : course.resume_lesson_id)}
-                  >
-                    {revoked
-                      ? '查看状态'
-                      : ['failed', 'cancelled', 'generating'].includes(course.status)
-                        ? '查看进度'
-                        : read
-                          ? '继续学习'
-                          : '查看课程'}
-                    <ArrowRight size={15} />
-                  </Link>
+                      ? '相关内容已隐藏，请重新选择资料创建课程。'
+                      : course.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
+                  </p>
+                  {!revoked && (
+                    <CourseReadingProgress
+                      lessons={course.lessons}
+                      label={`${course.title}阅读进度`}
+                    />
+                  )}
+                  <div className="course-card-footer">
+                    <span className="tiny muted">
+                      {!revoked && !available ? '纲要就绪后可逐课学习' : ''}
+                    </span>
+                    <Link className="text-link" to={path}>
+                      {revoked
+                        ? '查看状态'
+                        : ['failed', 'cancelled', 'generating'].includes(course.status)
+                          ? '查看进度'
+                          : read
+                            ? '继续学习'
+                            : '查看课程'}
+                      <ArrowRight size={15} />
+                    </Link>
+                  </div>
                 </div>
               </article>
             )

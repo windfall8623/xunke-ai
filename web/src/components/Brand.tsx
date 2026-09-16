@@ -4,7 +4,7 @@ export function Brand() {
       <img className="brand-mark" src="/brand/xunke-logo.svg" width={44} height={44} alt="" />
       <span className="brand-wordmark">
         循课 <span className="brand-ai">AI</span>
-        <span className="brand-subtitle">ZHIXUE AI</span>
+        <span className="brand-subtitle">学习工作室</span>
       </span>
     </>
   )

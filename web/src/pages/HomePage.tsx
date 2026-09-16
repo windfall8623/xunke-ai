@@ -3,7 +3,7 @@ import {
   ArrowDownToLine,
   ArrowRight,
   BookOpen,
-  Check,
+  Plus,
   CheckCircle2,
   FileText,
   Globe2,
@@ -16,6 +16,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading } from '../components/ui'
 import { CourseListSection } from '../features/courses/CourseListSection'
+import { CourseTodayCard } from '../features/courses/CourseTodayCard'
+import { StudyActivitySummary } from '../features/study/StudyActivitySummary'
 import { api } from '../services/api'
 import type { Difficulty, GenerateRequest, SelectedDocument } from '../types/api'
 
@@ -76,30 +78,50 @@ export function HomePage() {
     <div className="home-page">
       <header className="home-heading">
         <div>
-          <p className="eyebrow">
-            <span className="small-dot" /> 你的下一次进步，从这里开始
+          <h1>{user ? '接着上次，继续探索。' : '今天，想学点什么？'}</h1>
+          <p className="muted">
+            {user
+              ? '课程、练习和原文依据，都在你的学习桌上。'
+              : '把资料整理成课程，从理解一课开始。'}
           </p>
-          <h1>
-            今天，想学点什么<span className="accent">？</span>
-          </h1>
-          <p className="muted">从一门课程开始，按节学习、练习并回顾。</p>
         </div>
-        <div className="heading-art" aria-hidden="true">
-          <span className="art-spark">✦</span>
-          <div className="art-card">
-            <BookOpen size={46} strokeWidth={1.4} />
-            <span>
-              每一步
-              <br />
-              都有依据
-            </span>
-          </div>
-          <div className="art-check">
-            <Check size={23} />
-          </div>
-        </div>
+        <Link className="button primary" to="/study/courses/new">
+          <Plus size={17} />
+          开始新课程
+        </Link>
       </header>
-      <CourseListSection compact />
+      {user ? (
+        <div className="learning-desk">
+          <div className="learning-desk-main">
+            <CourseTodayCard />
+          </div>
+          <aside className="learning-desk-aside" aria-label="学习概览">
+            <StudyActivitySummary />
+          </aside>
+        </div>
+      ) : (
+        <section className="welcome-desk" aria-label="课程学习介绍">
+          <div className="welcome-copy">
+            <BookOpen size={28} strokeWidth={1.5} />
+            <h2>让一份资料，成为真正读懂的一门课。</h2>
+            <p>按节阅读，随时提问。需要核验时，原文就在手边。</p>
+            <Link to="/demo" className="button welcome-button">
+              体验一组练习
+            </Link>
+          </div>
+          <div className="welcome-volume" aria-hidden="true">
+            <span className="volume-bookmark" />
+            <span className="volume-title">
+              读懂
+              <br />
+              再向前
+            </span>
+            <span className="volume-caption">阅读 / 练习 / 回顾</span>
+            <BookOpen size={52} strokeWidth={1} />
+          </div>
+        </section>
+      )}
+      <CourseListSection compact showCreate={false} />
       <div className="home-grid">
         <section className="card composer">
           <div className="card-heading">
@@ -282,38 +304,60 @@ export function HomePage() {
                 </label>
               </div>
             )}
-            <div className="settings-row">
-              <label>
-                题目数量
-                <select value={count} onChange={(event) => setCount(Number(event.target.value))}>
-                  {[3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-                    <option key={value} value={value}>
-                      {value} 题{value === 5 ? ' · 推荐' : ''}
-                    </option>
-                  ))}
-                </select>
+            <details className="practice-options">
+              <summary>
+                调整练习设置
+                <span>
+                  {count} 题 /{' '}
+                  {difficulty === 'mixed'
+                    ? '综合难度'
+                    : difficulty === 'easy'
+                      ? '入门'
+                      : difficulty === 'medium'
+                        ? '进阶'
+                        : '挑战'}
+                </span>
+              </summary>
+              <div className="settings-row">
+                <label htmlFor="practice-question-count">
+                  题目数量
+                  <select
+                    id="practice-question-count"
+                    aria-label="题目数量"
+                    value={count}
+                    onChange={(event) => setCount(Number(event.target.value))}
+                  >
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                      <option key={value} value={value}>
+                        {value} 题{value === 5 ? ' · 推荐' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label htmlFor="practice-difficulty">
+                  练习难度
+                  <select
+                    id="practice-difficulty"
+                    aria-label="练习难度"
+                    value={difficulty}
+                    onChange={(event) => setDifficulty(event.target.value as Difficulty)}
+                  >
+                    <option value="mixed">综合难度</option>
+                    <option value="easy">入门 · 建立概念</option>
+                    <option value="medium">进阶 · 加深理解</option>
+                    <option value="hard">挑战 · 灵活应用</option>
+                  </select>
+                </label>
+              </div>
+              <label className="checkbox-row image-consent">
+                <input
+                  type="checkbox"
+                  checked={images}
+                  onChange={(event) => setImages(event.target.checked)}
+                />
+                添加辅助配图<span className="muted tiny">可选，可能增加等待时间</span>
               </label>
-              <label>
-                练习难度
-                <select
-                  value={difficulty}
-                  onChange={(event) => setDifficulty(event.target.value as Difficulty)}
-                >
-                  <option value="mixed">综合难度</option>
-                  <option value="easy">入门 · 建立概念</option>
-                  <option value="medium">进阶 · 加深理解</option>
-                  <option value="hard">挑战 · 灵活应用</option>
-                </select>
-              </label>
-            </div>
-            <label className="checkbox-row image-consent">
-              <input
-                type="checkbox"
-                checked={images}
-                onChange={(event) => setImages(event.target.checked)}
-              />
-              添加辅助配图<span className="muted tiny">可选，可能增加等待时间</span>
-            </label>
+            </details>
             <ErrorNotice error={validation || generate.error} />
             {generate.error && (
               <button
@@ -341,12 +385,7 @@ export function HomePage() {
         </section>
         <aside className="home-aside">
           <section className="journey-card">
-            <p className="eyebrow">不止是答对</p>
-            <h2>
-              让每一次练习，
-              <br />
-              都有新的收获。
-            </h2>
+            <h2>从资料到理解</h2>
             <ol className="journey-steps">
               <li>
                 <span>

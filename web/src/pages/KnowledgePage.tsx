@@ -57,9 +57,8 @@ export function KnowledgePage() {
   return (
     <div className="knowledge-page">
       <PageHeading
-        eyebrow="资料收好，练习有据"
         title="我的资料"
-        description="把学习内容收好，让每次练习有据可循。"
+        description="管理原始资料、章节与版本，让提问和练习有据可查。"
         action={
           <span className="quota-counter">
             <FolderOpen size={18} />
@@ -67,130 +66,158 @@ export function KnowledgePage() {
           </span>
         }
       />
-      <DocumentUpload onUploaded={reload} disabled={items.length >= 10} />
-      <div className="knowledge-toolbar">
-        <h2>
-          全部资料 <span>{items.length}</span>
-        </h2>
-        <label className="search-field">
-          <Search size={16} />
-          <input
-            aria-label="搜索资料"
-            placeholder="搜索资料名称"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <button
-          className="icon-button"
-          aria-label="刷新资料"
-          disabled={query.isFetching}
-          onClick={reload}
-        >
-          <RefreshCw size={17} />
-        </button>
-      </div>
-      <ErrorNotice error={query.error} onRetry={reload} />
-      <ErrorNotice error={reindex.error} />
-      {query.isPending ? (
-        <Loading />
-      ) : visible.length ? (
-        <div className="document-grid">
-          {visible.map((doc) => (
-            <article className="card document-card" key={doc.doc_id}>
-              <div className="document-card-top">
-                <span className={`file-icon file-${doc.file_type}`}>
-                  <FileText size={24} />
+      <section
+        className={`knowledge-upload ${items.length ? 'is-compact' : 'is-empty'}`}
+        aria-label="上传学习资料"
+      >
+        <DocumentUpload onUploaded={reload} disabled={items.length >= 10} />
+      </section>
+      <section className="knowledge-library" aria-label="资料库">
+        <div className="knowledge-toolbar">
+          <h2>
+            全部资料{' '}
+            <span>{search.trim() ? `${visible.length} / ${items.length}` : items.length}</span>
+          </h2>
+          <label className="search-field">
+            <Search size={16} />
+            <input
+              aria-label="搜索资料"
+              placeholder="搜索资料名称"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+          <button
+            className="icon-button"
+            aria-label="刷新资料"
+            disabled={query.isFetching}
+            onClick={reload}
+          >
+            <RefreshCw size={17} />
+          </button>
+        </div>
+        <ErrorNotice error={query.error} onRetry={reload} />
+        <ErrorNotice error={reindex.error} />
+        {query.isPending ? (
+          <Loading />
+        ) : visible.length ? (
+          <div className="document-list">
+            {visible.map((doc) => (
+              <article className="document-row" key={doc.doc_id} aria-label={doc.file_name}>
+                <span className={`file-icon file-${doc.file_type}`} aria-hidden="true">
+                  <FileText size={22} />
                   <span>{doc.file_type.toUpperCase()}</span>
                 </span>
-                <StatusBadge status={doc.status} />
-              </div>
-              <h2>{doc.file_name}</h2>
-              <p className="document-meta">
-                {formatBytes(doc.file_size)}
-                <span>·</span>
-                {formatDate(doc.created_at)}
-              </p>
-              {doc.error_message && <p className="document-error">{doc.error_message}</p>}
-              <details className="document-details">
-                <summary>章节与版本</summary>
-                {doc.active_version_id && (
-                  <p>
-                    当前版本：<code>{doc.active_version_id}</code>
+                <div className="document-identity">
+                  <h2>{doc.file_name}</h2>
+                  <p className="document-meta">
+                    <span>{formatBytes(doc.file_size)}</span>
+                    <span>上传于 {formatDate(doc.created_at)}</span>
                   </p>
-                )}
-                {doc.sections?.length ? (
-                  <ul>
-                    {doc.sections.map((section) => (
-                      <li key={section.section_id}>{section.title}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>处理完成后，章节目录会显示在这里。</p>
-                )}
-                <label>
-                  处理方式
-                  <select
-                    value={profiles[doc.doc_id] || 'legacy-char-v1'}
-                    onChange={(event) =>
-                      setProfiles((current) => ({
-                        ...current,
-                        [doc.doc_id]:
-                          event.target.value === 'structure-v1' ? 'structure-v1' : 'legacy-char-v1',
-                      }))
+                  {doc.error_message && <p className="document-error">{doc.error_message}</p>}
+                </div>
+                <div className="document-status">
+                  <StatusBadge status={doc.status} />
+                </div>
+                <details className="document-details">
+                  <summary>章节与版本</summary>
+                  {doc.active_version_id && (
+                    <p>
+                      当前版本：<code>{doc.active_version_id}</code>
+                    </p>
+                  )}
+                  {doc.sections?.length ? (
+                    <ul>
+                      {doc.sections.map((section) => (
+                        <li key={section.section_id}>{section.title}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>处理完成后，章节目录会显示在这里。</p>
+                  )}
+                  <label>
+                    处理方式
+                    <select
+                      value={profiles[doc.doc_id] || 'legacy-char-v1'}
+                      onChange={(event) =>
+                        setProfiles((current) => ({
+                          ...current,
+                          [doc.doc_id]:
+                            event.target.value === 'structure-v1'
+                              ? 'structure-v1'
+                              : 'legacy-char-v1',
+                        }))
+                      }
+                    >
+                      <option value="legacy-char-v1">标准分段</option>
+                      <option value="structure-v1">按章节结构</option>
+                    </select>
+                  </label>
+                  <button
+                    className="text-button"
+                    disabled={
+                      reindex.isPending ||
+                      ['processing', 'pending', 'deleting'].includes(doc.status)
                     }
+                    onClick={() => reindex.mutate(doc.doc_id)}
                   >
-                    <option value="legacy-char-v1">标准分段</option>
-                    <option value="structure-v1">按章节结构</option>
-                  </select>
-                </label>
-                <button
-                  className="text-button"
-                  disabled={
-                    reindex.isPending || ['processing', 'pending', 'deleting'].includes(doc.status)
-                  }
-                  onClick={() => reindex.mutate(doc.doc_id)}
-                >
-                  <RefreshCw size={13} />
-                  重新处理
-                </button>
-              </details>
-              <div className="document-actions">
-                {doc.status === 'ready' && (
-                  <Link className="text-button" to={`/qa?doc_id=${encodeURIComponent(doc.doc_id)}`}>
-                    向这份资料提问
-                  </Link>
-                )}
-                <button
-                  className="text-button"
-                  onClick={() => setReplace(doc)}
-                  disabled={doc.status === 'deleting'}
-                >
-                  <Replace size={14} />
-                  替换文件
-                </button>
-                <button
-                  className="text-button delete-link"
-                  aria-label={`删除 ${doc.file_name}`}
-                  onClick={() => {
-                    deletion.reset()
-                    setRemove(doc)
-                  }}
-                >
-                  <Trash2 size={14} />
-                  删除
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <section className="card">
-          <EmptyState title={search ? '没有找到相关资料' : '从第一份资料开始'}>
-            {search ? '试试其他关键词。' : '课程讲义、读书笔记、工作手册，都可以成为练习的起点。'}
+                    <RefreshCw size={13} />
+                    重新处理
+                  </button>
+                </details>
+                <div className="document-actions">
+                  {doc.status === 'ready' && (
+                    <Link
+                      className="text-button"
+                      to={`/qa?doc_id=${encodeURIComponent(doc.doc_id)}`}
+                    >
+                      向这份资料提问
+                    </Link>
+                  )}
+                  <button
+                    className="text-button"
+                    onClick={() => setReplace(doc)}
+                    disabled={doc.status === 'deleting'}
+                  >
+                    <Replace size={14} />
+                    替换文件
+                  </button>
+                  <button
+                    className="text-button delete-link"
+                    aria-label={`删除 ${doc.file_name}`}
+                    onClick={() => {
+                      deletion.reset()
+                      setRemove(doc)
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    删除
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : search.trim() ? (
+          <EmptyState
+            title="没有找到相关资料"
+            action={
+              <button className="text-button" onClick={() => setSearch('')}>
+                清除搜索
+              </button>
+            }
+          >
+            试试其他关键词，或清除搜索查看全部资料。
           </EmptyState>
-        </section>
-      )}
+        ) : !query.error ? (
+          <div className="knowledge-empty-note">
+            <FolderOpen size={20} aria-hidden="true" />
+            <div>
+              <h3>从第一份资料开始</h3>
+              <p>在上方上传讲义、笔记或工作手册，处理完成后即可提问与练习。</p>
+            </div>
+          </div>
+        ) : null}
+      </section>
       <div className="knowledge-note">
         <ShieldCheck size={18} />
         <p>
