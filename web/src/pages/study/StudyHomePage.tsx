@@ -51,7 +51,7 @@ function StudyHome({ identity }: { identity: string | number }) {
         }
       />
       <StudyNavigation />
-      <CourseListSection showCreate={false} />
+      <CourseListSection showCreate={false} showHeading={false} />
       <div className="study-activity-grid">
         <StudyActivitySummary />
       </div>

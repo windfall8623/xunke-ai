@@ -390,54 +390,88 @@ export function HomePage() {
           </form>
         </section>
         <aside className="home-aside">
-          <section className="journey-card">
-            <h2>从资料到理解</h2>
-            <ol className="journey-steps">
-              <li>
-                <span>
-                  <Target size={18} />
-                </span>
-                <div>
-                  <strong>从目标开始</strong>
-                  <p>选定主题与范围，专注当下。</p>
-                </div>
-              </li>
-              <li>
-                <span>
-                  <BookOpen size={18} />
-                </span>
-                <div>
-                  <strong>在练习中理解</strong>
-                  <p>即时反馈，看看答案为什么。</p>
-                </div>
-              </li>
-              <li>
-                <span>
-                  <ArrowDownToLine size={18} />
-                </span>
-                <div>
-                  <strong>回到依据，巩固薄弱点</strong>
-                  <p>查看原文，再练一组。</p>
-                </div>
-              </li>
-            </ol>
-            <div className="journey-bottom">
-              <span className="small-dot" /> 小小的坚持，也会走得很远
-            </div>
-          </section>
-          <Link to="/demo" className="demo-card">
-            <span className="icon-tile peach">
-              <Sparkles size={20} />
-            </span>
-            <div>
-              <strong>先体验，再出发</strong>
-              <p>试试预置的「高效学习」练习</p>
-              <span>
-                无需登录 · 无 AI 调用
+          {user ? (
+            <section className="journey-card">
+              <h2>我的资料</h2>
+              <p className="muted">选择资料可限定练习范围，也可以先针对资料提问。</p>
+              {catalog.isPending ? (
+                <Loading>正在读取资料…</Loading>
+              ) : catalog.error ? (
+                <ErrorNotice
+                  error={catalog.error}
+                  onRetry={() => {
+                    void catalog.refetch()
+                  }}
+                />
+              ) : !catalog.data?.items.length ? (
+                <p className="muted">还没有资料，可以先上传一份学习材料。</p>
+              ) : (
+                <ul className="home-material-list">
+                  {catalog.data?.items.slice(0, 3).map((doc) => (
+                    <li key={doc.doc_id}>
+                      <FileText size={16} />
+                      <span>{doc.file_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link className="text-link" to="/knowledge">
+                管理资料
                 <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
+              </Link>
+            </section>
+          ) : (
+            <>
+              <section className="journey-card">
+                <h2>从资料到理解</h2>
+                <ol className="journey-steps">
+                  <li>
+                    <span>
+                      <Target size={18} />
+                    </span>
+                    <div>
+                      <strong>从目标开始</strong>
+                      <p>选定主题与范围，专注当下。</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span>
+                      <BookOpen size={18} />
+                    </span>
+                    <div>
+                      <strong>在练习中理解</strong>
+                      <p>即时反馈，看看答案为什么。</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span>
+                      <ArrowDownToLine size={18} />
+                    </span>
+                    <div>
+                      <strong>回到依据，巩固薄弱点</strong>
+                      <p>查看原文，再练一组。</p>
+                    </div>
+                  </li>
+                </ol>
+                <div className="journey-bottom">
+                  <span className="small-dot" /> 小小的坚持，也会走得很远
+                </div>
+              </section>
+              <Link to="/demo" className="demo-card">
+                <span className="icon-tile peach">
+                  <Sparkles size={20} />
+                </span>
+                <div>
+                  <strong>先体验，再出发</strong>
+                  <p>试试预置的「高效学习」练习</p>
+                  <span>
+                    无需登录 · 无 AI 调用
+                    <ArrowRight size={14} />
+                  </span>
+                </div>
+              </Link>
+            </>
+          )}
           <div className="source-note">
             <CheckCircle2 size={19} />
             <p>资料练习会保留可核验的来源。主题练习可能基于通用知识，请留意题目来源说明。</p>

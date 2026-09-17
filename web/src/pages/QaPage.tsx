@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, List, MessageCircle, RefreshCw, Send } from 'lucide-react'
+import { ArrowDown, FileText, List, MessageCircle, RefreshCw, Send } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../app/AuthProvider'
@@ -24,7 +24,7 @@ export function QaPage() {
   return (
     <div className="qa-page">
       <PageHeading
-        title="知识库问答"
+        title="资料问答"
         description="从资料中寻找答案，沿着引用核对原文。"
         action={
           <button
@@ -106,6 +106,53 @@ function Conversation({ sessionId }: { sessionId: string }) {
   const [scopeOpen, setScopeOpen] = useState(false)
   const [source, setSource] = useState<{ answerId: string; evidenceId: string } | null>(null)
   const { session, messages, task } = qa
+  const conversationRef = useRef<HTMLElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLDivElement>(null)
+  const [awayFromLatest, setAwayFromLatest] = useState(false)
+  const hasConversation = !qa.hidden && (messages.length > 0 || !!task)
+
+  useEffect(() => {
+    if (!hasConversation || !session) {
+      setAwayFromLatest(false)
+      return
+    }
+    const conversation = conversationRef.current
+    const log = messagesRef.current
+    const composer = composerRef.current
+    if (!conversation || !log || !composer) return
+    function measure() {
+      if (!conversation || !log || !composer) return
+      const bounds = composer.getBoundingClientRect()
+      const bottom = Number.parseFloat(getComputedStyle(composer).bottom) || 0
+      conversation.style.setProperty('--qa-composer-clearance', `${bounds.height + bottom + 24}px`)
+      const latest = log.lastElementChild?.getBoundingClientRect()
+      // Only offer a jump when the latest turn is outside the unobscured reading area.
+      setAwayFromLatest(!!latest && (latest.bottom > bounds.top + 24 || latest.bottom < 0))
+    }
+    measure()
+    window.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(log)
+    observer?.observe(composer)
+    return () => {
+      window.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
+      observer?.disconnect()
+    }
+  }, [hasConversation, !!session, messages.length, task?.status, qa.history.isPending])
+
+  function returnToLatest() {
+    const latest = messagesRef.current?.lastElementChild as HTMLElement | null
+    if (!latest) return
+    latest.focus({ preventScroll: true })
+    latest.scrollIntoView({
+      block: 'end',
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
+  }
+
   const practiceMessage = messages.find((message) => message.answer?.answer_id === practiceAnswerId)
   const practiceAnswer = practiceMessage
     ? practiceMessage.status === 'completed'
@@ -172,7 +219,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
       </section>
     )
   return (
-    <section className="card qa-conversation">
+    <section ref={conversationRef} className="card qa-conversation">
       <header className="qa-conversation-heading">
         <div>
           <h2>{qa.hidden ? '资料已不可用' : session.title}</h2>
@@ -251,6 +298,8 @@ function Conversation({ sessionId }: { sessionId: string }) {
             )
           )}
           <div
+            ref={messagesRef}
+            id="qa-messages"
             className="qa-messages"
             role="log"
             aria-label="会话消息"
@@ -273,6 +322,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
                 <article
                   className={`qa-message qa-message-${message.role} ${message.status === 'revoked' ? 'qa-message-revoked' : ''}`}
                   key={message.message_id}
+                  tabIndex={-1}
                 >
                   <div className="qa-message-label">
                     {message.role === 'user' ? '你' : '资料回答'}
@@ -321,7 +371,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
               !messages.some(
                 (message) => message.task_id === task.task_id && message.role === 'user',
               ) && (
-                <article className="qa-message qa-message-user">
+                <article className="qa-message qa-message-user" tabIndex={-1}>
                   <div className="qa-message-label">
                     你<span>范围 {qa.submittedQuestion.data.scope_revision}</span>
                   </div>
@@ -329,7 +379,7 @@ function Conversation({ sessionId }: { sessionId: string }) {
                 </article>
               )}
             {task && !taskInHistory && (
-              <article className="qa-message qa-message-assistant">
+              <article className="qa-message qa-message-assistant" tabIndex={-1}>
                 <div className="qa-message-label">资料回答</div>
                 {task.answer && task.status === 'completed' ? (
                   <AnswerCard
@@ -375,63 +425,76 @@ function Conversation({ sessionId }: { sessionId: string }) {
           )}
         </>
       )}
-      <form className="qa-composer" onSubmit={submit}>
-        <div className="qa-composer-heading">
-          <label htmlFor="qa-question">你的问题</label>
-          <span id="qa-question-help">回答中的引用可打开原文核对</span>
-        </div>
-        <textarea
-          id="qa-question"
-          aria-describedby="qa-question-help qa-question-count"
-          rows={3}
-          maxLength={2000}
-          placeholder={
-            activeTask(task) ? '当前回答完成后，可以继续追问。' : '根据这些资料，你想了解什么？'
-          }
-          value={qa.hidden ? '' : qa.question}
-          disabled={!canAsk}
-          onChange={(event) => qa.setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (
-              event.key === 'Enter' &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing &&
-              event.keyCode !== 229
-            ) {
-              event.preventDefault()
-              qa.ask()
+      <div ref={composerRef} className="qa-composer-dock">
+        {hasConversation && awayFromLatest && (
+          <button
+            type="button"
+            className="button secondary qa-return-latest"
+            aria-controls="qa-messages"
+            onClick={returnToLatest}
+          >
+            <ArrowDown size={16} aria-hidden="true" />
+            返回最新消息
+          </button>
+        )}
+        <form className="qa-composer" onSubmit={submit}>
+          <div className="qa-composer-heading">
+            <label htmlFor="qa-question">你的问题</label>
+            <span id="qa-question-help">回答中的引用可打开原文核对</span>
+          </div>
+          <textarea
+            id="qa-question"
+            aria-describedby="qa-question-help qa-question-count"
+            rows={3}
+            maxLength={2000}
+            placeholder={
+              activeTask(task) ? '当前回答完成后，可以继续追问。' : '根据这些资料，你想了解什么？'
             }
-          }}
-        />
-        {qa.uncertain && !qa.hidden && (
-          <div className="notice qa-uncertain" role="alert">
-            <p>提交结果尚未确认。重试会确认同一次提交，请勿重复新建问题。</p>
+            value={qa.hidden ? '' : qa.question}
+            disabled={!canAsk}
+            onChange={(event) => qa.setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing &&
+                event.keyCode !== 229
+              ) {
+                event.preventDefault()
+                qa.ask()
+              }
+            }}
+          />
+          {qa.uncertain && !qa.hidden && (
+            <div className="notice qa-uncertain" role="alert">
+              <p>提交结果尚未确认。重试会确认同一次提交，请勿重复新建问题。</p>
+              <button
+                className="text-button"
+                type="button"
+                disabled={qa.submitting}
+                onClick={qa.retrySubmission}
+              >
+                重试确认提交
+              </button>
+            </div>
+          )}
+          <ErrorNotice error={qa.submitError} />
+          <div className="qa-composer-footer">
+            <span className="tiny muted" id="qa-question-count">
+              {qa.hidden ? 0 : qa.question.length} / 2000{' '}
+              <span className="qa-keyboard-hint">· Enter 发送，Shift+Enter 换行</span>
+            </span>
             <button
-              className="text-button"
-              type="button"
-              disabled={qa.submitting}
-              onClick={qa.retrySubmission}
+              className="button primary"
+              type="submit"
+              disabled={!canAsk || !qa.question.trim()}
             >
-              重试确认提交
+              <Send size={16} />
+              {qa.submitting ? '正在发送…' : '发送问题'}
             </button>
           </div>
-        )}
-        <ErrorNotice error={qa.submitError} />
-        <div className="qa-composer-footer">
-          <span className="tiny muted" id="qa-question-count">
-            {qa.hidden ? 0 : qa.question.length} / 2000{' '}
-            <span className="qa-keyboard-hint">· Enter 发送，Shift+Enter 换行</span>
-          </span>
-          <button
-            className="button primary"
-            type="submit"
-            disabled={!canAsk || !qa.question.trim()}
-          >
-            <Send size={16} />
-            {qa.submitting ? '正在发送…' : '发送问题'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
       {scopeOpen && (
         <Dialog
           title="更改问答范围"

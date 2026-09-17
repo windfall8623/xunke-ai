@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
+import { CoursePage } from '../../pages/study/CoursePage'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { coursesApi } from '../../services/courses'
+import { ApiError } from '../../services/http'
 import type { CourseLessonSummary, CourseLessonView, CourseView } from '../../types/course'
 import { CourseCover, CourseReadingProgress, courseReadingProgress } from './CourseCover'
 import { CourseListSection } from './CourseListSection'
@@ -49,8 +51,15 @@ function mount(node: React.ReactNode) {
     </QueryClientProvider>,
   )
 }
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'scrollIntoView',
+)
 afterEach(() => {
   vi.restoreAllMocks()
+  if (originalScrollIntoView)
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScrollIntoView)
+  else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView')
   vi.unstubAllGlobals()
 })
 
@@ -205,6 +214,9 @@ describe('bound course presentation', () => {
     await screen.findByRole('group', { name: '选择课程' })
     expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(2)
     expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(3)
+    const cabinet = screen.getByRole('group', { name: '选择课程' })
+    expect(cabinet.nextElementSibling).toHaveClass('course-bookshelf-detail')
+    expect(container.querySelectorAll('.course-bookshelf-detail')).toHaveLength(1)
     const update = desktop.addEventListener.mock.calls[0][1] as () => void
     act(() => {
       desktop.matches = false
@@ -218,9 +230,38 @@ describe('bound course presentation', () => {
     })
     expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(5)
     expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(1)
+    const rows = container.querySelectorAll('.course-bookshelf-row')
+    expect(rows[0].nextElementSibling).toHaveClass('course-bookshelf-detail')
+    await userEvent.click(within(rows[2] as HTMLElement).getByRole('button'))
+    expect(rows[2].nextElementSibling).toHaveClass('course-bookshelf-detail')
+    expect(rows[0].nextElementSibling).toBe(rows[1])
+    expect(container.querySelectorAll('.course-bookshelf-detail')).toHaveLength(1)
+    act(() => {
+      desktop.matches = true
+      tablet.matches = true
+      update()
+    })
+    expect(cabinet.nextElementSibling).toHaveClass('course-bookshelf-detail')
+    expect(container.querySelectorAll('.course-bookshelf-detail')).toHaveLength(1)
+    expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(1)
     unmount()
     expect(desktop.removeEventListener).toHaveBeenCalledWith('change', update)
     expect(tablet.removeEventListener).toHaveBeenCalledWith('change', update)
+  })
+
+  it('allows the study page to omit the duplicate heading without hiding shelf content', async () => {
+    vi.spyOn(coursesApi, 'list').mockResolvedValue({
+      items: [course],
+      total: 1,
+      page: 1,
+      page_size: 6,
+    })
+    mount(<CourseListSection showHeading={false} showCreate={false} />)
+    await screen.findByRole('group', { name: '选择课程' })
+    expect(screen.queryByRole('heading', { name: '我的课程' })).not.toBeInTheDocument()
+    expect(screen.queryByText('从上次停下的地方，继续一点点理解。')).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '我的课程' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '查看课程' })).toBeInTheDocument()
   })
 
   it('emphasizes only the first suggested activity and retains unavailable-entry handling', async () => {
@@ -272,6 +313,147 @@ const view: CourseLessonView = {
     { type: 'recap', synthetic: false, text: '参数是输入，返回值是输出。' },
   ],
 }
+const secondLesson = { ...lesson, lesson_id: 'lesson-2', title: '传递参数', position: 2 }
+function mountReader(reducedMotion = false, narrow = true) {
+  localStorage.setItem('xunke.outlineCollapsed', '0')
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('reduced-motion') ? reducedMotion : narrow,
+    })),
+  )
+  const scroll = vi.fn()
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: scroll,
+  })
+  vi.spyOn(coursesApi, 'course').mockImplementation(async (id) => ({
+    ...course,
+    course_id: id,
+    lessons: [lesson, secondLesson],
+  }))
+  vi.spyOn(coursesApi, 'reviews').mockResolvedValue([])
+  vi.spyOn(coursesApi, 'progress').mockResolvedValue({
+    course_id: course.course_id,
+    available_lessons: 2,
+    generated_lessons: 2,
+    initial_answered: 0,
+    initial_correct: 0,
+    practiced_lessons: 0,
+    read_lessons: 0,
+    total_lessons: 2,
+    next_action: { type: 'view_summary', reason: '查看进度' },
+  })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/study/courses/course-stable?lesson=lesson-1']}>
+        <Link to="/study/courses/other-course?lesson=lesson-1">另一门课程</Link>
+        <Routes>
+          <Route path="/study/courses/:courseId" element={<CoursePage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  return { scroll, client }
+}
+
+describe('explicit reader navigation', () => {
+  it.each([false, true])(
+    'focuses only after selected data arrives, reduced motion=%s',
+    async (reducedMotion) => {
+      let resolveSelected!: (value: CourseLessonView) => void
+      const selected = new Promise<CourseLessonView>((resolve) => {
+        resolveSelected = resolve
+      })
+      vi.spyOn(coursesApi, 'lesson').mockImplementation(async (_courseId, id) =>
+        id === 'lesson-1' ? view : selected,
+      )
+      const { scroll, client } = mountReader(reducedMotion)
+      await screen.findByRole('heading', { name: '理解函数' })
+      expect(scroll).not.toHaveBeenCalled()
+      await userEvent.click(screen.getByRole('button', { name: /传递参数/ }))
+      expect(screen.getByRole('button', { name: '展开课程目录' })).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: '课程纲要' })).not.toBeInTheDocument()
+      expect(scroll).not.toHaveBeenCalled()
+      await act(async () => {
+        resolveSelected({ ...view, ...secondLesson })
+      })
+      const heading = await screen.findByRole('heading', { name: '传递参数' })
+      await waitFor(() => expect(heading).toHaveFocus())
+      expect(heading).toHaveAttribute('tabindex', '-1')
+      expect(scroll).toHaveBeenCalledExactlyOnceWith({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      })
+      expect(scroll.mock.instances[0]).toBe(heading)
+      await act(async () => {
+        await client.invalidateQueries()
+      })
+      expect(scroll).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('keeps the desktop directory open and supports next-lesson navigation', async () => {
+    vi.spyOn(coursesApi, 'lesson').mockImplementation(async (_courseId, id) =>
+      id === 'lesson-1' ? view : { ...view, ...secondLesson },
+    )
+    const { scroll } = mountReader(false, false)
+    await screen.findByRole('heading', { name: '理解函数' })
+    await userEvent.click(screen.getByRole('button', { name: '下一课' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: '传递参数' })).toHaveFocus())
+    expect(screen.getByRole('region', { name: '课程纲要' })).toBeInTheDocument()
+    expect(scroll).toHaveBeenCalledOnce()
+  })
+
+  it('does not focus stale selected data after navigating to another course', async () => {
+    let resolveSelected!: (value: CourseLessonView) => void
+    const selected = new Promise<CourseLessonView>((resolve) => {
+      resolveSelected = resolve
+    })
+    vi.spyOn(coursesApi, 'lesson').mockImplementation(async (courseId, id) =>
+      id === 'lesson-2' ? selected : { ...view, course_id: courseId },
+    )
+    const { scroll } = mountReader()
+    await screen.findByRole('heading', { name: '理解函数' })
+    await userEvent.click(screen.getByRole('button', { name: /传递参数/ }))
+    await userEvent.click(screen.getByRole('link', { name: '另一门课程' }))
+    await screen.findByRole('heading', { name: '理解函数' })
+    await act(async () => {
+      resolveSelected({ ...view, ...secondLesson })
+    })
+    expect(scroll).not.toHaveBeenCalled()
+    expect(screen.queryByRole('heading', { name: '传递参数' })).not.toBeInTheDocument()
+  })
+
+  it('cancels pending focus and hides content when selected lesson access is revoked', async () => {
+    vi.spyOn(coursesApi, 'lesson').mockImplementation(async (_courseId, id) => {
+      if (id === 'lesson-1') return view
+      throw new ApiError('资料已失效', 410, 'source_revoked')
+    })
+    const { scroll } = mountReader()
+    await screen.findByRole('heading', { name: '理解函数' })
+    await userEvent.click(screen.getByRole('button', { name: /传递参数/ }))
+    await screen.findByRole('heading', { name: '课程资料已失效' })
+    expect(scroll).not.toHaveBeenCalled()
+    expect(screen.queryByText('Python 函数入门')).not.toBeInTheDocument()
+    expect(screen.queryByRole('article', { name: '当前课时' })).not.toBeInTheDocument()
+  })
+
+  it('does not move focus when selected lesson loading fails', async () => {
+    vi.spyOn(coursesApi, 'lesson').mockImplementation(async (_courseId, id) => {
+      if (id === 'lesson-1') return view
+      throw new Error('读取失败')
+    })
+    const { scroll } = mountReader()
+    await screen.findByRole('heading', { name: '理解函数' })
+    await userEvent.click(screen.getByRole('button', { name: /传递参数/ }))
+    await screen.findByRole('button', { name: '重新加载' })
+    expect(scroll).not.toHaveBeenCalled()
+    expect(screen.queryByRole('heading', { name: '传递参数' })).not.toBeInTheDocument()
+  })
+})
+
 function lessonProps() {
   return {
     lesson: view,

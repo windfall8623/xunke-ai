@@ -74,27 +74,13 @@ export function ProfilePage() {
   return (
     <div className="profile-page">
       <PageHeading
-        eyebrow="走过的每一步都算数"
-        title="学习记录"
-        description="走过的每一步，都在这里。"
+        title="个人中心"
+        description="管理账户资料，查看练习记录与学习历史。"
         action={
-          <div className="button-row">
-            <button
-              className="button secondary button-small"
-              onClick={() => setChangingPassword(true)}
-            >
-              <KeyRound size={15} />
-              修改密码
-            </button>
-            <button
-              className="button secondary button-small"
-              disabled={logout.isPending}
-              onClick={() => logout.mutate()}
-            >
-              <LogOut size={15} />
-              退出登录
-            </button>
-          </div>
+          <Link className="button secondary" to="/study/history">
+            查看学习历史
+            <ArrowRight size={16} />
+          </Link>
         }
       />
       <ErrorNotice
@@ -135,6 +121,23 @@ export function ProfilePage() {
             编辑资料
           </button>
         </div>
+        <div className="button-row profile-account-actions">
+          <button
+            className="button secondary button-small"
+            onClick={() => setChangingPassword(true)}
+          >
+            <KeyRound size={15} />
+            修改密码
+          </button>
+          <button
+            className="button secondary button-small"
+            disabled={logout.isPending}
+            onClick={() => logout.mutate()}
+          >
+            <LogOut size={15} />
+            退出登录
+          </button>
+        </div>
         <div className="profile-stats">
           <div>
             <span>
@@ -158,13 +161,24 @@ export function ProfilePage() {
               <CheckCircle2 size={17} />
               平均正确率
             </span>
-            <strong>{profile.data ? `${profile.data.average_accuracy}%` : '—'}</strong>
+            <strong>
+              {profile.data && profile.data.quiz_count > 0
+                ? `${profile.data.average_accuracy}%`
+                : '—'}
+            </strong>
           </div>
         </div>
       </section>
       <section className="card history-card">
+        <p className="muted">
+          这里展示题目练习记录；课程与学习空间活动请查看
+          <Link to="/study/history" className="text-link">
+            学习历史
+          </Link>
+          。
+        </p>
         <div className="section-line">
-          <h2>我的练习</h2>
+          <h2>练习记录</h2>
           <Link to="/" className="text-link">
             开始新练习
             <ArrowRight size={14} />

@@ -1928,6 +1928,17 @@ label {
     color: var(--muted);
   }
 }
+.profile-account-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.profile-page .history-card > .empty-state {
+  padding: 28px 16px;
+  min-height: 0;
+}
+.profile-page .history-card > .empty-state .empty-glyph {
+  display: none;
+}
 .history-card > .section-line {
   margin-bottom: 18px;
 }

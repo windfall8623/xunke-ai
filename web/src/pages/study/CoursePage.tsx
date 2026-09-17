@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, BookOpen, PanelLeftOpen, Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
@@ -44,6 +44,9 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
   const location = useLocation()
   const [params, setParams] = useSearchParams()
   const lessonId = params.get('lesson') || ''
+  const lessonContainer = useRef<HTMLDivElement>(null)
+  // Workspace is keyed by identity/course, so a pending focus cannot cross either boundary.
+  const selectedLessonToFocus = useRef<{ lessonId: string; originLocationKey: string } | null>(null)
   const operation = useCourseOperation()
   const keyFor = useMemo(() => createCourseSubmissionKeys(identity, courseId), [identity, courseId])
   const [evidence, setEvidence] = useState<{ sourceRef: string; lessonId?: string } | null>(null)
@@ -178,6 +181,51 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         block: 'start',
       })
   }, [location.hash, lessonQuery.data?.lesson_id, lessonQuery.data?.status])
+  useEffect(() => {
+    if (!selectedLessonToFocus.current) return
+    // Router navigation may commit after the local directory-collapse update.
+    if (selectedLessonToFocus.current.originLocationKey === location.key) return
+    if (
+      selectedLessonToFocus.current.lessonId !== lessonId ||
+      revoked ||
+      courseQuery.error ||
+      lessonQuery.error ||
+      [progressQuery.error, reviewsQuery.error, operation.error].some(courseSourceRevoked) ||
+      lessonQuery.data?.status === 'source_revoked'
+    ) {
+      selectedLessonToFocus.current = null
+      return
+    }
+    if (
+      !lessonQuery.isSuccess ||
+      lessonQuery.isFetching ||
+      lessonQuery.data.course_id !== courseId ||
+      lessonQuery.data.lesson_id !== lessonId
+    )
+      return
+    const heading = lessonContainer.current?.querySelector<HTMLElement>('.course-lesson-heading h2')
+    if (!heading) return
+    selectedLessonToFocus.current = null
+    heading.tabIndex = -1
+    heading.focus({ preventScroll: true })
+    heading.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }, [
+    lessonId,
+    courseId,
+    revoked,
+    courseQuery.error,
+    lessonQuery.error,
+    lessonQuery.isSuccess,
+    lessonQuery.isFetching,
+    lessonQuery.data,
+    progressQuery.error,
+    reviewsQuery.error,
+    operation.error,
+    location.key,
+  ])
   function invalidate(affectedLesson?: string) {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
@@ -249,7 +297,13 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
     )
   }
   function selectLesson(lesson: CourseLessonSummary) {
+    selectedLessonToFocus.current =
+      lesson.lesson_id !== lessonId
+        ? { lessonId: lesson.lesson_id, originLocationKey: location.key }
+        : null
     setEvidence(null)
+    if (window.matchMedia?.('(max-width: 850px)').matches ?? window.innerWidth <= 850)
+      setOutlineCollapsed(true)
     setParams({ lesson: lesson.lesson_id })
     if (lesson.status === 'not_generated' && lesson.availability !== 'material_gap')
       generateLesson(lesson.lesson_id)
@@ -451,7 +505,7 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
               />
             </div>
           )}
-          <div className="course-main">
+          <div className="course-main" ref={lessonContainer}>
             {lessonId ? (
               lessonQuery.error ? (
                 <ErrorNotice

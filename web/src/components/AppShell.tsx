@@ -29,7 +29,7 @@ export function AppShell() {
     { to: '/study', icon: GraduationCap, label: '我的课程', end: false },
     { to: '/knowledge', icon: Library, label: '我的资料', end: false },
     { to: '/qa', icon: MessageCircle, label: '资料问答', end: false },
-    { to: '/me', icon: UserRound, label: '学习记录', end: false },
+    { to: '/me', icon: UserRound, label: '个人中心', end: false },
     ...(evaluator
       ? [{ to: '/evaluations', icon: FlaskConical, label: '评测工作台', end: false }]
       : []),
@@ -103,7 +103,7 @@ export function AppShell() {
                     : location.pathname.startsWith('/study')
                       ? '我的课程'
                       : location.pathname.startsWith('/me')
-                        ? '学习记录'
+                        ? '个人中心'
                         : '学习首页'}
             </strong>
           </div>

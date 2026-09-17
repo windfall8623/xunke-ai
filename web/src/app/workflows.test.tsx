@@ -164,7 +164,7 @@ describe('profile and preset experience', () => {
         return json({ ...learner, quiz_count: 0, correct_count: 0, average_accuracy: 0 })
       return json({ items: [], total: 0 })
     })
-    await screen.findByRole('heading', { name: '学习记录' })
+    await screen.findByRole('heading', { name: '个人中心' })
     await userEvent.click(screen.getByRole('button', { name: '修改密码' }))
     await userEvent.type(screen.getByLabelText('当前密码'), 'old-password')
     await userEvent.type(screen.getByLabelText('新密码'), 'new-password-long')

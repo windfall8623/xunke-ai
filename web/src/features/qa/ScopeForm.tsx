@@ -94,19 +94,7 @@ function ScopeFields({
   }
   return (
     <form className="qa-scope-form" onSubmit={submit}>
-      {revision === undefined ? (
-        <label htmlFor={titleId}>
-          会话标题（选填）
-          <input
-            id={titleId}
-            value={title}
-            maxLength={80}
-            placeholder="新的资料问答"
-            disabled={busy}
-            onChange={(event) => setTitle(event.target.value)}
-          />
-        </label>
-      ) : (
+      {revision !== undefined && (
         <p className="muted tiny">范围版本 {revision} · 保存后仅在新范围中继续追问。</p>
       )}
       <div className="section-line">
@@ -202,6 +190,19 @@ function ScopeFields({
         <p className="notice" role="alert">
           所选章节目录已更新，请取消勾选这份资料后重新选择章节。
         </p>
+      )}
+      {revision === undefined && (
+        <label htmlFor={titleId}>
+          会话标题（选填）
+          <input
+            id={titleId}
+            value={title}
+            maxLength={80}
+            placeholder="新的资料问答"
+            disabled={busy}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+        </label>
       )}
       <ErrorNotice error={error} />
       <button

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BookOpen, Plus } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { Fragment, useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, formatDate } from '../../components/ui'
@@ -41,12 +41,22 @@ const statusLabels: Record<CourseStatus, string> = {
 export function CourseListSection({
   compact = false,
   showCreate = true,
+  showHeading = true,
 }: {
   compact?: boolean
   showCreate?: boolean
+  showHeading?: boolean
 }) {
   const identity = useIdentityKey()
-  return <CourseList key={identity} identity={identity} compact={compact} showCreate={showCreate} />
+  return (
+    <CourseList
+      key={identity}
+      identity={identity}
+      compact={compact}
+      showCreate={showCreate}
+      showHeading={showHeading}
+    />
+  )
 }
 
 function CourseBookshelf({ courses }: { courses: CourseView[] }) {
@@ -62,64 +72,71 @@ function CourseBookshelf({ courses }: { courses: CourseView[] }) {
   const { read, total: available } = courseReadingProgress(selected.lessons)
   const path = coursePath(selected.course_id, revoked ? null : selected.resume_lesson_id)
 
+  const detail = (
+    <section
+      id={detailId}
+      className="course-bookshelf-detail"
+      aria-labelledby={`${detailId}-title`}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <div className="course-bookshelf-detail-copy">
+        <div className="course-bookshelf-detail-meta tiny muted">
+          <span>{revoked ? '资料已失效' : statusLabels[selected.status]}</span>
+          <span>{formatDate(selected.updated_at)}</span>
+        </div>
+        <h3 id={`${detailId}-title`}>{revoked ? '资料已失效的课程' : selected.title}</h3>
+        <p className="muted">
+          {revoked
+            ? '相关内容已隐藏，请重新选择资料创建课程。'
+            : selected.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
+        </p>
+      </div>
+      <div className="course-bookshelf-detail-actions">
+        {!revoked && (
+          <CourseReadingProgress lessons={selected.lessons} label={`${selected.title}阅读进度`} />
+        )}
+        {!revoked && !available && <p className="tiny muted">纲要就绪后可逐课学习</p>}
+        <Link className="button primary" to={path}>
+          {revoked
+            ? '查看状态'
+            : ['failed', 'cancelled', 'generating'].includes(selected.status)
+              ? '查看进度'
+              : read
+                ? '继续学习'
+                : '查看课程'}
+          <ArrowRight size={15} />
+        </Link>
+      </div>
+    </section>
+  )
   return (
     <div className="course-bookshelf-layout">
       <p className="course-bookshelf-hint muted">选一本课程，查看学习目标与阅读进度。</p>
       <div className="course-bookshelf" role="group" aria-label="选择课程">
         {rows.map((row, index) => (
-          <div
-            className="course-bookshelf-row"
-            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-            key={index}
-          >
-            {row.map((course) => (
-              <CourseCover
-                key={course.course_id}
-                course={course}
-                onSelect={() => setSelectedId(course.course_id)}
-                selected={selected.course_id === course.course_id}
-                controls={detailId}
-              />
-            ))}
-          </div>
+          <Fragment key={index}>
+            <div
+              className="course-bookshelf-row"
+              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            >
+              {row.map((course) => (
+                <CourseCover
+                  key={course.course_id}
+                  course={course}
+                  onSelect={() => setSelectedId(course.course_id)}
+                  selected={selected.course_id === course.course_id}
+                  controls={detailId}
+                />
+              ))}
+            </div>
+            {columns === 1 &&
+              row.some((course) => course.course_id === selected.course_id) &&
+              detail}
+          </Fragment>
         ))}
       </div>
-      <section
-        id={detailId}
-        className="course-bookshelf-detail"
-        aria-labelledby={`${detailId}-title`}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div className="course-bookshelf-detail-copy">
-          <div className="course-bookshelf-detail-meta tiny muted">
-            <span>{revoked ? '资料已失效' : statusLabels[selected.status]}</span>
-            <span>{formatDate(selected.updated_at)}</span>
-          </div>
-          <h3 id={`${detailId}-title`}>{revoked ? '资料已失效的课程' : selected.title}</h3>
-          <p className="muted">
-            {revoked
-              ? '相关内容已隐藏，请重新选择资料创建课程。'
-              : selected.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
-          </p>
-        </div>
-        <div className="course-bookshelf-detail-actions">
-          {!revoked && (
-            <CourseReadingProgress lessons={selected.lessons} label={`${selected.title}阅读进度`} />
-          )}
-          {!revoked && !available && <p className="tiny muted">纲要就绪后可逐课学习</p>}
-          <Link className="button primary" to={path}>
-            {revoked
-              ? '查看状态'
-              : ['failed', 'cancelled', 'generating'].includes(selected.status)
-                ? '查看进度'
-                : read
-                  ? '继续学习'
-                  : '查看课程'}
-            <ArrowRight size={15} />
-          </Link>
-        </div>
-      </section>
+      {columns > 1 && detail}
     </div>
   )
 }
@@ -128,10 +145,12 @@ function CourseList({
   identity,
   compact,
   showCreate,
+  showHeading,
 }: {
   identity: string | number
   compact: boolean
   showCreate: boolean
+  showHeading: boolean
 }) {
   const auth = useAuth()
   const [page, setPage] = useState(1)
@@ -150,26 +169,30 @@ function CourseList({
   })
   return (
     <section className="course-shelf" aria-label="我的课程">
-      <div className="section-line course-shelf-heading">
-        <div>
-          <h2>我的课程</h2>
-          <p className="muted">从上次停下的地方，继续一点点理解。</p>
-        </div>
-        <div className="button-row">
-          {compact && auth.status === 'authenticated' && (
-            <Link to="/study" className="text-link">
-              全部课程
-              <ArrowRight size={14} />
-            </Link>
+      {(showHeading || showCreate || (compact && auth.status === 'authenticated')) && (
+        <div className="section-line course-shelf-heading">
+          {showHeading && (
+            <div>
+              <h2>我的课程</h2>
+              <p className="muted">从上次停下的地方，继续一点点理解。</p>
+            </div>
           )}
-          {showCreate && (
-            <Link className="button primary" to="/study/courses/new">
-              <Plus size={17} />
-              开始新课程
-            </Link>
-          )}
+          <div className="button-row">
+            {compact && auth.status === 'authenticated' && (
+              <Link to="/study" className="text-link">
+                全部课程
+                <ArrowRight size={14} />
+              </Link>
+            )}
+            {showCreate && (
+              <Link className="button primary" to="/study/courses/new">
+                <Plus size={17} />
+                开始新课程
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {auth.status === 'initializing' ? (
         <Loading>正在恢复课程…</Loading>
       ) : auth.status !== 'authenticated' ? (

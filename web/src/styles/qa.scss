@@ -77,8 +77,14 @@
   display: none;
 }
 .qa-new-session.card {
+  width: 100%;
+  max-width: 720px;
   padding: var(--space-7);
   box-shadow: none;
+}
+.qa-new-session .qa-scope-form .document-options {
+  max-height: none;
+  overflow: visible;
 }
 .qa-new-session-icon {
   color: var(--primary);
@@ -211,6 +217,14 @@
 }
 .qa-message {
   min-width: 0;
+  scroll-margin-block: var(--space-6) var(--qa-composer-clearance, 340px);
+  &:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 4px;
+  }
+  :is(button, a):focus {
+    scroll-margin-bottom: var(--qa-composer-clearance, 340px);
+  }
   overflow-wrap: anywhere;
   > p,
   .qa-answer-block > p {
@@ -356,6 +370,23 @@
     background: var(--danger-soft);
     color: var(--danger);
   }
+}
+// The dock stays in document flow, reserving its full height after the final
+// message. The page remains the only conversation scroll surface.
+.qa-composer-dock {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: 2;
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  background: var(--surface);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.qa-return-latest.button {
+  justify-self: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
 }
 .qa-composer {
   display: grid;
@@ -558,6 +589,9 @@
   .qa-message-user {
     max-width: 96%;
     padding: var(--space-3) var(--space-4);
+  }
+  .qa-composer-dock {
+    bottom: calc(72px + env(safe-area-inset-bottom) + var(--space-2));
   }
   .qa-composer {
     padding: var(--space-4);

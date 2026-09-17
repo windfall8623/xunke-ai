@@ -20,7 +20,7 @@ test('learning pages reflow from 360 to 1440 pixels with long content', async ({
   await page.evaluate(() => {
     document.documentElement.style.fontSize = '200%'
   })
-  await expect(page.getByRole('heading', { name: '学习记录', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '个人中心', exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(
     false,
   )
