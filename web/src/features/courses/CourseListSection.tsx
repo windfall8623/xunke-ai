@@ -130,13 +130,10 @@ function CourseBookshelf({ courses }: { courses: CourseView[] }) {
                 />
               ))}
             </div>
-            {columns === 1 &&
-              row.some((course) => course.course_id === selected.course_id) &&
-              detail}
+            {row.some((course) => course.course_id === selected.course_id) && detail}
           </Fragment>
         ))}
       </div>
-      {columns > 1 && detail}
     </div>
   )
 }

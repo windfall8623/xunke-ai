@@ -18,6 +18,16 @@ const labels: Record<CourseTodayItem['kind'], string> = {
   review_lesson: '待补练',
 }
 
+export function formatTodayHeadingDate(isoDate: string) {
+  const parsed = new Date(`${isoDate}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return isoDate
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(parsed)
+}
+
 export function CourseTodayCard() {
   const identity = useIdentityKey()
   const [timezone] = useState(() => {
@@ -59,9 +69,8 @@ export function CourseTodayCard() {
           </h2>
           <p className="tiny muted course-today-date">
             <time dateTime={query.data?.local_date || localDate}>
-              {query.data?.local_date || localDate}
+              {formatTodayHeadingDate(query.data?.local_date || localDate)}
             </time>
-            <span className="course-today-timezone">{timezone}</span>
           </p>
         </div>
         <div className="button-row">

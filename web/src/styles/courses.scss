@@ -816,19 +816,15 @@
 }
 .course-today-date {
   margin: 3px 0 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   line-height: 1.5;
-}
-.course-today-timezone {
-  margin-left: 8px;
-  overflow-wrap: anywhere;
 }
 .course-today-budget {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   select {
     padding: 7px 26px 7px 10px;
     min-height: 36px;
@@ -917,14 +913,14 @@
   min-width: 0;
   h3 {
     margin: 4px 0;
-    font-size: 0.94rem;
+    font-size: 1rem;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
   p {
     margin: 0;
     line-height: 1.6;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     overflow-wrap: anywhere;
   }
 }
@@ -933,7 +929,7 @@
   flex-wrap: wrap;
   gap: 4px 12px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   line-height: 1.5;
 }
 .course-today-duration {
@@ -943,7 +939,7 @@
 }
 .course-today-footnote {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   line-height: 1.6;
 }
 .course-today-notes p {

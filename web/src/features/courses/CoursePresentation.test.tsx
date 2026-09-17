@@ -215,7 +215,7 @@ describe('bound course presentation', () => {
     expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(2)
     expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(3)
     const cabinet = screen.getByRole('group', { name: '选择课程' })
-    expect(cabinet.nextElementSibling).toHaveClass('course-bookshelf-detail')
+    expect(cabinet.querySelector('.course-bookshelf-detail')).toBeTruthy()
     expect(container.querySelectorAll('.course-bookshelf-detail')).toHaveLength(1)
     const update = desktop.addEventListener.mock.calls[0][1] as () => void
     act(() => {
@@ -241,7 +241,7 @@ describe('bound course presentation', () => {
       tablet.matches = true
       update()
     })
-    expect(cabinet.nextElementSibling).toHaveClass('course-bookshelf-detail')
+    expect(cabinet.querySelector('.course-bookshelf-detail')).toBeTruthy()
     expect(container.querySelectorAll('.course-bookshelf-detail')).toHaveLength(1)
     expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(1)
     unmount()
