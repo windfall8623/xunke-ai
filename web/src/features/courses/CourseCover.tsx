@@ -41,10 +41,16 @@ export function CourseCover({
   course,
   to,
   compact = false,
+  onSelect,
+  selected = false,
+  controls,
 }: {
   course: Pick<CourseView, 'course_id' | 'title' | 'source_policy' | 'source_status' | 'status'>
   to?: string
   compact?: boolean
+  onSelect?: () => void
+  selected?: boolean
+  controls?: string
 }) {
   const revoked = course.source_status === 'revoked' || course.status === 'source_revoked'
   const className = `course-cover course-cover-binding-${bindingFor(course.course_id)}${compact ? ' course-cover-compact' : ''}${revoked ? ' is-revoked' : ''}`
@@ -54,7 +60,11 @@ export function CourseCover({
       <span className="course-cover-type">
         {revoked ? '资料已失效' : course.source_policy === 'topic' ? '主题课程' : '资料课程'}
       </span>
-      <h3 className="course-cover-title">{revoked ? '资料已失效的课程' : course.title}</h3>
+      {onSelect ? (
+        <span className="course-cover-title">{revoked ? '资料已失效的课程' : course.title}</span>
+      ) : (
+        <h3 className="course-cover-title">{revoked ? '资料已失效的课程' : course.title}</h3>
+      )}
       <span className="course-cover-rule" aria-hidden="true" />
     </>
   )
@@ -64,6 +74,18 @@ export function CourseCover({
         <span className="course-cover-binding" />
         <span className="course-cover-rule" />
       </div>
+    )
+  if (onSelect)
+    return (
+      <button
+        type="button"
+        className={`${className} course-book-selector`}
+        aria-pressed={selected}
+        aria-controls={controls}
+        onClick={onSelect}
+      >
+        {content}
+      </button>
     )
   return to ? (
     <Link className={className} to={to}>

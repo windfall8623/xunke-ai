@@ -95,30 +95,33 @@ test('course covers expose saved reading progress, hide revoked content and open
   await installCourseDesignApi(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: '接着上次，继续探索。' })).toBeVisible()
+  await expect(page.getByRole('region', { name: '我的课程', exact: true })).toHaveCount(0)
+  await page.getByRole('link', { name: /进入我的书架/ }).click()
   const shelf = page.getByRole('region', { name: '我的课程', exact: true })
-  const cover = shelf.getByRole('link', { name: `主题课程 ${courseFixture.title}`, exact: true })
-  await expect(cover).toHaveAttribute('href', lessonPath)
+  const cover = shelf.getByRole('button', { name: `主题课程 ${courseFixture.title}`, exact: true })
+  await expect(cover).toHaveAttribute('aria-pressed', 'true')
   const reading = shelf.getByRole('progressbar', { name: `${courseFixture.title}阅读进度` })
   await expect(reading).toHaveAttribute('value', '2')
   await expect(reading).toHaveAttribute('max', '4')
-  await expect(shelf.getByText('50%', { exact: true })).toBeVisible()
+  await shelf
+    .getByRole('button', { name: `主题课程 ${unstartedCourseFixture.title}`, exact: true })
+    .click()
   await expect(
     shelf.getByRole('progressbar', { name: `${unstartedCourseFixture.title}阅读进度` }),
   ).toHaveAttribute('value', '0')
+  await shelf.getByRole('button', { name: '资料已失效 资料已失效的课程', exact: true }).click()
   await expect(shelf.getByText(revokedCourseFixture.title)).toHaveCount(0)
   await expect(shelf.getByText(revokedCourseFixture.mission!.goal)).toHaveCount(0)
-  const revoked = shelf
-    .getByRole('article')
-    .filter({ has: page.getByRole('heading', { name: '资料已失效的课程' }) })
-  await expect(revoked.getByRole('progressbar')).toHaveCount(0)
-  await expect(revoked.getByRole('link', { name: '查看状态' })).toHaveAttribute(
+  await expect(shelf.getByRole('progressbar')).toHaveCount(0)
+  await expect(shelf.getByRole('link', { name: '查看状态' })).toHaveAttribute(
     'href',
     `/study/courses/${revokedCourseFixture.course_id}`,
   )
-  const binding = await cover.getAttribute('class')
-  await page.reload()
-  await expect(cover).toHaveAttribute('class', binding!)
-  await cover.click()
+  await cover.focus()
+  await page.keyboard.press('Enter')
+  await expect(cover).toHaveAttribute('aria-pressed', 'true')
+  await expect(shelf.locator('.course-bookshelf-detail')).toHaveCount(1)
+  await shelf.getByRole('link', { name: '继续学习', exact: true }).click()
   await expect(page).toHaveURL(lessonPath)
   const lesson = await expectLesson(page)
   for (const label of ['讲解 1', '示例 2', '资料说明 3', '小结 4']) {
@@ -143,10 +146,15 @@ for (const width of [360, 768, 1440]) {
     await installCourseDesignApi(page)
     await page.goto('/')
     await expect(page.getByRole('heading', { name: '接着上次，继续探索。' })).toBeVisible()
-    await expect(
-      page.getByRole('progressbar', { name: `${courseFixture.title}阅读进度` }),
-    ).toBeVisible()
     await expectNoOverflow(page, `home ${width}px`)
+    await page.getByRole('link', { name: /进入我的书架/ }).click()
+    await expect(
+      page.getByRole('button', { name: `主题课程 ${courseFixture.title}`, exact: true }),
+    ).toBeVisible()
+    await expect(page.locator('.course-bookshelf-row')).toHaveCount(
+      width >= 1200 ? 1 : width >= 768 ? 2 : 3,
+    )
+    await expectNoOverflow(page, `bookshelf ${width}px`)
     await page.goto(lessonPath)
     const lesson = await expectLesson(page)
     await expect(lesson.locator('pre')).toBeVisible()
@@ -163,8 +171,8 @@ test('reduced motion removes cover movement and reading scroll animation', async
   await page.setViewportSize({ width: 1440, height: 960 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await installCourseDesignApi(page)
-  await page.goto('/')
-  const cover = page.getByRole('link', { name: `主题课程 ${courseFixture.title}`, exact: true })
+  await page.goto('/study')
+  const cover = page.getByRole('button', { name: `主题课程 ${courseFixture.title}`, exact: true })
   await expect(cover).toBeVisible()
   await cover.hover()
   const motion = await cover.evaluate((element) => {
@@ -177,6 +185,7 @@ test('reduced motion removes cover movement and reading scroll animation', async
   expect(motion.transform).toBe('none')
   expect(motion.durations.every((duration) => duration <= 0.001)).toBe(true)
   await cover.click()
+  await page.getByRole('link', { name: '继续学习', exact: true }).click()
   await expectLesson(page)
   await expect(page.getByRole('region', { name: '课文', exact: true })).toHaveCSS(
     'scroll-behavior',

@@ -363,34 +363,36 @@ function CourseWorkspace({ courseId, identity }: { courseId: string; identity: s
         <ArrowLeft size={16} />
         我的课程
       </Link>
-      <div className="course-book-heading">
-        <CourseCover course={course} compact />
-        <PageHeading
-          title={course.title}
-          description={course.mission?.goal || '正在整理这门课程的学习目标。'}
-          action={
-            <Link to="/study/courses/new" className="button secondary">
-              <Plus size={16} />
-              新课程
-            </Link>
-          }
-        />
-      </div>
-      <CourseReadingProgress lessons={lessons} />
-      <div className="course-source-label">
-        <span className="badge">
-          {course.source_policy === 'topic' ? '主题课程' : '仅依据所选资料'}
-        </span>
-        <span className="tiny muted">
-          {course.source_policy === 'topic'
-            ? '基于模型通用知识，无已保存的资料引用'
-            : `已固定 ${course.scope?.documents?.length || 0} 份资料的版本`}
-          {course.mission?.daily_minutes ? ` · 每天 ${course.mission.daily_minutes} 分钟` : ''}
-        </span>
-        <a className="text-link" href="#course-progress">
-          查看学习进度
-        </a>
-      </div>
+      <section className="course-overview" aria-label="课程概览">
+        <div className="course-book-heading">
+          <CourseCover course={course} compact />
+          <PageHeading
+            title={course.title}
+            description={course.mission?.goal || '正在整理这门课程的学习目标。'}
+            action={
+              <Link to="/study/courses/new" className="button secondary">
+                <Plus size={16} />
+                新课程
+              </Link>
+            }
+          />
+        </div>
+        <CourseReadingProgress lessons={lessons} />
+        <div className="course-source-label">
+          <span className="badge">
+            {course.source_policy === 'topic' ? '主题课程' : '仅依据所选资料'}
+          </span>
+          <span className="tiny muted">
+            {course.source_policy === 'topic'
+              ? '基于模型通用知识，无已保存的资料引用'
+              : `已固定 ${course.scope?.documents?.length || 0} 份资料的版本`}
+            {course.mission?.daily_minutes ? ` · 每天 ${course.mission.daily_minutes} 分钟` : ''}
+          </span>
+          <a className="text-link" href="#course-progress">
+            查看学习进度
+          </a>
+        </div>
+      </section>
       <EvidenceNoticeBar warnings={course.warnings || []} />
       <ErrorNotice
         error={operation.error ? courseErrorMessage(operation.error) : null}

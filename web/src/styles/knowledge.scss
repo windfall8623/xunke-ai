@@ -3,6 +3,12 @@
 
   .page-heading {
     margin-bottom: var(--space-6);
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-strong);
+    h1 {
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
   }
 
   .quota-counter {
@@ -56,7 +62,9 @@
   .is-compact .upload-zone {
     padding: var(--space-4) var(--space-5);
     border-style: solid;
-    background: var(--bg);
+    border-left: 4px solid var(--primary);
+    background: var(--surface);
+    box-shadow: 0 4px 14px -9px rgb(24 35 41 / 22%);
     h2 {
       font-size: var(--text-md);
       margin-bottom: var(--space-1);
@@ -79,8 +87,11 @@
 
   .knowledge-library {
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: 16px;
     background: var(--surface);
+    box-shadow:
+      0 2px 3px rgb(24 35 41 / 3%),
+      0 18px 40px -30px rgb(24 35 41 / 24%);
     min-width: 0;
     > .notice {
       margin: var(--space-4);
@@ -89,8 +100,10 @@
 
   .knowledge-toolbar {
     margin: 0;
-    padding: var(--space-4) var(--space-5);
+    padding: 22px 24px;
     gap: var(--space-3);
+    background: var(--surface-2);
+    border-radius: 16px 16px 0 0;
     border-bottom: 1px solid var(--border);
     h2 {
       font-size: var(--text-md);
@@ -141,8 +154,11 @@
     width: 44px;
     padding-block: var(--space-2);
     border-radius: var(--radius-sm);
-    color: var(--ink-soft);
-    background: var(--bg);
+    color: var(--primary-dark);
+    background: var(--primary-soft);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 70%),
+      0 2px 0 var(--border);
     > span {
       font-size: var(--text-xs);
       letter-spacing: 0;

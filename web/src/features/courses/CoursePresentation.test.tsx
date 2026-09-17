@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -49,7 +49,10 @@ function mount(node: React.ReactNode) {
     </QueryClientProvider>,
   )
 }
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('bound course presentation', () => {
   it('keeps the binding stable when title or status changes, with a real navigation link', () => {
@@ -129,6 +132,95 @@ describe('bound course presentation', () => {
       'href',
       '/study/courses/course-stable?lesson=lesson-1',
     )
+  })
+
+  it('selects books with native buttons and shows only the selected course details', async () => {
+    vi.spyOn(coursesApi, 'list').mockResolvedValue({
+      items: [
+        course,
+        {
+          ...course,
+          course_id: 'second-course',
+          title: '第二门课程',
+          lessons: [{ ...lesson, read_at: '2026-09-16' }],
+        },
+        { ...course, course_id: 'revoked-course', title: '私密标题', source_status: 'revoked' },
+      ],
+      total: 3,
+      page: 1,
+      page_size: 6,
+    })
+    mount(<CourseListSection />)
+    const first = await screen.findByRole('button', { name: '主题课程 Python 函数入门' })
+    expect(first).toHaveAttribute('aria-pressed', 'true')
+    expect(first.querySelector('h3')).toBeNull()
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1)
+    const second = screen.getByRole('button', { name: '主题课程 第二门课程' })
+    second.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(second).toHaveAttribute('aria-pressed', 'true')
+    expect(first).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('region', { name: '第二门课程' })).toHaveAttribute(
+      'id',
+      second.getAttribute('aria-controls'),
+    )
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1)
+    expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1')
+    expect(screen.getByRole('link', { name: '继续学习' })).toHaveAttribute(
+      'href',
+      '/study/courses/second-course?lesson=lesson-1',
+    )
+    await userEvent.click(screen.getByRole('button', { name: '资料已失效 资料已失效的课程' }))
+    expect(screen.queryByText('私密标题')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /私密标题/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '查看状态' })).toHaveAttribute(
+      'href',
+      '/study/courses/revoked-course',
+    )
+  })
+
+  it('groups books into shared responsive rows and cleans up media listeners', async () => {
+    const desktop = {
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const tablet = {
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => (query.includes('1200') ? desktop : tablet)),
+    )
+    vi.spyOn(coursesApi, 'list').mockResolvedValue({
+      items: Array.from({ length: 5 }, (_, index) => ({ ...course, course_id: `book-${index}` })),
+      total: 5,
+      page: 1,
+      page_size: 6,
+    })
+    const { container, unmount } = mount(<CourseListSection />)
+    await screen.findByRole('group', { name: '选择课程' })
+    expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(2)
+    expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(3)
+    const update = desktop.addEventListener.mock.calls[0][1] as () => void
+    act(() => {
+      desktop.matches = false
+      update()
+    })
+    expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(3)
+    expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(2)
+    act(() => {
+      tablet.matches = false
+      update()
+    })
+    expect(container.querySelectorAll('.course-bookshelf-row')).toHaveLength(5)
+    expect(container.querySelector('.course-bookshelf-row')?.children).toHaveLength(1)
+    unmount()
+    expect(desktop.removeEventListener).toHaveBeenCalledWith('change', update)
+    expect(tablet.removeEventListener).toHaveBeenCalledWith('change', update)
   })
 
   it('emphasizes only the first suggested activity and retains unavailable-entry handling', async () => {

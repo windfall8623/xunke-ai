@@ -1,0 +1,179 @@
+.course-bookshelf-layout {
+  min-width: 0;
+}
+
+.course-bookshelf-hint {
+  margin: 0 0 14px;
+  font-size: var(--text-sm);
+}
+
+/* One cabinet, with a shared backboard and structural sides for every row. */
+.course-bookshelf {
+  --shelf-oak-light: #ddc4a0;
+  --shelf-oak: #b38b5d;
+  --shelf-oak-dark: #795837;
+  --shelf-back: #e4d6bf;
+  position: relative;
+  min-width: 0;
+  border: 12px solid var(--shelf-oak);
+  border-top-width: 10px;
+  border-bottom-width: 8px;
+  border-radius: 5px 5px 3px 3px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 102px,
+      rgb(121 88 55 / 7%) 103px,
+      transparent 105px
+    ),
+    var(--shelf-back);
+  box-shadow:
+    inset 5px 0 12px rgb(69 43 20 / 13%),
+    inset -5px 0 12px rgb(69 43 20 / 13%),
+    0 12px 18px -14px rgb(69 43 20 / 38%);
+}
+
+.course-bookshelf-row {
+  position: relative;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  gap: clamp(20px, 3vw, 42px);
+  min-width: 0;
+  padding: 30px clamp(18px, 3vw, 40px) 22px;
+  background: linear-gradient(180deg, rgb(69 43 20 / 10%), transparent 40%);
+
+  /* The plank belongs to the row, never to an individual book. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto -5px 0;
+    height: 22px;
+    border-radius: 2px;
+    background:
+      repeating-linear-gradient(
+        2deg,
+        transparent 0 4px,
+        rgb(69 43 20 / 9%) 5px,
+        transparent 6px 11px
+      ),
+      linear-gradient(
+        180deg,
+        var(--shelf-oak-light) 0 23%,
+        var(--shelf-oak) 25% 80%,
+        var(--shelf-oak-dark) 100%
+      );
+    box-shadow:
+      0 3px 3px rgb(69 43 20 / 15%),
+      0 12px 14px -8px rgb(69 43 20 / 30%);
+    pointer-events: none;
+  }
+}
+
+.course-bookshelf .course-book-selector {
+  width: calc(100% - 8px);
+  max-width: 260px;
+  min-height: 272px;
+  margin: 0 8px 0 0;
+  padding: 24px 22px 26px 32px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 3px 8px 8px 3px;
+
+  .course-cover-title {
+    font-size: clamp(1.15rem, 1.65vw, 1.5rem);
+    line-height: 1.6;
+  }
+
+  &[aria-pressed='true'] {
+    outline: 2px solid var(--shelf-oak-dark);
+    outline-offset: 5px;
+
+    .course-cover-rule {
+      width: 70px;
+      opacity: 1;
+    }
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 7px;
+  }
+}
+
+.course-bookshelf-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 270px);
+  align-items: center;
+  gap: 24px 36px;
+  margin-top: 28px;
+  padding: 24px 4px 4px;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+
+  h3 {
+    margin: 10px 0;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.85;
+    overflow-wrap: anywhere;
+  }
+}
+
+.course-bookshelf-detail-copy,
+.course-bookshelf-detail-actions {
+  min-width: 0;
+}
+
+.course-bookshelf-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.course-bookshelf-detail-actions {
+  display: grid;
+  gap: 18px;
+
+  .button {
+    justify-self: start;
+  }
+}
+
+@media (hover: hover) {
+  .course-bookshelf .course-book-selector:hover {
+    outline: 2px solid var(--shelf-oak-dark);
+    outline-offset: 5px;
+  }
+}
+
+@media (max-width: 767px) {
+  .course-bookshelf {
+    border-inline-width: 9px;
+  }
+
+  .course-bookshelf-row {
+    padding-top: 26px;
+    padding-inline: 24px;
+  }
+
+  .course-bookshelf .course-book-selector {
+    min-height: 246px;
+    max-width: 238px;
+  }
+
+  .course-bookshelf-detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin-top: 22px;
+    padding-top: 20px;
+  }
+}

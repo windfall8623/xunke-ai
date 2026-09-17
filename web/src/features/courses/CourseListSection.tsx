@@ -1,14 +1,33 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BookOpen, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, formatDate } from '../../components/ui'
 import { courseErrorMessage, courseKeys, coursesApi } from '../../services/courses'
 import { coursePath } from '../../services/courseNavigation'
-import type { CourseStatus } from '../../types/course'
+import type { CourseStatus, CourseView } from '../../types/course'
 import { CourseCover, CourseReadingProgress, courseReadingProgress } from './CourseCover'
 import '../../styles/courses.scss'
+import '../../styles/course-bookshelf.scss'
+
+function useShelfColumns() {
+  const [columns, setColumns] = useState(1)
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const desktop = window.matchMedia('(min-width: 1200px)')
+    const tablet = window.matchMedia('(min-width: 768px)')
+    const update = () => setColumns(desktop.matches ? 3 : tablet.matches ? 2 : 1)
+    update()
+    desktop.addEventListener('change', update)
+    tablet.addEventListener('change', update)
+    return () => {
+      desktop.removeEventListener('change', update)
+      tablet.removeEventListener('change', update)
+    }
+  }, [])
+  return columns
+}
 
 const statusLabels: Record<CourseStatus, string> = {
   generating: '纲要准备中',
@@ -28,6 +47,81 @@ export function CourseListSection({
 }) {
   const identity = useIdentityKey()
   return <CourseList key={identity} identity={identity} compact={compact} showCreate={showCreate} />
+}
+
+function CourseBookshelf({ courses }: { courses: CourseView[] }) {
+  const columns = useShelfColumns()
+  const detailId = useId()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = courses.find((course) => course.course_id === selectedId) ?? courses[0]
+  const rows = Array.from({ length: Math.ceil(courses.length / columns) }, (_, index) =>
+    courses.slice(index * columns, (index + 1) * columns),
+  )
+  if (!selected) return null
+  const revoked = selected.source_status === 'revoked' || selected.status === 'source_revoked'
+  const { read, total: available } = courseReadingProgress(selected.lessons)
+  const path = coursePath(selected.course_id, revoked ? null : selected.resume_lesson_id)
+
+  return (
+    <div className="course-bookshelf-layout">
+      <p className="course-bookshelf-hint muted">选一本课程，查看学习目标与阅读进度。</p>
+      <div className="course-bookshelf" role="group" aria-label="选择课程">
+        {rows.map((row, index) => (
+          <div
+            className="course-bookshelf-row"
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            key={index}
+          >
+            {row.map((course) => (
+              <CourseCover
+                key={course.course_id}
+                course={course}
+                onSelect={() => setSelectedId(course.course_id)}
+                selected={selected.course_id === course.course_id}
+                controls={detailId}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <section
+        id={detailId}
+        className="course-bookshelf-detail"
+        aria-labelledby={`${detailId}-title`}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div className="course-bookshelf-detail-copy">
+          <div className="course-bookshelf-detail-meta tiny muted">
+            <span>{revoked ? '资料已失效' : statusLabels[selected.status]}</span>
+            <span>{formatDate(selected.updated_at)}</span>
+          </div>
+          <h3 id={`${detailId}-title`}>{revoked ? '资料已失效的课程' : selected.title}</h3>
+          <p className="muted">
+            {revoked
+              ? '相关内容已隐藏，请重新选择资料创建课程。'
+              : selected.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
+          </p>
+        </div>
+        <div className="course-bookshelf-detail-actions">
+          {!revoked && (
+            <CourseReadingProgress lessons={selected.lessons} label={`${selected.title}阅读进度`} />
+          )}
+          {!revoked && !available && <p className="tiny muted">纲要就绪后可逐课学习</p>}
+          <Link className="button primary" to={path}>
+            {revoked
+              ? '查看状态'
+              : ['failed', 'cancelled', 'generating'].includes(selected.status)
+                ? '查看进度'
+                : read
+                  ? '继续学习'
+                  : '查看课程'}
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </section>
+    </div>
+  )
 }
 
 function CourseList({
@@ -108,52 +202,7 @@ function CourseList({
           </EmptyState>
         </div>
       ) : (
-        <div className="course-card-grid">
-          {query.data.items.map((course) => {
-            const revoked = course.source_status === 'revoked' || course.status === 'source_revoked'
-            const { read, total: available } = courseReadingProgress(course.lessons)
-            const path = coursePath(course.course_id, revoked ? null : course.resume_lesson_id)
-            return (
-              <article className="course-card" key={course.course_id}>
-                <CourseCover course={course} to={path} />
-                <div className="course-card-details">
-                  <div className="course-card-meta">
-                    <span className="tiny muted">
-                      {revoked ? '资料已失效' : statusLabels[course.status]}
-                    </span>
-                    <span className="tiny muted">{formatDate(course.updated_at)}</span>
-                  </div>
-                  <p className="muted course-card-goal">
-                    {revoked
-                      ? '相关内容已隐藏，请重新选择资料创建课程。'
-                      : course.mission?.goal || '正在将你的学习目标整理成课程纲要。'}
-                  </p>
-                  {!revoked && (
-                    <CourseReadingProgress
-                      lessons={course.lessons}
-                      label={`${course.title}阅读进度`}
-                    />
-                  )}
-                  <div className="course-card-footer">
-                    <span className="tiny muted">
-                      {!revoked && !available ? '纲要就绪后可逐课学习' : ''}
-                    </span>
-                    <Link className="text-link" to={path}>
-                      {revoked
-                        ? '查看状态'
-                        : ['failed', 'cancelled', 'generating'].includes(course.status)
-                          ? '查看进度'
-                          : read
-                            ? '继续学习'
-                            : '查看课程'}
-                      <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+        <CourseBookshelf key={page} courses={query.data.items} />
       )}
       {!compact && query.data && !query.error && query.data.total > pageSize && (
         <div className="button-row course-pagination" aria-label="课程分页">

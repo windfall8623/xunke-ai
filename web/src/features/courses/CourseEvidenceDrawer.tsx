@@ -63,7 +63,7 @@ export function CourseEvidenceDrawer({
               <span>{locatorLabel(query.data.locator)}</span>
             </div>
           </div>
-          <div className="evidence-quote">
+          <div className="evidence-quote course-evidence-reveal" key={sourceRef}>
             <Quote size={23} />
             <p style={{ whiteSpace: 'pre-wrap' }}>
               {query.data.excerpt || '此来源没有可展示的片段。'}

@@ -15,7 +15,6 @@ import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useIdentityKey } from '../app/AuthProvider'
 import { ErrorNotice, Loading } from '../components/ui'
-import { CourseListSection } from '../features/courses/CourseListSection'
 import { CourseTodayCard } from '../features/courses/CourseTodayCard'
 import { StudyActivitySummary } from '../features/study/StudyActivitySummary'
 import { api } from '../services/api'
@@ -121,7 +120,14 @@ export function HomePage() {
           </div>
         </section>
       )}
-      <CourseListSection compact showCreate={false} />
+      <Link className="home-bookshelf-entry" to="/study">
+        <BookOpen size={24} />
+        <span>
+          <strong>进入我的书架</strong>
+          <small>查看全部课程，选择下一本继续阅读。</small>
+        </span>
+        <ArrowRight size={20} />
+      </Link>
       <div className="home-grid">
         <section className="card composer">
           <div className="card-heading">

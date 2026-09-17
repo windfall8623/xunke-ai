@@ -94,7 +94,19 @@
 
 .course-shelf {
   min-width: 0;
-  margin-bottom: 28px;
+  margin-bottom: 0;
+  padding: 28px;
+  border: 1px solid #d7dcd5;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8faf7, #edf0e9);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 12px 32px -26px rgb(24 35 41 / 28%);
+}
+@media (max-width: 600px) {
+  .course-shelf {
+    padding: 20px 14px;
+  }
 }
 .course-shelf-heading {
   margin-bottom: 18px;
@@ -844,9 +856,12 @@
     padding: 18px 16px;
     margin-bottom: 4px;
     color: var(--on-graphite);
-    background: var(--graphite);
+    background: #2d4543;
     border-radius: 3px 10px 10px 3px;
-    box-shadow: var(--shadow-md);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 10%),
+      0 2px 4px rgb(24 35 41 / 4%),
+      3px 10px 22px -12px rgb(24 35 41 / 22%);
     &::before {
       content: '';
       position: absolute;
@@ -1126,23 +1141,25 @@
 
 /* ---- 课程目录折叠与阅读区升级（2026-09） ---- */
 .course-workspace.outline-collapsed {
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 .outline-rail {
   align-self: start;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-self: start;
   align-items: center;
   gap: 10px;
-  padding: 14px 8px;
+  padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   font: inherit;
-  writing-mode: vertical-rl;
-  letter-spacing: 6px;
+  writing-mode: horizontal-tb;
+  letter-spacing: normal;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
@@ -1173,7 +1190,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 16px 4px 0;
 }
 .course-cover {
@@ -1184,22 +1201,46 @@
   gap: 24px;
   min-width: 0;
   min-height: 250px;
-  padding: 26px 26px 28px 38px;
-  overflow: hidden;
+  padding: 24px 28px 24px 36px;
   color: var(--surface);
-  background: var(--graphite);
+  background-color: var(--graphite);
+  background-image: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 18%),
+    transparent 7%,
+    rgb(255 255 255 / 5%) 9%,
+    transparent 16%
+  );
   border: 1px solid var(--graphite);
-  border-radius: 3px 12px 12px 3px;
+  border-radius: 4px 10px 10px 4px;
+  isolation: isolate;
+  margin-right: 7px;
   box-shadow:
-    inset -4px 0 0 var(--border),
-    0 3px 0 var(--border);
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    inset -2px 0 0 rgb(0 0 0 / 15%),
+    1px 3px 3px rgb(24 35 41 / 12%),
+    5px 14px 20px -12px rgb(24 35 41 / 32%);
+  &::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 5px;
+    bottom: 4px;
+    right: -7px;
+    width: 8px;
+    border: 1px solid #b8c3bd;
+    border-left: 0;
+    border-radius: 0 5px 5px 0;
+    background: repeating-linear-gradient(90deg, #f2f3e9 0 1px, #ced5ca 1px 2px);
+    box-shadow: 2px 2px 0 var(--graphite);
+  }
   text-decoration: none;
 
   &.course-cover-binding-1 {
-    background: var(--ink);
+    background-color: var(--ink);
   }
   &.course-cover-binding-2 {
-    background: var(--primary);
+    background-color: var(--primary);
     border-color: var(--primary);
   }
   &.is-revoked {
@@ -1209,15 +1250,14 @@
   }
   .course-cover-title {
     color: inherit;
-    font-size: clamp(1.35rem, 2vw, 1.75rem);
-    font-weight: 600;
-    line-height: 1.65;
+    font-size: clamp(1.375rem, 2vw, 1.625rem);
+    font-weight: 500;
+    line-height: 1.5;
     margin: 0;
     overflow-wrap: anywhere;
   }
 }
 a.course-cover {
-  transition: transform 160ms ease;
   &:focus-visible {
     outline: 3px solid var(--primary);
     outline-offset: 5px;
@@ -1225,10 +1265,11 @@ a.course-cover {
 }
 .course-cover-binding {
   position: absolute;
-  inset: 0 auto 0 11px;
-  width: 1px;
-  background: currentColor;
-  opacity: 0.25;
+  inset: 0 auto 0 14px;
+  width: 5px;
+  border-left: 1px solid rgb(255 255 255 / 18%);
+  background: linear-gradient(90deg, rgb(0 0 0 / 22%), rgb(255 255 255 / 5%));
+  pointer-events: none;
 }
 .course-cover-type {
   font-size: 0.75rem;
@@ -1262,6 +1303,9 @@ a.course-cover {
     }
     &::-webkit-progress-value {
       background: var(--primary);
+      @media (prefers-reduced-motion: no-preference) {
+        transition: width 200ms ease;
+      }
     }
     &::-moz-progress-bar {
       background: var(--primary);
@@ -1274,8 +1318,39 @@ a.course-cover {
   gap: 12px;
   font-variant-numeric: tabular-nums;
 }
-.course-page > .course-reading-progress {
-  width: min(100%, 420px);
+.course-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  align-items: center;
+  gap: 24px 36px;
+  padding: 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 3px 8px rgb(24 35 41 / 3%);
+  .course-source-label {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .page-heading {
+    margin: 0;
+  }
+  .page-heading h1 {
+    font-size: clamp(1.3rem, 1.8vw, 1.75rem);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .page-heading p {
+    font-size: var(--text-sm);
+    margin-bottom: 0;
+  }
+}
+.course-overview > .course-reading-progress {
+  width: 100%;
+  padding: 20px;
+  background: var(--primary-soft);
+  border-radius: 12px;
 }
 .course-book-heading {
   display: flex;
@@ -1305,8 +1380,10 @@ a.course-cover {
   justify-self: center;
 }
 .course-outline.card {
-  box-shadow: none;
-  background: var(--bg);
+  box-shadow: 0 8px 24px -18px rgb(24 35 41 / 22%);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 22px 18px;
 }
 .course-lesson {
   gap: 0;
@@ -1314,7 +1391,10 @@ a.course-cover {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 14px;
+  box-shadow:
+    0 2px 3px rgb(24 35 41 / 3%),
+    0 20px 50px -30px rgb(24 35 41 / 22%);
   > * {
     min-width: 0;
   }
@@ -1334,7 +1414,9 @@ a.course-cover {
   padding: 0 0 28px;
   border-bottom: 1px solid var(--border);
   h2 {
-    font-size: clamp(1.4rem, 2.3vw, 1.9rem);
+    font-size: clamp(1.65rem, 2.6vw, 2.2rem);
+    font-weight: 500;
+    letter-spacing: -0.025em;
   }
 }
 .course-lesson-body {
@@ -1370,8 +1452,9 @@ a.course-cover {
 }
 .course-block-reference {
   margin-block: 16px;
-  padding: 12px 0 12px 22px;
+  padding: 12px 22px;
   border-left: 2px solid var(--border);
+  background: var(--bg);
   color: var(--graphite);
 }
 .course-block.course-block-recap {
@@ -1385,12 +1468,23 @@ a.course-cover {
   box-shadow: none;
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  a.course-cover:hover {
-    transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  a.course-cover {
+    transition: transform 200ms ease;
+    &:hover {
+      transform: translateY(-2px);
+    }
   }
 }
 @media (max-width: 850px) {
+  .course-overview {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 22px;
+    gap: 18px;
+  }
+  .course-overview > .course-reading-progress {
+    padding: 14px 16px;
+  }
   .course-workspace.outline-collapsed {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1403,6 +1497,23 @@ a.course-cover {
   }
 }
 @media (max-width: 560px) {
+  .course-overview {
+    padding: 18px;
+    gap: 14px;
+  }
+  .course-overview .course-cover-compact {
+    display: none;
+  }
+  .course-overview .page-heading {
+    gap: 12px;
+  }
+  .course-overview .page-heading h1 {
+    font-size: 1.25rem;
+  }
+  .course-overview .course-source-label {
+    gap: 8px;
+    padding-top: 12px;
+  }
   .course-card-grid {
     gap: 26px;
   }
@@ -1432,7 +1543,7 @@ a.course-cover {
     padding: 18px 14px;
   }
   .course-block-reference {
-    padding-left: 14px;
+    padding-inline: 14px;
   }
   .course-today-item.is-current {
     padding: 18px 12px;

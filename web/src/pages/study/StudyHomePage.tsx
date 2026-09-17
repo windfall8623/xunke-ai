@@ -8,7 +8,6 @@ import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/
 import { StudyScopePicker } from '../../features/study/StudyScopePicker'
 import { StudyActivitySummary } from '../../features/study/StudyActivitySummary'
 import { CourseListSection } from '../../features/courses/CourseListSection'
-import { CourseTodayCard } from '../../features/courses/CourseTodayCard'
 import { StudyNavigation } from './ReviewPage'
 import {
   createStudySubmissionKeys,
@@ -52,7 +51,6 @@ function StudyHome({ identity }: { identity: string | number }) {
         }
       />
       <StudyNavigation />
-      <CourseTodayCard />
       <CourseListSection showCreate={false} />
       <div className="study-activity-grid">
         <StudyActivitySummary />
