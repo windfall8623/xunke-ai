@@ -95,9 +95,10 @@ p {
   margin-top: 0;
 }
 h1 {
+  font-family: var(--font-serif);
   font-size: clamp(1.65rem, 2.3vw, 2.2rem);
-  letter-spacing: -0.025em;
-  line-height: 1.45;
+  letter-spacing: -0.015em;
+  line-height: 1.5;
   font-weight: 600;
   margin-bottom: 10px;
 }
@@ -226,12 +227,12 @@ label {
   }
 }
 .danger {
-  background: #fcecea;
-  color: #ab443b;
-  border-color: #efd3ce;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger-soft);
 }
 .button-small {
-  min-height: 35px;
+  min-height: 36px;
   font-size: 0.8rem;
   padding: 8px 13px;
 }
@@ -259,7 +260,7 @@ label {
   height: 40px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: white;
+  background: var(--surface);
 }
 .card {
   background: var(--surface);

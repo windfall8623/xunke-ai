@@ -289,11 +289,10 @@
     min-width: 0;
   }
   h1 {
-    font-family: inherit;
     font-size: clamp(1.8rem, 2.6vw, 2.4rem);
     font-weight: 600;
-    line-height: 1.45;
-    letter-spacing: 0.025em;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
     margin-bottom: 12px;
   }
   p {
