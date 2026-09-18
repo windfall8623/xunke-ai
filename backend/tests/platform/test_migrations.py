@@ -15,7 +15,7 @@ async def test_four_and_seven_table_migrations_preserve_history(
     from app.core.migrations import migrate
     from app.core.values import dump
 
-    name = "yu_migration_test_" + uuid.uuid4().hex[:12]
+    name = "yu_ai_learn_test_migration_" + uuid.uuid4().hex[:12]
     server = await aiomysql.connect(
         host=platform_settings.mysql_host,
         port=platform_settings.mysql_port,
@@ -85,7 +85,7 @@ async def test_four_and_seven_table_migrations_preserve_history(
             ] == "needs_reupload"
     finally:
         await db.close_mysql_pool()
-        assert name.startswith("yu_migration_test_") and len(name) == 30
+        assert name.startswith("yu_ai_learn_test_migration_") and len(name) == 39
         async with server.cursor() as cur:
             await cur.execute(f"DROP DATABASE `{name}`")
         server.close()

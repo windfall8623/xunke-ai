@@ -78,8 +78,8 @@ async def make_course(owner: int, units: list[dict], *, preload: bool = True):
 
 
 @pytest.mark.asyncio
-async def test_preload_enqueues_first_generatable_lesson(learner):
-    api, session = learner
+async def test_preload_enqueues_first_generatable_lesson(personal_learner):
+    api, session = personal_learner
     owner = session["user"]["id"]
     units = [make_unit("缺口课", "material_gap"), make_unit("可学课")]
     course_id, scope, lesson_ids = await make_course(owner, units)
@@ -140,8 +140,8 @@ def test_preload_flag_defaults_on_and_survives_spec_roundtrip():
 
 
 @pytest.mark.asyncio
-async def test_preload_locks_outline_editing(learner):
-    api, session = learner
+async def test_preload_locks_outline_editing(personal_learner):
+    api, session = personal_learner
     owner = session["user"]["id"]
     units = [make_unit("第一课")]
     course_id, scope, lesson_ids = await make_course(owner, units)

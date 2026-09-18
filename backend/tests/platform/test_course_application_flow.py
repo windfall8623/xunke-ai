@@ -76,9 +76,9 @@ async def _attempt(api, course, assessment_id, attempt_id):
 
 
 @pytest.mark.asyncio
-async def test_generated_application_hides_reference_answer_and_rubric(learner, course_worker):
+async def test_generated_application_hides_reference_answer_and_rubric(personal_learner, course_worker):
     """按需生成的应用任务只公开任务说明与验收维度，私有答案留在产物里。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -109,9 +109,9 @@ async def test_generated_application_hides_reference_answer_and_rubric(learner, 
 
 
 @pytest.mark.asyncio
-async def test_answer_survives_a_feedback_failure_and_can_be_retried(learner, course_worker):
+async def test_answer_survives_a_feedback_failure_and_can_be_retried(personal_learner, course_worker):
     """反馈调用失败不丢回答：答案先落库，重试反馈是显式操作。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -153,9 +153,9 @@ async def test_answer_survives_a_feedback_failure_and_can_be_retried(learner, co
 
 
 @pytest.mark.asyncio
-async def test_model_feedback_stays_provisional_and_never_verifies(learner, course_worker):
+async def test_model_feedback_stays_provisional_and_never_verifies(personal_learner, course_worker):
     """模型反馈只是暂定评价：不能成为确认成绩，也不能让目标显示已验证。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -192,9 +192,9 @@ async def test_model_feedback_stays_provisional_and_never_verifies(learner, cour
 
 
 @pytest.mark.asyncio
-async def test_uncertain_feedback_needs_review_without_a_score(learner, course_worker):
+async def test_uncertain_feedback_needs_review_without_a_score(personal_learner, course_worker):
     """不确定的反馈保持 needs_review 且没有分数，不进入正确率。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -219,9 +219,9 @@ async def test_uncertain_feedback_needs_review_without_a_score(learner, course_w
 
 
 @pytest.mark.asyncio
-async def test_new_attempt_inserts_and_chains_supersedes(learner, course_worker):
+async def test_new_attempt_inserts_and_chains_supersedes(personal_learner, course_worker):
     """修改回答形成新 attempt：旧回答与旧反馈都保留，新反馈按链串联。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -267,9 +267,9 @@ async def test_new_attempt_inserts_and_chains_supersedes(learner, course_worker)
 
 
 @pytest.mark.asyncio
-async def test_duplicate_submit_and_generation_keys_stay_idempotent(learner, course_worker):
+async def test_duplicate_submit_and_generation_keys_stay_idempotent(personal_learner, course_worker):
     """同键重复提交返回同一 attempt；同键再排应用题不新增任务。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -305,9 +305,9 @@ async def test_duplicate_submit_and_generation_keys_stay_idempotent(learner, cou
 
 
 @pytest.mark.asyncio
-async def test_answer_is_saved_before_the_feedback_queue_is_reachable(learner, course_worker):
+async def test_answer_is_saved_before_the_feedback_queue_is_reachable(personal_learner, course_worker):
     """反馈排队不可用时提交仍成功：答案与幂等收据先于任何队列写入提交。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -343,11 +343,11 @@ async def test_answer_is_saved_before_the_feedback_queue_is_reachable(learner, c
 
 
 @pytest.mark.asyncio
-async def test_sealed_check_and_other_accounts_cannot_write_applications(learner, course_worker):
+async def test_sealed_check_and_other_accounts_cannot_write_applications(personal_learner, course_worker):
     """封存后不再接收新回答；另一账号既读不到也写不了应用任务。"""
     from tests.platform.conftest import register_email_account
 
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)
@@ -399,9 +399,9 @@ async def test_sealed_check_and_other_accounts_cannot_write_applications(learner
 
 
 @pytest.mark.asyncio
-async def test_revoked_course_hides_saved_answers_without_leaking_text(learner, course_worker):
+async def test_revoked_course_hides_saved_answers_without_leaking_text(personal_learner, course_worker):
     """课程资料撤销后回答不可读，也不泄漏正文；反馈任务不再重排。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, CRITERIA)
     assessment_id = await _assessment(api, course_worker, course)

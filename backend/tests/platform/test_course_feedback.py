@@ -237,9 +237,9 @@ APPLICATION_CRITERIA = [
 
 
 @pytest.mark.asyncio
-async def test_application_regrade_supersedes_provisional_grade(learner, course_worker):
+async def test_application_regrade_supersedes_provisional_grade(personal_learner, course_worker):
     """owner+evaluator 复核：追加 human/confirmed 判分头，supersedes 暂定头并更新指针。"""
-    api, session = learner
+    api, session = personal_learner
     owner = session["user"]["id"]
     course = await published_course(owner, APPLICATION_CRITERIA)
     assessment_id = await _run_assessment(api, course_worker, course)
