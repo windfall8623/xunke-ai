@@ -14,8 +14,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11" />
   <img src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/LangGraph-Agent%20Workflow-176B58" alt="LangGraph 工作流" />
   <img src="https://img.shields.io/badge/LlamaIndex-RAG-5551BA" alt="LlamaIndex 检索集成" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white" alt="MySQL 8.0" />
+  <img src="https://img.shields.io/badge/Redis-Cache%20%26%20Events-DC382D?logo=redis&logoColor=white" alt="Redis" />
+  <img src="https://img.shields.io/badge/Qdrant-Vector%20DB-DC2626" alt="Qdrant" />
   <img src="https://img.shields.io/badge/License-MIT-176B58" alt="MIT License" />
 </p>
 
@@ -64,9 +68,10 @@ flowchart LR
 | **基于资料查证** | 上传 PDF、DOCX、Markdown、TXT，限定资料或章节多轮问答，点击引用回到原文，还可从有依据的回答发起练习。 |
 | **练习与反馈** | 产品覆盖单选、多选、判断、填空、数值、短解释六类题型；课程每课配三道客观题检查，支持继续作答与查看解析。 |
 | **对照目标检验学习结果** | 课程结业检查提供客观题与文本应用任务，回答先保存、反馈可恢复；逐项目标展示待验证、需补学、已验证或旧版本证据，并说明判断依据。 |
-| **持续学习** | 学习空间管理目标、资料与知识点，记录首次检查、补练、错题和复习；“今日学习”结合未完成活动与到期任务推荐下一步。生成完成或失败时，无论当前在哪个页面都会收到提醒。 |
-| **独立课程书架** | 首页聚焦今日行动，“我的课程”集中管理书架；支持课程选择、手机阅读与明确进入课时后的阅读聚焦。资料问答可持续输入，并按需跳到最新消息。 |
-| **使用自己的模型** | 普通用户在个人中心配置 DeepSeek、原生 Anthropic 或 OpenAI 兼容服务；个人模型调用平台不计费，管理员使用系统模型。密钥加密保存，不回显明文。 |
+| **持续学习与习惯培养** | 学习空间管理目标、资料与知识点，记录首次检查、补练、错题和复习；“今日学习”结合未完成活动与到期任务推荐下一步。集成习惯打卡卡片与周学习总结，生成完成或失败时跨页面提示。 |
+| **独立课程书架与沉浸阅读** | 首页聚焦今日主行动，“我的课程”集中呈现拟物书脊书架；课时阅读提供衬线宋体排版、大纲折叠与平滑滚动锚点，营造书籍沉浸感。 |
+| **使用自己的模型** | 普通用户在个人中心配置 DeepSeek、原生 Anthropic 或 OpenAI 兼容服务；个人模型调用平台不计费，管理员使用系统模型。密钥 AES-GCM 绑定加密存储，不回显明文。 |
+| **双向量检索与无缝迁移** | 知识库原生支持 Chroma 与 Qdrant 双后端；支持向量数据平滑热迁移与保留 float32 原始归档的无损回退，资料不足标明缺口。 |
 | **比较 RAG 方案** | 在评测工作台冻结数据和配置，比较召回、排序、引用、耗时与费用，按需启用模型 Judge；系统执行能力仅向管理员开放。 |
 
 ### 界面一览
@@ -196,11 +201,11 @@ flowchart LR
 
 | 层次 | 技术与职责 |
 | --- | --- |
-| 交互 | React 19、TypeScript、Vite、TanStack Query：课程、问答、练习与任务状态 |
-| 业务 | FastAPI、Pydantic、MySQL：身份、权限、数据契约、学习记录、任务与预算 |
-| Agent 与模型 | RAG 与教学两张 LangGraph、Planner / Teacher / Reviewer、Teach v2 结构契约；LangChain 适配模型协议 |
-| 检索与上下文 | LlamaIndex、Chroma / Qdrant、中文 BM25 / RRF、可选重排、证据契约与上下文预算 |
-| 任务与加速 | MySQL 租约队列、Redis Lua / Pub/Sub、SSE 游标恢复、可选查询向量缓存 |
+| 交互 | React 19、TypeScript、Vite、TanStack Query：石墨玉设计规范、衬线排版、独立课程书架、问答、练习与任务状态 |
+| 业务 | FastAPI、Pydantic v2、MySQL：身份安全、AES-GCM 个人密钥隔离、四层数据契约、学习事实、任务与预算 |
+| Agent 与模型 | RAG 出题图与教学协作图（双 LangGraph）、Planner / Teacher / Reviewer 三角色、共享唯一返修槽、Teach v2 结构契约 |
+| 检索与上下文 | LlamaIndex、Chroma / Qdrant 双向量后端、中文 BM25 / RRF 融合、可选交叉重排、统一证据契约 (Evidence Pack) |
+| 任务与加速 | MySQL 8.0 SKIP LOCKED 租约队列、Redis Lua 突发限流 / Pub/Sub 唤醒、双通道 SSE、查询向量隔离缓存 |
 | 运行与评测 | 单 owner 或 writer / generation 分工，独立评测 worker，Docker Compose / Nginx |
 
 学习 LLM 按当前账户选择：普通用户与 `evaluator` 使用个人模型，`admin` 使用系统模型；系统 Embedding、可选重排和外部 Judge 分别配置。个人配置加密存储在 MySQL，任务领取时解析，任务结束后关闭其独立模型客户端，不缓存跨用户密钥。Claude 使用原生 Anthropic 协议，也支持 DeepSeek 和 OpenAI 兼容服务。基础部署使用 Chroma；Redis 与 Qdrant 通过独立 Compose 配置启用，无需本地 GPU。已有资料切换向量后端时，请按 [迁移与回退说明](#vector-deployment) 操作。
@@ -699,7 +704,21 @@ npm --prefix web run test:run
 npm --prefix web run build
 ```
 
-后端请使用独立 Python 3.11 环境，安装 `backend/requirements.lock` 及本地 `evaluation` 包，在 `backend` 目录运行 `python scripts/export_contracts.py --check` 和 `python -m pytest -m "not external" -q`。数据库集成测试需要独立 MySQL，库名必须以 `yu_ai_learn_test` 开头；具体合成环境变量和安装命令见 CI，**不要指向生产库或加载真实服务商凭据**。`evaluation/requirements-ragas.lock` 应安装到单独环境，缺少该依赖时的跳过不能替代 Ragas 检查通过。
+后端检查（项目根目录）：
+
+请使用独立 Python 3.11 环境（例如虚拟环境 `backend/.venv-test`），安装 `backend/requirements.lock` 及本地 `evaluation` 包：
+
+```shell
+# 1. 前后端契约一致性门禁检查（CI 拦截契约漂移）
+python backend/scripts/export_contracts.py --check
+
+# 2. 核心单元测试（教学 Multi-Agent、RAG 核心、解码器与个人模型用量调度）
+# Windows 环境建议预建 .pytest-tmp 并显式传入 --basetemp 避免临时目录锁
+mkdir -p .pytest-tmp
+python -m pytest -m "not external" -q --basetemp .pytest-tmp/verify backend/tests/teaching backend/tests/rag backend/tests/test_content_decoder.py backend/tests/test_personal_llm_usage.py backend/tests/test_worker_llm_dispatch.py
+```
+
+数据库集成测试需要独立测试 MySQL，库名必须以 `yu_ai_learn_test` 或 `xunke_test_` 开头；具体合成环境变量见 CI，**不要指向生产库或加载真实服务商凭据**。`evaluation/requirements-ragas.lock` 应安装到单独环境，缺少该依赖时的跳过不能替代 Ragas 检查通过。
 
 模拟测试验证功能与隔离边界，不代表真实模型教学质量或服务商连通性已经验收；外部模型抽样验证需另行准备授权、价格和预算。
 
