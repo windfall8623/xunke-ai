@@ -57,6 +57,8 @@ test-results/
 playwright-report/
 .runtime/
 .superpowers/
+.codex/
+.zcode/
 docs/
 
 .venv-test/
