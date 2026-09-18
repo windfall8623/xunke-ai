@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.rag.contracts import CoveragePlan, DocumentEvidence, PipelineConfig
 from app.rag.errors import GenerationValidationFailed, ScopeRevoked, SourceUnavailable
+from app.rag.graph_trace import SummarySink
 from app.rag.pipeline import PipelinePorts, generate_quiz_artifact, reauthorize_scope
 from app.rag.retrieval import HybridRetriever
 from app.rag.scope import evidence_in_scope, normalize_spec, require_execution_scope
@@ -166,6 +167,7 @@ class RagEngine:
         config=None,
         *,
         coverage_plan: CoveragePlan | None = None,
+        record_summary: SummarySink | None = None,
     ):
         spec = normalize_spec(spec)
         require_execution_scope(actor, context, scope)
@@ -190,6 +192,7 @@ class RagEngine:
             estimate_llm_cost=getattr(self.generator, "estimate_cost", None),
             prompt_token_count=getattr(self.generator, "measure_input_tokens", None),
             rerank_candidates=self.rerank_candidates,
+            record_summary=record_summary,
         )
         return await generate_quiz_artifact(
             spec,

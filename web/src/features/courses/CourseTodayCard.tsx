@@ -17,6 +17,14 @@ const labels: Record<CourseTodayItem['kind'], string> = {
   practice_lesson: '本课练习',
   review_lesson: '待补练',
 }
+const actionLabels: Record<CourseTodayItem['kind'], string> = {
+  continue_quiz: '继续这次练习',
+  course_review: '开始本课复习',
+  study_review: '继续学习空间复习',
+  learn_lesson: '继续阅读',
+  practice_lesson: '做本课三题',
+  review_lesson: '回看并补练',
+}
 
 export function formatTodayHeadingDate(isoDate: string) {
   const parsed = new Date(`${isoDate}T00:00:00`)
@@ -131,7 +139,7 @@ export function CourseTodayCard() {
                     </div>
                     {path ? (
                       <Link className={`button ${index === 0 ? 'primary' : 'secondary'}`} to={path}>
-                        开始
+                        {actionLabels[item.kind]}
                         <ArrowRight size={16} />
                       </Link>
                     ) : (
@@ -142,7 +150,10 @@ export function CourseTodayCard() {
               })}
             </ol>
           ) : (
-            <p className="muted">今天暂无待处理的学习建议。可以回看已学课时，或开始一门新课程。</p>
+            <div className="course-today-empty">
+              <p className="muted">当前时间安排内暂无待处理的学习建议。已保存的课程和记录仍可随时查看。</p>
+              <Link className="button secondary" to="/study#my-courses">查看我的课程<ArrowRight size={16} /></Link>
+            </div>
           )}
           {!!query.data.warnings?.length && (
             <div className="course-today-notes">

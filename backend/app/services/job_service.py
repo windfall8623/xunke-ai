@@ -24,6 +24,8 @@ OPERATIONS = {
     "course_outline": "course.outline",
     "course_lesson": "course.lesson",
     "course_tutor": "course.tutor",
+    "course_application_generate": "course.application.generate",
+    "course_application_feedback": "course.application.feedback",
 }
 
 
@@ -234,7 +236,10 @@ async def claim_job(worker_id, *, task_id=None, kinds=None, maintain=True):
             600
             if row["kind"] in ("ingest", "delete", "images")
             else s.course_job_deadline_seconds
-            if row["kind"] in ("course_outline", "course_lesson", "course_tutor")
+            if row["kind"] in (
+                "course_outline", "course_lesson", "course_tutor",
+                "course_application_generate", "course_application_feedback",
+            )
             else s.job_deadline_seconds
         )
         deadline = row["deadline_at"] or now() + timedelta(seconds=timeout)
@@ -317,6 +322,11 @@ async def heartbeat(job, stage=None):
 
 
 async def complete_job(job, result, *, publisher=None):
+    from app.services.content_event_service import current_preview, close_content
+
+    preview = current_preview()
+    if preview and preview.job["task_id"] == job["task_id"]:
+        await preview.flush()
     async with transaction() as conn:
         current = await locked_job(job, conn)
         if publisher:
@@ -338,6 +348,7 @@ async def complete_job(job, result, *, publisher=None):
             "completed",
             task_event_service.event_payload(final, status="completed"),
         )
+    await close_content(job, completed=True)
 
 
 async def fail_job(job, code, *, retryable=False):
@@ -374,6 +385,9 @@ async def fail_job(job, code, *, retryable=False):
                 "failed",
                 task_event_service.event_payload(final, status="failed", error_code=code),
             )
+    from app.services.content_event_service import close_content
+
+    await close_content(job, completed=False)
 
 
 async def cancel_job(owner, task_id, *, conn=None):

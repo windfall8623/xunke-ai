@@ -10,6 +10,7 @@ from app.rag.contracts import DocumentEvidence, ResolvedScope
 from app.rag.errors import ScopeRevoked, SourceUnavailable
 from app.rag.scope import evidence_in_scope
 from app.services import source_service
+from app.teaching.protocol import parse_course_draft, parse_lesson_draft, public_lesson_payload, public_unit
 
 TERMINAL = {"completed", "failed", "cancelled"}
 
@@ -34,8 +35,20 @@ async def owned_lesson(owner, course_id, lesson_id, *, conn=None, lock=False):
     return row
 
 
+async def load_course_plan(course, *, conn=None):
+    """Reassemble the frozen planner artifact without changing its storage layout."""
+    outline = load(course["outline_json"])
+    if not outline:
+        return None
+    lessons = await fetch_all(
+        "SELECT unit_json FROM learning_course_lessons WHERE course_id=%s AND owner_id=%s ORDER BY position",
+        (course["course_id"], course["owner_id"]), conn=conn,
+    )
+    return {**outline, "payload": {**outline["payload"], "units": [load(row["unit_json"]) for row in lessons]}}
+
+
 async def course_context_for_quiz(owner, quiz_id, *, conn=None):
-    """Resolve only an owned, published quiz's actual immutable course link."""
+    """Resolve an owned lesson-linked quiz. Completion quizzes are authorized separately."""
     link = await fetch_one(
         "SELECT link.course_id,link.lesson_id,link.link_id,link.kind,link.content_version "
         "FROM learning_course_quiz_links link "
@@ -85,6 +98,12 @@ async def task_view(owner, task_id, course_id, lesson_id=None, *, conn=None):
         "course_material_gap": "资料不足以支持本课，请补充资料后创建课程",
         "course_provider_unavailable": "课程模型暂未配置，请检查模型设置",
         "course_generation_invalid": "模型返回的课程格式不完整，请重试",
+        "course_generation_incomplete": "模型未返回完整课程内容，请重试",
+        "course_quality_unavailable": "教学核对未完成，本次新稿尚未发布",
+        "course_quality_blocked": "教学核对发现需要修改的内容，本次新稿尚未发布",
+        "teaching_agents_unavailable": "协作教学暂未就绪，请稍后重试",
+        "teaching_policy_changed": "教学配置已变化，请显式重试任务",
+        "teaching_call_outcome_unknown": "上次教学调用结果尚未确认，请显式重试任务",
         "course_disabled": "课程生成功能暂未启用",
         "course_tutor_invalid": "助教回答格式不完整，请重试",
         "course_tutor_generation_invalid": "助教回答格式不完整，请重试",
@@ -95,8 +114,11 @@ async def task_view(owner, task_id, course_id, lesson_id=None, *, conn=None):
         "provider_rate_limited": "模型服务当前请求过多，请稍后重试",
         "source_revoked": "关联资料已失效",
     }
+    from app.services.teaching_quality_service import quality_summary_for_task
+
     return dict(
         **task, course_id=course_id, lesson_id=lesson_id,
+        quality_summary=await quality_summary_for_task(owner, task_id, conn=conn),
         business_settled=business_settled_from(task["status"], task["stage"]),
         error_message=errors.get(task["error_code"].lower(), "生成未完成，请稍后重试") if task["error_code"] else None,
     )
@@ -109,6 +131,9 @@ def current_status(row, task):
 
 
 async def course_view(row):
+    from app.services.course_outcome_service import course_outcome_fields
+    from app.services.teaching_quality_service import quality_summary_for_course
+
     try:
         scope = await authorize_course(row)
     except AppError as exc:
@@ -127,11 +152,20 @@ async def course_view(row):
         "SELECT * FROM learning_course_lessons WHERE course_id=%s AND owner_id=%s ORDER BY position",
         (row["course_id"], row["owner_id"]),
     )
+    if outline:
+        # Units are stored as separate rows; rebuild only for validation, leaving
+        # the persisted envelope and the HTTP projection independently versioned.
+        parsed = parse_course_draft({**outline, "payload": {
+            **payload, "units": [load(lesson["unit_json"]) for lesson in lessons],
+        }})
+        outline = parsed.model_dump(mode="json")
+        payload = outline.get("payload") or {}
     summaries = []
     for lesson in lessons:
         task = await task_view(row["owner_id"], lesson["generation_task_id"], row["course_id"], lesson["lesson_id"])
         summaries.append(dict(
-            **load(lesson["unit_json"], {}), lesson_id=lesson["lesson_id"], position=lesson["position"],
+            **public_unit(load(lesson["unit_json"], {}), schema_version=outline.get("schema_version")),
+            lesson_id=lesson["lesson_id"], position=lesson["position"],
             status=current_status(lesson, task), revision=lesson["revision"], content_version=lesson["content_version"],
             read_at=iso(lesson["read_at"]), last_opened_at=iso(lesson["last_opened_at"]),
         ))
@@ -145,6 +179,9 @@ async def course_view(row):
     await authorize_course(row)
     return dict(
         course_id=row["course_id"], title=payload.get("title") or spec.get("topic", "新课程"),
+        teaching_mode=spec.get("teaching_mode", "fast"),
+        quality_summary=await quality_summary_for_course(row["owner_id"], row["course_id"]) if outline else None,
+        **await course_outcome_fields(row["owner_id"], row["course_id"]),
         source_policy=row["source_policy"], source_status="active",
         scope=PublicResolvedScope.from_scope(scope) if scope.documents else None,
         status=current_status(row, task), revision=row["revision"], mission=payload.get("mission"),
@@ -172,6 +209,7 @@ async def list_courses(owner, page=1, page_size=20):
 
 async def get_lesson(owner, course_id, lesson_id, *, opened=False):
     from app.services.course_quiz_service import list_quiz_links
+    from app.services.teaching_quality_service import quality_summary_for_course
 
     course = await owned_course(owner, course_id)
     await authorize_course(course)
@@ -183,9 +221,12 @@ async def get_lesson(owner, course_id, lesson_id, *, opened=False):
             (stamp, lesson_id, owner),
         )
         row["last_opened_at"] = stamp
-    unit = load(row["unit_json"], {})
+    outline = load(course["outline_json"], {})
+    unit = public_unit(load(row["unit_json"], {}), schema_version=outline.get("schema_version"))
     content = load(row["content_json"], {})
-    payload = content.get("payload") or {}
+    if content:
+        content = parse_lesson_draft(content).model_dump(mode="json")
+    payload = public_lesson_payload(content, schema_version=content.get("schema_version"))
     task = await task_view(owner, row["generation_task_id"], course_id, lesson_id)
     links = await list_quiz_links(owner, course_id, lesson_id)
     await authorize_course(course)
@@ -193,6 +234,7 @@ async def get_lesson(owner, course_id, lesson_id, *, opened=False):
         lesson_id=lesson_id, course_id=course_id, title=unit.get("title", "课时"),
         objective=unit.get("objective"), estimated_minutes=unit.get("estimated_minutes"),
         status=current_status(row, task), revision=row["revision"], content_version=row["content_version"],
+        quality_summary=await quality_summary_for_course(owner, course_id, lesson_id) if content else None,
         blocks=payload.get("blocks", []), checks=payload.get("checks", []), next_step=payload.get("next_step"),
         sources=content.get("sources", []), warnings=content.get("warnings", []),
         read_at=iso(row["read_at"]), last_opened_at=iso(row["last_opened_at"]),

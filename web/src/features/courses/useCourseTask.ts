@@ -42,20 +42,33 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     refetchIntervalInBackground: false,
   })
   const task = query.data || initial
-  const settle = useSettleWatch(task, () => {
-    // 调和收尾完成：业务记录（课程/课时/进度）可能已更新，做一次最终刷新。
-    if (!task) return
+  function refreshBusiness() {
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
-    if (task.lesson_id)
-      void client.invalidateQueries({
-        queryKey: courseKeys.lesson(identity, courseId, task.lesson_id),
-      })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
+    if (task?.lesson_id)
+      void client.invalidateQueries({ queryKey: courseKeys.lesson(identity, courseId, task.lesson_id) })
+  }
+  const settle = useSettleWatch(task, () => {
+    // 调和收尾完成：业务记录（课程/课时/进度）可能已更新，做一次最终刷新。
+    if (!task) return
+    refreshBusiness()
   })
   settleStateRef.current = settle
   const handleTaskEvent = (event: TaskEvent) => {
-    if (!initial?.task_id || event.type === 'reset' || event.type === 'source_revoked') return
+    if (event.type === 'source_revoked') {
+      // SSE 可能是撤销的唯一信号：让课程与课时重新读取服务端事实，
+      // 由既有授权路径进入 revoked 展示，而不是继续显示缓存正文。
+      void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
+      if (initial?.lesson_id)
+        void client.invalidateQueries({
+          queryKey: courseKeys.lesson(identity, courseId, initial.lesson_id),
+        })
+      return
+    }
+    if (!initial?.task_id || event.type === 'reset') return
     const { payload } = event
     client.setQueryData<CourseTaskView>(queryKey, (current) => {
       if (!current || current.task_id !== initial.task_id) return current
@@ -86,6 +99,8 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     void client.invalidateQueries({ queryKey: courseKeys.course(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.progress(identity, courseId) })
     void client.invalidateQueries({ queryKey: courseKeys.lists(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.todayAll(identity) })
+    void client.invalidateQueries({ queryKey: courseKeys.reviews(identity, courseId) })
     if (task.lesson_id)
       void client.invalidateQueries({
         queryKey: courseKeys.lesson(identity, courseId, task.lesson_id),
@@ -107,6 +122,9 @@ export function useCourseTask(courseId: string, initial?: CourseTaskView | null)
     cancel,
     cancelling: operation.pending !== null,
     cancelError: operation.error,
+    cancelState: operation.state,
     settling: settle.active,
+    settleExpired: settle.expired,
+    refreshBusiness,
   }
 }

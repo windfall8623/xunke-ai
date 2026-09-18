@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AppRoutes } from './app/router'
 import { ApiError } from './services/http'
+import './styles/course-print.scss'
 
 const client = new QueryClient({
   defaultOptions: {

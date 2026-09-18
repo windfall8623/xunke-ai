@@ -1,10 +1,9 @@
-import { CheckCircle2, MessageCircle, Save } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CheckCircle2, Flag, MessageCircle, RefreshCw, Save } from 'lucide-react'
+import { useId, useState } from 'react'
 import { ErrorNotice, Loading, formatDate } from '../../components/ui'
 import {
   courseErrorMessage,
   courseTaskErrorMessage,
-  courseTaskPending,
 } from '../../services/courses'
 import type {
   CourseSelfCheckCreate,
@@ -13,21 +12,32 @@ import type {
   LessonCheck,
 } from '../../types/course'
 import type { LessonTutorController } from './useLessonTutor'
+import { feedbackForAttempt, selfCheckRoundState, teachingFeedbackState, type CourseOperationState, type RecallRound } from './courseActionState'
+import { CourseFeedbackDialog, type CourseFeedbackEntry } from './CourseFeedbackDialog'
+import { SelfCheckHistory } from './SelfCheckHistory'
+import { CourseOperationNotice } from './CourseOperationNotice'
 
 export function LessonSelfCheck({
   checks,
   tutor,
+  courseId,
+  lessonId,
+  contentVersion,
   onFeedback,
   onOpenFeedback,
 }: {
   checks: LessonCheck[]
   tutor: LessonTutorController
+  courseId: string
+  lessonId: string
+  contentVersion: number
   onFeedback: (attempt: CourseSelfCheckView) => void
   onOpenFeedback: (turn: CourseTutorTurnView) => void
 }) {
   const error = tutor.checksQuery.error
+  const [issue, setIssue] = useState<CourseFeedbackEntry | null>(null)
   return (
-    <section className="card course-self-check">
+    <section id="lesson-self-check" className="card course-self-check">
       <h3>停下来，想一想</h3>
       <p className="tiny muted">
         保存自己的理解，再按需请助教反馈。这里不计分，也不改变经验值或正式练习成绩。
@@ -57,63 +67,137 @@ export function LessonSelfCheck({
                 (a, b) =>
                   a.created_at.localeCompare(b.created_at) || a.turn_id.localeCompare(b.turn_id),
               )
-            const feedback = turns[turns.length - 1] || attempt?.latest_tutor_turn
+            const feedback = attempt
+              ? feedbackForAttempt(attempt, turns[turns.length - 1] || attempt.latest_tutor_turn)
+              : null
+            const operationState = tutor.operationState.kind !== 'idle' &&
+              tutor.operationState.operation === `check:${check.check_ref}`
+              ? tutor.operationState : { kind: 'idle' } as const
             return (
               <SelfCheckItem
                 key={check.check_ref}
                 check={check}
+                courseId={courseId}
+                lessonId={lessonId}
+                attempts={attempts}
                 attempt={attempt}
                 feedback={feedback}
                 saving={tutor.pending === `check:${check.check_ref}`}
                 disabled={tutor.pending !== null}
+                saveBlocked={!!tutor.saveRecovery || !!tutor.requestRecovery}
                 feedbackDisabled={tutor.busy || tutor.query.isPending || !!tutor.query.error}
+                operationState={operationState}
+                error={tutor.error}
+                recovery={tutor.saveRecovery?.checkRef === check.check_ref ? tutor.saveRecovery : null}
+                onRecover={() => { void tutor.recoverSave() }}
+                onRetrySave={() => { void tutor.recoverSave(true) }}
+                onRefreshFeedback={() => { void tutor.refreshFeedback() }}
+                onRetryFeedback={(turn) => { void tutor.retry(turn) }}
+                feedbackReadError={!!tutor.query.error}
                 onSave={(answer) => tutor.save(check.check_ref, answer)}
                 onFeedback={onFeedback}
                 onOpenFeedback={onOpenFeedback}
+                onIssue={
+                  attempt && !tutor.inaccessible
+                    ? () =>
+                        setIssue({
+                          kind: 'confusion',
+                          target: {
+                            kind: 'self_check',
+                            lesson_id: lessonId,
+                            content_version: contentVersion,
+                            check_attempt_id: attempt.attempt_id,
+                          },
+                        })
+                    : undefined
+                }
               />
             )
           })}
         </ol>
       )}
-      <ErrorNotice error={tutor.error ? courseErrorMessage(tutor.error) : null} />
+      {issue && (
+        <CourseFeedbackDialog
+          courseId={courseId}
+          entry={issue}
+          onClose={() => setIssue(null)}
+        />
+      )}
     </section>
   )
 }
 
-const answerKey = (answer: CourseSelfCheckCreate['answer']) =>
-  JSON.stringify(Array.isArray(answer) ? [...answer].sort() : answer.trim())
-
 function SelfCheckItem({
   check,
+  courseId,
+  lessonId,
+  attempts,
   attempt,
   feedback,
   saving,
   disabled,
+  saveBlocked,
   feedbackDisabled,
+  operationState,
+  error,
+  recovery,
+  onRecover,
+  onRetrySave,
+  onRefreshFeedback,
+  onRetryFeedback,
+  feedbackReadError,
   onSave,
   onFeedback,
   onOpenFeedback,
+  onIssue,
 }: {
   check: LessonCheck
+  courseId: string
+  lessonId: string
+  attempts: CourseSelfCheckView[]
   attempt?: CourseSelfCheckView
   feedback?: CourseTutorTurnView | null
   saving: boolean
   disabled: boolean
+  saveBlocked: boolean
   feedbackDisabled: boolean
-  onSave: (answer: CourseSelfCheckCreate['answer']) => Promise<CourseSelfCheckView | undefined>
+  operationState: CourseOperationState
+  error: unknown
+  recovery: { checked: boolean } | null
+  onRecover: () => void
+  onRetrySave: () => void
+  onRefreshFeedback: () => void
+  onRetryFeedback: (turn: CourseTutorTurnView) => void
+  feedbackReadError: boolean
+  onSave: (
+    answer: CourseSelfCheckCreate['answer'],
+    intentId: string,
+  ) => Promise<CourseSelfCheckView | undefined>
   onFeedback: (attempt: CourseSelfCheckView) => void
   onOpenFeedback: (turn: CourseTutorTurnView) => void
+  onIssue?: () => void
 }) {
+  const fieldId = useId()
   const multiple = check.question_type === 'multiple'
   const choice = ['single', 'multiple', 'judge'].includes(check.question_type)
+  // B02：进入本题一律空输入，旧答案只在保存本次之后作为历史对照出现。
   const [answer, setAnswer] = useState<CourseSelfCheckCreate['answer']>(
-    attempt?.answer || (multiple ? [] : ''),
+    multiple ? [] : '',
   )
-  const [dirty, setDirty] = useState(false)
-  useEffect(() => {
-    if (!dirty) setAnswer(attempt?.answer || (multiple ? [] : ''))
-  }, [attempt?.attempt_id, dirty, multiple])
-  const unchanged = !!attempt && answerKey(answer) === answerKey(attempt.answer)
+  const [round, setRound] = useState<RecallRound>(() => ({
+    intentId: crypto.randomUUID(),
+    baselineAttemptId: null,
+    baselineSeen: false,
+    savedAttemptId: null,
+    revealed: false,
+  }))
+  const [feedbackRevealed, setFeedbackRevealed] = useState(false)
+  const { roundSaved, canReveal, draftDiffers } = selfCheckRoundState(
+    round, attempt, answer,
+  )
+  const feedbackState = teachingFeedbackState(feedback)
+  const hasOperationNotice = ['submitting', 'unconfirmed', 'failed'].includes(operationState.kind)
+  const describedBy = `${fieldId}-saved${hasOperationNotice ? ` ${fieldId}-operation` : ''}`
   const filled = choice
     ? !!check.options?.length &&
       (Array.isArray(answer)
@@ -122,21 +206,28 @@ function SelfCheckItem({
         : check.options.some((option) => option.key === answer))
     : typeof answer === 'string' && !!answer.trim() && answer.length <= 2000
   async function save() {
-    if (!filled || disabled || unchanged) return
+    if (!filled || disabled || saveBlocked || roundSaved) return
+    setRound((current) => (current.baselineSeen
+      ? current
+      : {
+          ...current,
+          baselineSeen: true,
+          baselineAttemptId: attempt?.attempt_id ?? null,
+        }))
     const saved = await onSave(
       Array.isArray(answer) ? [...answer].sort() : choice ? answer : answer.trim(),
+      round.intentId,
     )
     if (saved) {
-      setAnswer(saved.answer)
-      setDirty(false)
+      setRound((current) => ({ ...current, savedAttemptId: saved.attempt_id }))
     }
   }
   return (
     <li className="lesson-check-item">
-      <p className="lesson-check-prompt">{check.prompt}</p>
+      <p className="lesson-check-prompt" id={`${fieldId}-prompt`}>{check.prompt}</p>
       {choice ? (
         check.options?.length ? (
-          <fieldset disabled={disabled} className="lesson-check-options">
+          <fieldset disabled={disabled} className="lesson-check-options" aria-describedby={describedBy}>
             <legend className="sr-only">
               {multiple ? '选择所有符合你理解的选项' : '选择符合你理解的选项'}
             </legend>
@@ -155,8 +246,7 @@ function SelfCheckItem({
                     value={option.key}
                     checked={selected}
                     onChange={() => {
-                      setDirty(true)
-                      setAnswer(
+                                            setAnswer(
                         multiple
                           ? selected
                             ? (Array.isArray(answer) ? answer : []).filter(
@@ -179,16 +269,16 @@ function SelfCheckItem({
         )
       ) : (
         <label className="lesson-check-text">
-          <span className="sr-only">填写你的理解</span>
+          <span className="sr-only">填写你的理解：{check.prompt}</span>
           <textarea
+            aria-describedby={describedBy}
             rows={4}
             maxLength={2000}
             disabled={disabled}
             value={typeof answer === 'string' ? answer : ''}
             placeholder="用自己的话写下思路、解释或疑问…"
             onChange={(event) => {
-              setDirty(true)
-              setAnswer(event.target.value)
+                            setAnswer(event.target.value)
             }}
           />
           <small className="tiny muted">
@@ -200,34 +290,49 @@ function SelfCheckItem({
         <button
           type="button"
           className="button secondary"
-          disabled={disabled || !filled || unchanged}
+          disabled={disabled || saveBlocked || !filled || roundSaved}
           onClick={() => {
             void save()
           }}
         >
-          {unchanged ? <CheckCircle2 size={16} /> : <Save size={16} />}
-          {saving ? '正在保存…' : unchanged ? '回答已保存' : '保存回答'}
+          {roundSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+          {saving ? '正在保存…' : recovery ? '保存结果待确认' : roundSaved ? '回答已保存' : '保存回答'}
         </button>
-        {attempt && unchanged && feedback ? (
+        {onIssue && (
+          <button type="button" className="button secondary" onClick={onIssue}>
+            <Flag size={16} />
+            有疑问 / 内容有误
+          </button>
+        )}
+        {attempt && feedback ? (
           <button
             type="button"
             className="button secondary"
-            onClick={() => onOpenFeedback(feedback)}
+            disabled={feedbackState === 'syncing' ? disabled :
+              ['failed', 'cancelled'].includes(feedbackState) ? feedbackDisabled : false}
+            onClick={() => {
+              setFeedbackRevealed(true)
+              if (feedbackState === 'syncing') onRefreshFeedback()
+              else if (['failed', 'cancelled'].includes(feedbackState)) onRetryFeedback(feedback)
+              else onOpenFeedback(feedback)
+            }}
           >
             <MessageCircle size={16} />
-            {courseTaskPending(feedback.task)
+            {feedbackState === 'preparing'
               ? '查看反馈进度'
-              : feedback.task.status === 'completed'
+              : feedbackState === 'syncing'
+                ? '刷新反馈'
+                : feedbackState === 'ready'
                 ? '查看教学反馈与依据'
-                : '查看未完成反馈，可重试'}
+                : '重试这次反馈'}
           </button>
         ) : (
           <button
             type="button"
             className="button secondary"
-            disabled={!attempt || !unchanged || feedbackDisabled}
+            disabled={!attempt || feedbackDisabled}
             onClick={() => {
-              if (attempt && unchanged) onFeedback(attempt)
+              if (attempt) onFeedback(attempt)
             }}
           >
             <MessageCircle size={16} />
@@ -235,22 +340,72 @@ function SelfCheckItem({
           </button>
         )}
       </div>
-      <p className="tiny muted" role="status">
-        {unchanged && attempt
-          ? `已保存于 ${formatDate(attempt.saved_at)}`
-          : attempt
-            ? '修改尚未保存；保存后可检查新的理解，之前的回答仍保留。'
-            : '先保存回答，再请助教给出教学反馈。'}
+      <p className="tiny muted" role="status" id={`${fieldId}-saved`}>
+        {recovery ? '这次保存结果尚未确认，请先核对；继续编辑不会改变原提交内容。' : roundSaved
+          ? draftDiffers
+            ? '修改尚未保存；点「再想一次」把它作为新的回答保存，之前的回答仍保留。'
+            : `已保存于 ${formatDate(attempt!.saved_at)}`
+          : '先写下你现在（保存前不展示旧回答）的理解，再请助教给出教学反馈。'}
       </p>
-      {unchanged && feedback && (
+      <div className="button-row self-check-recall">
+        <button
+          type="button"
+          className="button secondary"
+          disabled={!canReveal || round.revealed}
+          onClick={() => setRound((current) => ({ ...current, revealed: true }))}
+        >
+          比较以前的回答
+        </button>
+        {roundSaved && (
+          <button
+            type="button"
+            className="button secondary"
+            disabled={disabled || saving}
+            onClick={() => {
+              setRound({
+                intentId: crypto.randomUUID(),
+                baselineAttemptId: attempt?.attempt_id ?? round.savedAttemptId,
+                baselineSeen: true,
+                savedAttemptId: null,
+                revealed: round.revealed,
+              })
+            }}
+          >
+            再想一次
+          </button>
+        )}
+      </div>
+      {canReveal && round.revealed && (
+        <SelfCheckHistory
+          courseId={courseId}
+          lessonId={lessonId}
+          attempts={attempts
+            .filter((item) => item.attempt_id !== round.savedAttemptId)
+            .slice(-5)}
+        />
+      )}
+      <div id={`${fieldId}-operation`}>
+        <CourseOperationNotice state={operationState} error={error}
+          onRecover={recovery ? onRecover : undefined} disabled={disabled} />
+        {recovery?.checked && (
+          <button type="button" className="button secondary" disabled={disabled} onClick={onRetrySave}>
+            <RefreshCw size={16} />重试原回答的保存
+          </button>
+        )}
+      </div>
+      {feedback && (
         <div className="lesson-check-feedback">
           <strong>教学反馈</strong>
-          {feedback.task.status === 'completed' && feedback.answer ? (
-            <p>{feedback.answer}</p>
-          ) : courseTaskPending(feedback.task) ? (
+          {feedbackState === 'ready' ? (
+            roundSaved || feedbackRevealed
+              ? <p>{feedback.answer}</p>
+              : <p className="tiny muted">已有反馈。保存本次回答后可对照这份反馈；旧回答按你的选择展示。</p>
+          ) : feedbackState === 'preparing' ? (
             <p role="status">反馈准备中，已保存的回答不会丢失。</p>
+          ) : feedbackState === 'syncing' ? (
+            <p role="status">{feedbackReadError ? '结果读取暂未完成，请刷新反馈。' : '反馈已生成，正在读取。'} 已保存的回答不会丢失。</p>
           ) : (
-            <p>{courseTaskErrorMessage(feedback.task)} 回答已经保存，可以稍后重试反馈。</p>
+            <p>{feedbackState === 'cancelled' ? '这次教学反馈已取消。' : courseTaskErrorMessage(feedback.task)} 回答已经保存，可以稍后重试反馈。</p>
           )}
         </div>
       )}

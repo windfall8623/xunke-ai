@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS learning_teaching_quality_runs (
+ quality_run_id VARCHAR(64) PRIMARY KEY,
+ task_id VARCHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+ owner_id BIGINT UNSIGNED NOT NULL, course_id VARCHAR(64) NOT NULL, lesson_id VARCHAR(64) NULL,
+ kind VARCHAR(16) NOT NULL, criteria_revision INT NULL,
+ plan_hash CHAR(64) NULL, skill_hash CHAR(64) NOT NULL, scope_fingerprint CHAR(64) NOT NULL,
+ policy_json JSON NOT NULL, policy_hash CHAR(64) NOT NULL,
+ repair_used BOOLEAN NOT NULL DEFAULT FALSE, generation_revision INT NOT NULL DEFAULT 1,
+ current_draft_hash CHAR(64) NULL, candidate_json JSON NULL, report_json JSON NULL, checkpoint_json JSON NULL,
+ status VARCHAR(24) NOT NULL DEFAULT 'running', reason_code VARCHAR(64) NULL,
+ artifact_hash CHAR(64) NULL, artifact_json JSON NULL,
+ created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+ updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+ UNIQUE KEY uk_teaching_quality_task (task_id),
+ UNIQUE KEY uk_teaching_quality_task_owner (quality_run_id,task_id,owner_id),
+ KEY idx_teaching_quality_course (course_id,owner_id,lesson_id,created_at),
+ KEY idx_teaching_quality_expiry (status,updated_at),
+ FOREIGN KEY (task_id,owner_id) REFERENCES quiz_tasks(task_id,user_id),
+ FOREIGN KEY (course_id,owner_id) REFERENCES learning_courses(course_id,owner_id),
+ FOREIGN KEY (lesson_id,course_id,owner_id) REFERENCES learning_course_lessons(lesson_id,course_id,owner_id),
+ CONSTRAINT ck_teaching_quality_kind CHECK ((kind='outline' AND lesson_id IS NULL) OR (kind='lesson' AND lesson_id IS NOT NULL)),
+ CONSTRAINT ck_teaching_quality_revision CHECK (generation_revision IN (1,2) AND (criteria_revision IS NULL OR criteria_revision>=1)),
+ CONSTRAINT ck_teaching_quality_status CHECK (status IN ('running','ready','published','failed','revoked'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS learning_teaching_agent_steps (
+ step_id VARCHAR(64) PRIMARY KEY, quality_run_id VARCHAR(64) NOT NULL,
+ task_id VARCHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL, owner_id BIGINT UNSIGNED NOT NULL,
+ attempt INT NOT NULL, role VARCHAR(16) NOT NULL, stage_slot VARCHAR(24) NOT NULL,
+ status VARCHAR(16) NOT NULL DEFAULT 'started',
+ input_hash CHAR(64) NOT NULL, output_hash CHAR(64) NULL, draft_hash CHAR(64) NULL,
+ generation_revision INT NOT NULL,
+ provider_call_id VARCHAR(64) COLLATE utf8mb4_unicode_ci NULL, report_json JSON NULL,
+ started_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), completed_at DATETIME(6) NULL,
+ UNIQUE KEY uk_teaching_agent_slot (quality_run_id,stage_slot),
+ KEY idx_teaching_agent_task (task_id,attempt),
+ FOREIGN KEY (quality_run_id,task_id,owner_id) REFERENCES learning_teaching_quality_runs(quality_run_id,task_id,owner_id),
+ CONSTRAINT ck_teaching_agent_role CHECK (role IN ('planner','teacher','reviewer')),
+ CONSTRAINT ck_teaching_agent_slot CHECK (stage_slot IN ('initial','repair','review_initial','review_recheck')),
+ CONSTRAINT ck_teaching_agent_status CHECK (status IN ('started','completed','failed','unknown')),
+ CONSTRAINT ck_teaching_agent_revision CHECK (attempt>=1 AND generation_revision IN (1,2))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

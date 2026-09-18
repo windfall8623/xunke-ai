@@ -177,7 +177,13 @@ export function useQaSession(sessionId: string) {
   settleStateRef.current = settle
   const streamTaskId = taskId ?? settle.taskId ?? undefined
   const handleTaskEvent = (event: TaskEvent) => {
-    if (!streamTaskId || event.type === 'reset' || event.type === 'source_revoked') return
+    if (event.type === 'source_revoked') {
+      // SSE 可能是撤销的唯一信号：立即走既有的 conceal 路径，
+      // 清除本会话敏感缓存并停止读取，不等下一次 GET 才发现。
+      conceal()
+      return
+    }
+    if (!streamTaskId || event.type === 'reset') return
     const { payload } = event
     client.setQueryData<QaTask>(qaKeys.task(identity, sessionId, streamTaskId), (current) => {
       if (!current || current.task_id !== streamTaskId) return current

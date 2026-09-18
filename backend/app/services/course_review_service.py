@@ -5,7 +5,7 @@ The owner worker consumes events; reading a course or today's suggestions never
 creates an event, advances a schedule or starts a model task.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -16,6 +16,7 @@ from app.core.errors import AppError, conflict, not_found
 from app.core.values import digest, dump, iso, load, uid
 from app.learning.contracts import ConceptState, IanaTimezone, LearningOutcome
 from app.learning.review_rules import RULE_VERSION, next_schedule
+from app.models.course_preferences import CourseReviewUpdate
 from app.models.course_review import CourseReviewStart, CourseReviewView
 from app.rag.contracts import ResolvedScope
 from app.services import course_quiz_service as quizzes
@@ -133,12 +134,26 @@ async def _consume_event(preview):
         )
         if quiz is None or quiz["status"] != "settled" or quiz["settled_at"] != event["settled_at"]:
             raise conflict("course_review_settlement_changed", "复习结算记录不完整")
+        # source_scope_json is nullable on quiz_sessions. A quiz stored without a
+        # scope still matches only while the course resolves to no documents.
+        stored_scope = load(quiz["source_scope_json"])
+        scope_changed = (
+            ResolvedScope.model_validate(stored_scope) != scope
+            if stored_scope
+            else bool(scope.documents)
+        )
         if (
             quiz["source_status"] == "source_revoked"
-            or ResolvedScope.model_validate(load(quiz["source_scope_json"])) != scope
+            or scope_changed
             or quiz["source_policy"] != course["source_policy"]
         ):
             await _finish_event(conn, event, "source_revoked")
+            return 1
+        if not quiz["rag_run_id"]:
+            # Legacy settlements without an immutable generation identity can
+            # never pass question verification. Keep their original receipt,
+            # but do not block newer events or create any review-state facts.
+            await _finish_event(conn, event, "quiz_evidence_unavailable")
             return 1
         # Even a late backfilled event still completes its own real batch. It
         # must not, however, replace a schedule based on a newer settlement.
@@ -243,6 +258,82 @@ async def reconcile_course_reviews(limit=100):
     return processed
 
 
+async def update_course_review(actor, course_id, review_id, body, key):
+    """暂停/恢复/延期当前复习安排；显式时间只影响本次安排，规则照常结算下一次。"""
+    body = CourseReviewUpdate.model_validate(body)
+    owner = actor.owner_id
+    request_hash = digest(dump({
+        "operation": "course.review.adjust", "review_id": review_id,
+        **body.model_dump(mode="json"),
+    }))
+    existing = await fetch_one(
+        "SELECT adjustment_id FROM learning_course_review_adjustments "
+        "WHERE owner_id=%s AND idempotency_key=%s",
+        (owner, key), conn=None,
+    )
+    if existing:
+        row = await fetch_one(
+            "SELECT * FROM learning_course_reviews WHERE review_id=%s AND owner_id=%s",
+            (review_id, owner), conn=None,
+        )
+        if row is None:
+            raise not_found()
+        return _review_view(row)
+    due_at = None
+    if body.action == "reschedule":
+        try:
+            due_at = datetime.fromisoformat(body.due_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise AppError(422, "invalid_due_at", "请提供有效的调整时间") from exc
+        if due_at.tzinfo is None:
+            raise AppError(422, "invalid_due_at", "调整时间必须带时区")
+        now_utc = datetime.now(UTC)
+        if due_at <= now_utc:
+            raise AppError(422, "invalid_due_at", "调整时间必须是未来时间")
+        if due_at > now_utc + timedelta(days=90):
+            raise AppError(422, "invalid_due_at", "调整时间不能超过 90 天")
+    async with transaction() as conn:
+        review = await fetch_one(
+            "SELECT * FROM learning_course_reviews WHERE review_id=%s AND owner_id=%s "
+            "AND course_id=%s FOR UPDATE",
+            (review_id, owner, course_id), conn=conn,
+        )
+        if review is None:
+            raise not_found()
+        if review["revision"] != body.expected_revision:
+            raise conflict("revision_conflict", "复习状态已变化，请刷新后重试")
+        if review["content_version"] != body.expected_content_version:
+            raise conflict("revision_conflict", "复习对应的课文版本已变化")
+        if review["status"] in _TERMINAL:
+            raise conflict("course_review_changed", "这次复习已完成或被替代")
+        if review["status"] not in {"scheduled", "ready", "failed"}:
+            raise conflict("course_review_changed", "这次复习正在生成中，稍后再调整")
+        updates = {
+            "pause": "paused=TRUE",
+            "resume": "paused=FALSE",
+            "reschedule": "override_due_at=%s",
+        }[body.action]
+        params = [due_at, review_id, owner] if body.action == "reschedule" else [review_id, owner]
+        await execute(
+            f"UPDATE learning_course_reviews SET {updates},revision=revision+1 "
+            "WHERE review_id=%s AND owner_id=%s",
+            tuple(params), conn=conn,
+        )
+        await execute(
+            "INSERT INTO learning_course_review_adjustments(adjustment_id,review_id,owner_id,"
+            "action,due_at,expected_revision,idempotency_key,request_hash) "
+            "VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
+            (uid("adj"), review_id, owner, body.action, due_at,
+             body.expected_revision, key, request_hash),
+            conn=conn,
+        )
+        row = await fetch_one(
+            "SELECT * FROM learning_course_reviews WHERE review_id=%s AND owner_id=%s",
+            (review_id, owner), conn=conn,
+        )
+    return _review_view(row)
+
+
 async def purge_course_reviews(conn, owner, course_id):
     """Withdraw source-revoked entries while retaining immutable settlement IDs."""
     _require_transaction(conn)
@@ -282,6 +373,20 @@ async def _review_rows(owner, course_id, *, conn=None):
     )
 
 
+def effective_due_at(rule_due_at, override_due_at):
+    """用户覆盖优先于规则时间；未调整时保持规则建议。"""
+    return override_due_at if override_due_at is not None else rule_due_at
+
+
+def due_candidate_visible(*, paused, status, due_at, now_utc):
+    """暂停只隐藏建议，不制造完成记录；完成态始终不可见。"""
+    return (
+        not paused
+        and status in {"scheduled", "failed"}
+        and due_at <= now_utc
+    )
+
+
 def _review_view(row):
     status = row["status"]
     if status not in _TERMINAL and row["active_link_id"]:
@@ -304,11 +409,18 @@ def _review_view(row):
     }
     if status == "scheduled" and row["reason"] == "confirmed_wrong_or_partial":
         reasons["scheduled"] = "本次检查仍有待巩固内容，建议次日再做三题复习。"
+    effective = effective_due_at(row.get("rule_due_at") or row["due_at"], row.get("override_due_at"))
+    reason_text = reasons[status]
+    if row.get("paused") and status == "scheduled":
+        reason_text = "复习已暂停：不会出现在今日建议中，可随时恢复。"
     return CourseReviewView(
         review_id=row["review_id"], course_id=row["course_id"], lesson_id=row["lesson_id"],
         content_version=row["content_version"], schedule_seq=row["schedule_seq"],
-        due_at=iso(_sql_time(_aware(row["due_at"]))), timezone=row["timezone"],
-        status=status, revision=row["revision"], active_link_id=row["active_link_id"], reason=reasons[status],
+        due_at=iso(_sql_time(_aware(effective))), timezone=row["timezone"],
+        status=status, revision=row["revision"], active_link_id=row["active_link_id"], reason=reason_text,
+        paused=bool(row.get("paused")),
+        rule_due_at=iso(_sql_time(_aware(row["rule_due_at"]))) if row.get("rule_due_at") else None,
+        override_due_at=iso(_sql_time(_aware(row["override_due_at"]))) if row.get("override_due_at") else None,
     ).model_dump(mode="json")
 
 
@@ -359,7 +471,10 @@ def _start_checks(review, lesson, body, current_time):
         raise conflict("course_review_changed", "这次复习已完成或被替代，请刷新课程")
     if review["revision"] != body.expected_revision:
         raise conflict("revision_conflict", "复习状态已变化，请刷新后重试")
-    if not body.early and _aware(review["due_at"]) > current_time:
+    if review.get("paused"):
+        raise conflict("course_review_paused", "这次复习已暂停，请先恢复后再开始")
+    effective = effective_due_at(review.get("rule_due_at") or review["due_at"], review.get("override_due_at"))
+    if not body.early and _aware(effective) > current_time:
         raise conflict("course_review_not_due", "还未到建议复习时间，可明确选择提前复习")
 
 

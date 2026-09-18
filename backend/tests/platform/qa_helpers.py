@@ -18,6 +18,9 @@ async def qa_context(learner, platform_settings):
     with OwnerIndexStore(platform_settings.data_dir, process_role="rag_owner") as store:
         engine = RagEngine(store, FixtureEmbedding(), reauthorize=reauthorize_scope)
         worker = OwnerWorker(engine)
+        # These tests own named jobs, not the database's periodic maintenance.
+        worker._next_event_purge = float("inf")
+        worker._next_course_review_reconcile = float("inf")
         response = await api.post(
             "/api/v1/knowledge/documents",
             files={

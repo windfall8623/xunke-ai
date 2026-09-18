@@ -10,10 +10,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.routes import (
     auth,
+    course_assessments,
+    course_exports,
+    course_feedback,
     course_reviews,
     course_tutor,
     courses,
     evaluation,
+    experience,
     feedback,
     health,
     internal_eval,
@@ -92,8 +96,11 @@ app.include_router(knowledge.eval_router, prefix="/api/v1")
 app.include_router(qa.router, prefix="/api/v1")
 app.include_router(study.router, prefix="/api/v1")
 app.include_router(course_reviews.router, prefix="/api/v1")
+app.include_router(course_assessments.router, prefix="/api/v1")
 app.include_router(course_tutor.router, prefix="/api/v1")
 app.include_router(courses.router, prefix="/api/v1")
+app.include_router(course_feedback.router, prefix="/api/v1")
+app.include_router(course_exports.router, prefix="/api/v1")
 app.include_router(practice.router, prefix="/api/v1")
 app.include_router(practice_grading.router, prefix="/api/v1")
 app.include_router(practice_views.router, prefix="/api/v1")
@@ -101,6 +108,7 @@ app.include_router(evaluation.router, prefix="/api/v1")
 app.include_router(internal_eval.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
 app.include_router(me_llm.router, prefix="/api/v1")
+app.include_router(experience.router, prefix="/api/v1")
 
 
 @app.exception_handler(RagError)

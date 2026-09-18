@@ -69,7 +69,9 @@ def adapters(worker):
             worker.engine.qa_generator.semantic_llm, worker.practice_provider.llm,
             worker.practice_provider.semantic_llm, worker.grading_provider.llm,
             worker.course_generator.outline_llm, worker.course_generator.lesson_llm,
-            worker.course_tutor_generator.llm]
+            worker.course_generator.reviewer.llm, worker.course_tutor_generator.llm,
+            worker.course_application_generator.generation_llm,
+            worker.course_application_generator.feedback_llm]
 
 
 @pytest.mark.asyncio
@@ -93,6 +95,8 @@ async def test_overlapping_users_share_retrieval_not_models(runtime):
                 assert isolated.engine.store is worker.engine.store
                 assert isolated.engine.embedding is worker.engine.embedding
                 assert isolated.engine.retriever is worker.engine.retriever
+                assert isolated.engine.retriever.reranker is worker.engine.retriever.reranker
+                assert isolated.engine.retriever.llm_reranker is worker.engine.retriever.llm_reranker
                 assert isolated.engine.web_provider is worker.engine.web_provider
                 assert isolated.engine.legacy_baseline is None
                 for adapter in adapters(isolated):
@@ -101,7 +105,7 @@ async def test_overlapping_users_share_retrieval_not_models(runtime):
                     assert not adapter.llm.root.closed
                 for provider in (isolated.engine.qa_generator, isolated.practice_provider,
                                  isolated.grading_provider, isolated.course_generator,
-                                 isolated.course_tutor_generator):
+                                 isolated.course_generator.reviewer, isolated.course_tutor_generator):
                     assert provider.model_configuration["config_source"] == "user"
                     assert "secret-" not in str(provider.model_configuration)
             assert not {id(x.llm.root) for x in adapters(alice)} & {
@@ -259,3 +263,109 @@ async def test_real_engine_mandatory_resolver_and_fake_injection(runtime):
                                                SimpleNamespace(owner_id="test")) as view:
         assert view is fake
     assert not created
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["learner", "evaluator"])
+@pytest.mark.parametrize("kind", [
+    "course_outline", "course_lesson", "course_application_generate", "course_application_feedback",
+])
+async def test_new_teaching_and_revision_jobs_require_personal_adapters(runtime, role, kind):
+    worker, created = runtime
+    shared = object()
+    worker.course_application_generator = shared
+    worker.course_generator = shared
+
+    async def resolve(owner_id, **kwargs):
+        return config(role)
+
+    worker.runtime_resolver = resolve
+    actor = SimpleNamespace(owner_id=role, roles=[role])
+    job = {"mode": "production", "kind": kind, "request": {"revision_id": "revision-1"}}
+    async with user_dispatch.isolated_dispatch(worker, job, actor) as view:
+        assert view is not worker
+        assert view.course_generator is not shared and view.course_application_generator is not shared
+        assert all(adapter.config_source == "user" for adapter in adapters(view))
+        assert view.course_generator.reviewer.llm.purpose == "course_teaching_review"
+        assert view.course_generator.reviewer.llm.llm.kwargs["temperature"] == 0
+        assert view.course_application_generator.generation_llm.purpose == "course_application_generate"
+        assert view.course_application_generator.feedback_llm.purpose == "course_application_feedback"
+    assert all(model.closed for model in created)
+    assert worker.course_application_generator is worker.course_generator is shared
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["course_application_generate", "course_application_feedback", "course_lesson"])
+async def test_new_job_missing_config_never_reaches_shared_adapters(runtime, kind):
+    worker, created = runtime
+
+    async def missing(*args, **kwargs):
+        raise AppError(422, "llm_configuration_required", "Personal model required")
+
+    worker.runtime_resolver = missing
+    with pytest.raises(AppError) as error:
+        async with user_dispatch.isolated_dispatch(
+            worker, {"mode": "production", "kind": kind}, SimpleNamespace(owner_id="evaluator"),
+        ):
+            pytest.fail("Missing personal model must stop dispatch")
+    assert error.value.code == "llm_configuration_required"
+    assert not created
+
+
+@pytest.mark.asyncio
+async def test_worker_announces_teaching_support_without_system_chat(runtime, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.core.values import load
+
+    worker, _ = runtime
+    settings = Settings(_env_file=None, course_enabled=True, deepseek_api_key="", llm_api_key="")
+    monkeypatch.setattr(rag_owner, "get_settings", lambda: settings)
+    write = AsyncMock()
+    monkeypatch.setattr(rag_owner, "execute", write)
+    worker.course_generator = None
+    await worker._worker_heartbeat()
+    assert load(write.await_args.args[1][1])["teaching_agents_ready"] is True
+    settings.course_enabled = False
+    await worker._worker_heartbeat()
+    assert load(write.await_args.args[1][1])["teaching_agents_ready"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["course_application_generate", "course_application_feedback"])
+async def test_application_job_dispatch_uses_isolated_generator(runtime, monkeypatch, kind):
+    from unittest.mock import AsyncMock
+
+    from app.workers import course_application_job
+
+    worker, _ = runtime
+    worker.runtime_resolver = AsyncMock(return_value=config("alice"))
+    run = AsyncMock()
+    monkeypatch.setattr(course_application_job, "run_course_application", run)
+    actor = SimpleNamespace(owner_id="alice")
+    job = {"mode": "production", "kind": kind}
+    async with user_dispatch.isolated_dispatch(worker, job, actor) as view:
+        await view._dispatch(job, actor)
+        assert run.await_args.kwargs["generator"] is view.course_application_generator
+        assert run.await_args.kwargs["usage_loader"] is rag_owner._metered_usage
+    run.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["learner", "evaluator", "admin"])
+@pytest.mark.parametrize("kind", ["eval_sample", "ingest"])
+async def test_evaluation_worker_checks_current_database_role(runtime, monkeypatch, role, kind):
+    from unittest.mock import AsyncMock
+
+    from app.rag.errors import ScopeRevoked
+
+    read = AsyncMock(return_value={"id": 7, "role": role})
+    monkeypatch.setattr(rag_owner, "fetch_one", read)
+    job = {"mode": "evaluation", "kind": kind, "user_id": 7, "request": {"role": "admin"}}
+    if role == "admin":
+        actor = await rag_owner._actor(job)
+        assert actor.owner_id == 7 and actor.roles == ["admin"]
+    else:
+        with pytest.raises(ScopeRevoked):
+            await rag_owner._actor(job)
+    read.assert_awaited_once_with("SELECT id,role FROM users WHERE id=%s", (7,))

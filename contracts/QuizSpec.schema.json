@@ -1,5 +1,47 @@
 {
   "$defs": {
+    "QuizCourseCriterion": {
+      "additionalProperties": false,
+      "description": "Server-selected local goal references; not authorization identities.",
+      "properties": {
+        "course_criterion_ref": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+          "title": "Course Criterion Ref",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_type": {
+          "enum": [
+            "recognition",
+            "recall",
+            "application",
+            "explanation",
+            "creation"
+          ],
+          "title": "Evidence Type",
+          "type": "string"
+        },
+        "expectation": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Expectation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "course_criterion_ref",
+        "description",
+        "evidence_type",
+        "expectation"
+      ],
+      "title": "QuizCourseCriterion",
+      "type": "object"
+    },
     "RequestedDocument": {
       "additionalProperties": false,
       "properties": {
@@ -63,6 +105,14 @@
   },
   "additionalProperties": false,
   "properties": {
+    "course_criteria": {
+      "items": {
+        "$ref": "#/$defs/QuizCourseCriterion"
+      },
+      "maxItems": 10,
+      "title": "Course Criteria",
+      "type": "array"
+    },
     "difficulty": {
       "default": "mixed",
       "enum": [

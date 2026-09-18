@@ -16,6 +16,7 @@ from app.workers import providers
 CHAT_JOB_KINDS = frozenset({
     "quiz", "report", "qa", "practice_generate", "practice_grade",
     "course_outline", "course_lesson", "course_tutor",
+    "course_application_generate", "course_application_feedback",
 })
 
 
@@ -106,19 +107,32 @@ async def isolated_dispatch(worker, job, actor):
             model_configuration=grading_model_configuration_from_config(config, settings),
         )
         isolated.course_generator = isolated.course_tutor_generator = None
+        isolated.course_application_generator = None
         if settings.course_enabled:
             course_chat = model(temperature=0.3, max_tokens=4500,
                                 timeout_seconds=settings.course_provider_timeout_seconds)
+            reviewer = providers.TeachingReviewer(
+                meter(course_chat.bind(max_tokens=1200, temperature=0),
+                      purpose="course_teaching_review", output_upper=1200),
+                model_configuration=_metadata(config, 0),
+            )
             isolated.course_generator = providers.CourseGenerator(
                 meter(course_chat.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
                 meter(course_chat, purpose="course_lesson", output_upper=4500),
                 timeout_seconds=settings.course_provider_timeout_seconds,
-                model_configuration=_metadata(config, 0.3),
+                model_configuration=_metadata(config, 0.3), reviewer=reviewer,
             )
             isolated.course_tutor_generator = providers.CourseTutorGenerator(
                 meter(course_chat.bind(max_tokens=1500), purpose="course_tutor", output_upper=1500),
                 timeout_seconds=settings.course_provider_timeout_seconds,
                 model_configuration=_metadata(config, 0.3),
+            )
+            isolated.course_application_generator = providers.CourseApplicationGenerator(
+                meter(course_chat.bind(max_tokens=4096),
+                      purpose="course_application_generate", output_upper=4096),
+                meter(course_chat.bind(max_tokens=1600, temperature=0),
+                      purpose="course_application_feedback", output_upper=1600),
+                timeout_seconds=settings.course_provider_timeout_seconds,
             )
         yield isolated
     finally:

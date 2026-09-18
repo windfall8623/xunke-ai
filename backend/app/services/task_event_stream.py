@@ -113,6 +113,19 @@ def _quiz_reader() -> TaskReader:
     )
 
 
+def _course_application_reader() -> TaskReader:
+    async def authorize(owner: int, task_id: str) -> dict:
+        from app.services.course_application_service import get_application_task
+
+        return await get_application_task(owner, task_id)
+
+    return TaskReader(
+        kinds=frozenset({"course_application_generate", "course_application_feedback"}),
+        authorize=authorize,
+        identity=_course_identity,
+    )
+
+
 def _practice_reader() -> TaskReader:
     from app.services import practice_service
 
@@ -134,6 +147,7 @@ _READERS = {
     "course": _course_reader(),
     "quiz": _quiz_reader(),
     "practice": _practice_reader(),
+    "course_application": _course_application_reader(),
 }
 
 
@@ -343,7 +357,9 @@ async def _stream(
             except AuthenticationError:
                 return
             except AppError as exc:
-                if exc.status == 403 and exc.code in SOURCE_REVOKED_REASONS:
+                # 课程/问答读路径把资料撤销报告为 404+source_revoked，
+                # 授权类撤销也可能是 403；两者都要发控制帧，客户端才能隐藏内容。
+                if exc.status in (403, 404) and exc.code in SOURCE_REVOKED_REASONS:
                     yield _sse(
                         _source_revoked_frame(task_id, "source_revoked"),
                         event="source_revoked",

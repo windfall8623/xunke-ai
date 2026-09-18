@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { CoursePage } from '../../pages/study/CoursePage'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { coursesApi } from '../../services/courses'
+import { courseKeys, coursesApi } from '../../services/courses'
 import { ApiError } from '../../services/http'
 import type { CourseLessonSummary, CourseLessonView, CourseView } from '../../types/course'
 import { CourseCover, CourseReadingProgress, courseReadingProgress } from './CourseCover'
@@ -17,7 +17,16 @@ vi.mock('../../app/AuthProvider', () => ({
   useIdentityKey: () => 'presentation-test',
 }))
 vi.mock('./useLessonTutor', () => ({
-  useLessonTutor: () => ({ query: { isPending: false }, busy: false }),
+  useLessonTutor: () => ({
+    query: { isPending: false },
+    checksQuery: { isPending: false },
+    attempts: [],
+    busy: false,
+    refreshFeedback: vi.fn(),
+  }),
+}))
+vi.mock('../../services/experienceEvents', () => ({
+  recordExperienceEvent: vi.fn().mockResolvedValue(undefined),
 }))
 
 const lesson: CourseLessonSummary = {
@@ -38,6 +47,8 @@ const course: CourseView = {
   status: 'ready',
   outline_editable: false,
   revision: 1,
+  criteria_revision: 1,
+  teaching_mode: 'fast',
   created_at: '2026-09-16T10:00:00Z',
   updated_at: '2026-09-16T10:00:00Z',
   resume_lesson_id: 'lesson-1',
@@ -285,7 +296,7 @@ describe('bound course presentation', () => {
     const items = await screen.findAllByRole('listitem')
     expect(items[0]).toHaveClass('is-current')
     expect(items[1]).not.toHaveClass('is-current')
-    expect(within(items[0]).getByRole('link', { name: '开始' })).toHaveAttribute(
+    expect(within(items[0]).getByRole('link', { name: '继续阅读' })).toHaveAttribute(
       'href',
       '/study/courses/course-stable?lesson=lesson-1',
     )
@@ -314,7 +325,10 @@ const view: CourseLessonView = {
   ],
 }
 const secondLesson = { ...lesson, lesson_id: 'lesson-2', title: '传递参数', position: 2 }
-function mountReader(reducedMotion = false, narrow = true) {
+function mountReader(reducedMotion = false, narrow = true, options: {
+  initialEntry?: string
+  cachedLesson?: CourseLessonView
+} = {}) {
   localStorage.setItem('xunke.outlineCollapsed', '0')
   vi.stubGlobal(
     'matchMedia',
@@ -333,6 +347,10 @@ function mountReader(reducedMotion = false, narrow = true) {
     lessons: [lesson, secondLesson],
   }))
   vi.spyOn(coursesApi, 'reviews').mockResolvedValue([])
+  vi.spyOn(coursesApi, 'outcomes').mockImplementation(async (id) => ({
+    course_id: id, criteria_revision: 1, criteria: [],
+  }))
+  vi.spyOn(coursesApi, 'assessments').mockResolvedValue([])
   vi.spyOn(coursesApi, 'progress').mockResolvedValue({
     course_id: course.course_id,
     available_lessons: 2,
@@ -342,12 +360,14 @@ function mountReader(reducedMotion = false, narrow = true) {
     practiced_lessons: 0,
     read_lessons: 0,
     total_lessons: 2,
-    next_action: { type: 'view_summary', reason: '查看进度' },
+    next_action: { type: 'learn_lesson', lesson_id: 'lesson-2', reason: '继续学习参数' },
   })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  if (options.cachedLesson)
+    client.setQueryData(courseKeys.lesson('presentation-test', course.course_id, options.cachedLesson.lesson_id), options.cachedLesson)
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/study/courses/course-stable?lesson=lesson-1']}>
+      <MemoryRouter initialEntries={[options.initialEntry || '/study/courses/course-stable?lesson=lesson-1']}>
         <Link to="/study/courses/other-course?lesson=lesson-1">另一门课程</Link>
         <Routes>
           <Route path="/study/courses/:courseId" element={<CoursePage />} />
@@ -359,6 +379,51 @@ function mountReader(reducedMotion = false, narrow = true) {
 }
 
 describe('explicit reader navigation', () => {
+  it('focuses an explicit summary once and never scrolls again after a background refresh', async () => {
+    vi.spyOn(coursesApi, 'lesson').mockResolvedValue(view)
+    const { scroll, client } = mountReader()
+    await screen.findByRole('heading', { name: '理解函数' })
+    await userEvent.click(screen.getByRole('button', { name: '本次先到这里' }))
+    const summary = screen.getByRole('region', { name: '本课小结' })
+    await waitFor(() => expect(summary).toHaveFocus())
+    expect(scroll).toHaveBeenCalledOnce()
+    expect(scroll.mock.instances[0]).toBe(summary)
+    await act(async () => { await client.invalidateQueries() })
+    expect(scroll).toHaveBeenCalledOnce()
+  })
+
+  it('waits for fresh owner-scoped data before focusing a cached deep link', async () => {
+    let resolveLesson!: (value: CourseLessonView) => void
+    const response = new Promise<CourseLessonView>((resolve) => { resolveLesson = resolve })
+    vi.spyOn(coursesApi, 'lesson').mockReturnValue(response)
+    const { scroll, client } = mountReader(true, true, {
+      initialEntry: '/study/courses/course-stable?lesson=lesson-1#lesson-summary', cachedLesson: view,
+    })
+    await screen.findByRole('heading', { name: '理解函数' })
+    expect(scroll).not.toHaveBeenCalled()
+    await act(async () => { resolveLesson(view) })
+    const summary = screen.getByRole('region', { name: '本课小结' })
+    await waitFor(() => expect(summary).toHaveFocus())
+    expect(scroll).toHaveBeenCalledExactlyOnceWith({ behavior: 'auto', block: 'start' })
+    await act(async () => { await client.invalidateQueries() })
+    expect(scroll).toHaveBeenCalledOnce()
+  })
+
+  it('does not focus a cached deep link when the fresh lesson read fails', async () => {
+    let rejectLesson!: (reason: Error) => void
+    const response = new Promise<CourseLessonView>((_resolve, reject) => { rejectLesson = reject })
+    vi.spyOn(coursesApi, 'lesson').mockReturnValue(response)
+    const { scroll } = mountReader(false, true, {
+      initialEntry: '/study/courses/course-stable?lesson=lesson-1#lesson-summary', cachedLesson: view,
+    })
+    await screen.findByRole('heading', { name: '理解函数' })
+    expect(scroll).not.toHaveBeenCalled()
+    await act(async () => { rejectLesson(new ApiError('资料已失效', 410, 'source_revoked')) })
+    await screen.findByRole('heading', { name: '课程资料已失效' })
+    expect(scroll).not.toHaveBeenCalled()
+    expect(screen.queryByRole('article', { name: '当前课时' })).not.toBeInTheDocument()
+  })
+
   it.each([false, true])(
     'focuses only after selected data arrives, reduced motion=%s',
     async (reducedMotion) => {
@@ -400,7 +465,7 @@ describe('explicit reader navigation', () => {
     )
     const { scroll } = mountReader(false, false)
     await screen.findByRole('heading', { name: '理解函数' })
-    await userEvent.click(screen.getByRole('button', { name: '下一课' }))
+    await userEvent.click(await screen.findByRole('button', { name: '继续下一课' }))
     await waitFor(() => expect(screen.getByRole('heading', { name: '传递参数' })).toHaveFocus())
     expect(screen.getByRole('region', { name: '课程纲要' })).toBeInTheDocument()
     expect(scroll).toHaveBeenCalledOnce()
@@ -457,19 +522,22 @@ describe('explicit reader navigation', () => {
 function lessonProps() {
   return {
     lesson: view,
+    sourcePolicy: 'topic' as const,
+    progressState: 'confirmed' as const,
     pendingWeakPoints: [],
+    nextAction: { type: 'learn_lesson' as const, lesson_id: 'lesson-2', reason: '继续学习参数' },
     onReloadReviews: vi.fn(),
     onGenerate: vi.fn(),
     onEvidence: vi.fn(),
     onUnavailable: vi.fn(),
-    onNext: vi.fn(),
+    onNextAction: vi.fn(),
   }
 }
 describe('continuous lesson presentation', () => {
   it('renders the four block types and retains citations, reading, practice and review actions', async () => {
     const props = lessonProps()
     mount(<CourseLesson {...props} />)
-    expect(screen.getByRole('region', { name: '课文' })).not.toHaveClass('card')
+    expect(screen.getByRole('region', { name: '本课正文' })).not.toHaveClass('card')
     for (const [name, type] of [
       ['讲解 1', 'explanation'],
       ['示例 2', 'example'],
@@ -480,11 +548,11 @@ describe('continuous lesson presentation', () => {
     }
     await userEvent.click(screen.getByRole('button', { name: '查看第 1 段依据 1' }))
     expect(props.onEvidence).toHaveBeenCalledWith('ref-1')
-    expect(screen.getByRole('button', { name: '标记已读' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '生成本课 3 题' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '记录已读，进入本课练习' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '本次先到这里' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '刷新复习安排' })).toBeEnabled()
-    await userEvent.click(screen.getByRole('button', { name: '下一课' }))
-    expect(props.onNext).toHaveBeenCalledOnce()
+    await userEvent.click(screen.getByRole('button', { name: '继续下一课' }))
+    expect(props.onNextAction).toHaveBeenCalledExactlyOnceWith(props.nextAction)
   })
 
   it('does not render lesson text until generation is ready', async () => {

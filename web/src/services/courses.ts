@@ -1,10 +1,18 @@
 import { ApiError, request } from './http'
 import { providerErrorMessage } from './providerErrors'
+import { trackContentSubmission } from './experienceEvents'
 import type {
+  CourseApplicationAnswer,
+  CourseApplicationAttemptView,
+  CourseAssessmentComplete,
+  CourseAssessmentCreate,
+  CourseAssessmentView,
+  CourseCapabilities,
   CourseCreate,
   CourseEvidenceView,
   CourseLessonView,
   CourseList,
+  CourseOutcomeSummary,
   CourseOutlineUpdate,
   CourseProgressView,
   CourseQuizCreate,
@@ -16,12 +24,19 @@ import type {
   CourseView,
 } from '../types/course'
 
+/** 契约上限：`CourseApplicationAnswer.answer` 为 1–4000 字符。 */
+export const COURSE_APPLICATION_ANSWER_MAX = 4000
+
 const segment = encodeURIComponent
 const courseBase = (id: string) => `/courses/${segment(id)}`
 const lessonBase = (id: string, lessonId: string) =>
   `${courseBase(id)}/lessons/${segment(lessonId)}`
+const assessmentBase = (id: string, assessmentId: string) =>
+  `${courseBase(id)}/assessments/${segment(assessmentId)}`
 
 export const coursesApi = {
+  capabilities: (signal?: AbortSignal) =>
+    request<CourseCapabilities>('/courses/capabilities', { signal }),
   list: (page = 1, pageSize = 6, signal?: AbortSignal) =>
     request<CourseList>(`/courses?page=${page}&page_size=${pageSize}`, { signal }),
   create: (data: CourseCreate, key: string, signal?: AbortSignal) =>
@@ -41,13 +56,15 @@ export const coursesApi = {
     revision: number,
     key: string,
     signal?: AbortSignal,
+    requestQualityReview = false,
   ) =>
-    request<CourseTaskView>(`${lessonBase(id, lessonId)}/generation-jobs`, {
+    trackContentSubmission(() => request<CourseTaskView>(`${lessonBase(id, lessonId)}/generation-jobs`, {
       method: 'POST',
-      data: { expected_course_revision: revision },
+      // 课时沿用课程已冻结的教学方式；fast 下只能显式请求本课核对。
+      data: { expected_course_revision: revision, request_quality_review: requestQualityReview },
       idempotencyKey: key,
       signal,
-    }),
+    })),
   lesson: (id: string, lessonId: string, signal?: AbortSignal) =>
     request<CourseLessonView>(lessonBase(id, lessonId), { signal }),
   markRead: (id: string, lessonId: string, revision: number, read: boolean, signal?: AbortSignal) =>
@@ -100,10 +117,78 @@ export const coursesApi = {
       `${lessonId ? lessonBase(id, lessonId) : courseBase(id)}/evidence/${segment(sourceRef)}`,
       { signal },
     ),
+  // A07：只读目标结果投影；GET 不创建题目、不结算、不追加学习行为。
+  outcomes: (id: string, signal?: AbortSignal) =>
+    request<CourseOutcomeSummary>(`${courseBase(id)}/outcomes`, { signal }),
+  assessments: (id: string, signal?: AbortSignal) =>
+    request<CourseAssessmentView[]>(`${courseBase(id)}/assessments`, { signal }),
+  assessment: (id: string, assessmentId: string, signal?: AbortSignal) =>
+    request<CourseAssessmentView>(assessmentBase(id, assessmentId), { signal }),
+  createAssessment: (id: string, data: CourseAssessmentCreate, key: string, signal?: AbortSignal) =>
+    request<CourseAssessmentView>(`${courseBase(id)}/assessment-jobs`, {
+      method: 'POST',
+      data,
+      idempotencyKey: key,
+      signal,
+    }),
+  completeAssessment: (
+    id: string,
+    assessmentId: string,
+    data: CourseAssessmentComplete,
+    key: string,
+    signal?: AbortSignal,
+  ) =>
+    request<CourseAssessmentView>(`${assessmentBase(id, assessmentId)}/complete`, {
+      method: 'POST',
+      data,
+      idempotencyKey: key,
+      signal,
+    }),
+  // A08：按需生成 1–2 个文本应用任务，保存回答后再排队反馈。
+  createApplications: (id: string, assessmentId: string, key: string, signal?: AbortSignal) =>
+    request<CourseAssessmentView>(`${assessmentBase(id, assessmentId)}/application-jobs`, {
+      method: 'POST',
+      idempotencyKey: key,
+      signal,
+    }),
+  submitApplicationAnswer: (
+    id: string,
+    assessmentId: string,
+    applicationTaskId: string,
+    data: CourseApplicationAnswer,
+    key: string,
+    signal?: AbortSignal,
+  ) =>
+    request<CourseApplicationAttemptView>(
+      `${assessmentBase(id, assessmentId)}/applications/${segment(applicationTaskId)}/attempts`,
+      { method: 'POST', data, idempotencyKey: key, signal },
+    ),
+  applicationAttempt: (
+    id: string,
+    assessmentId: string,
+    attemptId: string,
+    signal?: AbortSignal,
+  ) =>
+    request<CourseApplicationAttemptView>(
+      `${assessmentBase(id, assessmentId)}/attempts/${segment(attemptId)}`,
+      { signal },
+    ),
+  retryApplicationFeedback: (
+    id: string,
+    assessmentId: string,
+    attemptId: string,
+    key: string,
+    signal?: AbortSignal,
+  ) =>
+    request<CourseApplicationAttemptView>(
+      `${assessmentBase(id, assessmentId)}/attempts/${segment(attemptId)}/feedback-jobs`,
+      { method: 'POST', idempotencyKey: key, signal },
+    ),
 }
 
 export const courseKeys = {
   all: (identity: string | number) => [identity, 'courses'] as const,
+  capabilities: (identity: string | number) => [identity, 'courses', 'capabilities'] as const,
   lists: (identity: string | number) => [identity, 'courses', 'list'] as const,
   list: (identity: string | number, page = 1, pageSize = 6) =>
     [identity, 'courses', 'list', page, pageSize] as const,
@@ -120,6 +205,18 @@ export const courseKeys = {
     [identity, 'courses', 'task', id, lessonId || null, taskId] as const,
   evidence: (identity: string | number, id: string, sourceRef: string, lessonId?: string) =>
     [identity, 'courses', 'evidence', id, lessonId || null, sourceRef] as const,
+  outcomes: (identity: string | number, id: string) =>
+    [identity, 'courses', 'outcomes', id] as const,
+  assessments: (identity: string | number, id: string) =>
+    [identity, 'courses', 'assessments', id] as const,
+  assessment: (identity: string | number, id: string, assessmentId: string) =>
+    [identity, 'courses', 'assessment', id, assessmentId] as const,
+  applicationAttempt: (
+    identity: string | number,
+    id: string,
+    assessmentId: string,
+    attemptId: string,
+  ) => [identity, 'courses', 'application-attempt', id, assessmentId, attemptId] as const,
 }
 
 export const courseTaskPending = (task?: { status: string } | null) =>
@@ -129,7 +226,11 @@ export const courseSourceRevoked = (error: unknown) =>
   error instanceof ApiError &&
   ([403, 410].includes(error.status) || String(error.code).toLowerCase() === 'source_revoked')
 
+export const courseAccessDenied = (error: unknown) => courseSourceRevoked(error) ||
+  (error instanceof ApiError && [401, 404].includes(error.status))
+
 const courseErrors: Record<string, string> = {
+  teaching_agents_unavailable: '标准教学暂不可用，请核对教学方式后再次提交。',
   source_not_ready: '资料还未处理完成，请等待就绪后重新选择。',
   source_revoked: '课程资料已不可用，相关内容已隐藏。请重新选择资料创建课程。',
   source_unavailable: '所选资料不可用，请检查资料状态并重新选择。',
@@ -148,6 +249,17 @@ const courseErrors: Record<string, string> = {
   course_review_conflict: '复习安排已更新，请核对最新状态后重试。',
   content_version_conflict: '课文版本已更新，请刷新这一课后继续。',
   course_tutor_busy: '本课已有助教回答正在准备，请等待完成或取消后再提问。',
+  course_quality_unavailable: '本次教学核对未完成，已保留原有内容。可稍后重新生成。',
+  course_assessment_no_taught_goals: '请先学完至少一个目标对应的课时，再开始结业检查；资料缺口的目标仍保持待验证。',
+  course_assessment_completed: '本次检查已封存。需要继续检验时，请创建下一组检查。',
+  course_assessment_incomplete: '请先完成并确认本组客观题的结算，再封存本次检查。',
+  course_assessment_invalid: '本次结业题的目标对应关系未通过核对，请重新开始一组检查。',
+  course_assessment_evidence_changed: '检查题目或结算证据已变化，请刷新后核对最新结果。',
+  course_criterion_invalid: '所选目标不属于当前课程版本，请刷新后重新选择。',
+  course_application_no_taught_goals: '当前还没有已教且可用于应用练习的目标。',
+  course_application_question_changed: '应用任务内容已更新，请刷新后查看最新题目。',
+  course_application_task_replaced: '应用任务已更新，请刷新后继续。',
+  content_filtered: '这次回答未通过内容检查，请调整后重新提交。',
 }
 
 export function courseLocalDate(now: Date, timezone: string) {

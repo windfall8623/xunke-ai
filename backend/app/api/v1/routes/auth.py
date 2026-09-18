@@ -72,14 +72,21 @@ async def email_code(body: EmailCodeBody, request: Request, response: Response):
         raise AppError(400, "invalid_email", "请输入有效的邮箱地址") from None
     await rate_limit_service.enforce_email_burst(email, ip)
     if body.purpose == email_verification.PURPOSE_RESET:
-        # 重置码只发给已存在的已验证账号；口径与登录一致，不细化失败原因。
+        # 重置码只发给已存在的已验证账号；其余地址返回同一成功口径，
+        # 不透露邮箱是否已注册（不发送、不占用发信配额）。
         identity = await fetch_one(
             "SELECT email_verified_at FROM auth_identities "
             "WHERE provider='password' AND app_scope='web' AND subject=%s",
             (email,),
         )
         if not identity or not identity["email_verified_at"]:
-            raise AppError(401, "invalid_credentials", "账号或凭证无效")
+            return ApiResponse.success(
+                {
+                    "message": email_verification.RESET_MESSAGE,
+                    "retry_after_seconds": get_settings().email_send_cooldown_seconds,
+                    "expires_in_seconds": email_verification.CODE_LIFETIME_SECONDS,
+                }
+            )
     result = await email_verification.send_code(email, ip, purpose=body.purpose)
     return ApiResponse.success(result)
 

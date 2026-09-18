@@ -1,6 +1,7 @@
 """Isolated MySQL integration fixtures; never use deployment credentials."""
 
 import os
+import re
 import uuid
 
 import httpx
@@ -11,8 +12,8 @@ import pytest_asyncio
 @pytest.fixture
 def platform_settings(monkeypatch, tmp_path):
     database_name = os.environ.get("XUNKE_TEST_DATABASE", "yu_ai_learn_test")
-    if not database_name.startswith("yu_ai_learn_test") or not database_name.replace("_", "").isalnum():
-        raise ValueError("XUNKE_TEST_DATABASE must name an isolated yu_ai_learn_test database")
+    if not re.fullmatch(r"(?:yu_ai_learn_test(?:_[a-z0-9_]+)?|xunke_test_[a-z0-9_]+)", database_name):
+        raise ValueError("XUNKE_TEST_DATABASE must name an isolated yu_ai_learn_test or xunke_test_ database")
     values = {
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "13316",
@@ -65,9 +66,11 @@ async def database(platform_settings):
     from app.core.migrations import migrate
 
     await init_pool()
-    await migrate()
-    yield
-    await close_mysql_pool()
+    try:
+        await migrate()
+        yield
+    finally:
+        await close_mysql_pool()
 
 
 @pytest_asyncio.fixture
@@ -107,6 +110,28 @@ async def register_email_account(
     )
     assert result.status_code == 201, result.text
     return result.json()["data"], email
+
+
+async def install_personal_model(owner_id, *, model="synthetic-personal-model", base_url="https://provider.example/v1"):
+    """Install test-only encrypted credentials without a provider probe or request."""
+    from app.core.config import get_settings
+    from app.core.db import execute
+    from app.core.user_llm_crypto import encrypt_api_key
+
+    settings = get_settings()
+    settings.user_llm_key_secret = "isolated-personal-model-crypto-secret-32-characters"
+    await execute(
+        "INSERT INTO user_llm_configs(owner_id,provider,model,base_url,api_key_cipher) "
+        "VALUES(%s,'openai_compatible',%s,%s,%s) ON DUPLICATE KEY UPDATE "
+        "provider=VALUES(provider),model=VALUES(model),base_url=VALUES(base_url),api_key_cipher=VALUES(api_key_cipher)",
+        (owner_id, model, base_url, encrypt_api_key("synthetic-personal-key-1234", owner_id, settings)),
+    )
+
+
+@pytest_asyncio.fixture
+async def personal_learner(learner):
+    await install_personal_model(learner[1]["user"]["id"])
+    return learner
 
 
 @pytest_asyncio.fixture

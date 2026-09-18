@@ -151,3 +151,25 @@ def send_password_reset_email(
         ),
         settings=settings,
     )
+
+
+def send_learning_reminder_email(
+    recipient: str,
+    title: str,
+    link_path: str,
+    *,
+    settings: Settings | None = None,
+) -> None:
+    """学习提醒只含短提示与站内入口：不发答题正文、资料摘录或薄弱点列表。"""
+    origin = (settings.web_origins[0] if settings and settings.web_origins else "").rstrip("/")
+    _send_code_email(
+        recipient,
+        "",
+        0,
+        subject=f"循课 · {title}",
+        body=(
+            f"{title}\n\n请登录循课查看：{origin}{link_path}\n"
+            "本邮件不包含你的答题内容或学习记录详情。\n"
+        ),
+        settings=settings,
+    )

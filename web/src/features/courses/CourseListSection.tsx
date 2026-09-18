@@ -165,7 +165,7 @@ function CourseList({
     refetchIntervalInBackground: false,
   })
   return (
-    <section className="course-shelf" aria-label="我的课程">
+    <section id="my-courses" className="course-shelf" aria-label="我的课程">
       {(showHeading || showCreate || (compact && auth.status === 'authenticated')) && (
         <div className="section-line course-shelf-heading">
           {showHeading && (
@@ -215,12 +215,18 @@ function CourseList({
         />
       ) : query.isPending ? (
         <Loading>正在读取我的课程…</Loading>
-      ) : !query.data?.items.length ? (
+      ) : query.data?.total === 0 ? (
         <div className="card">
-          <EmptyState title="从第一门课程开始">
+          <EmptyState title="从第一门课程开始" action={
+            <Link className="button primary" to="/study/courses/new"><Plus size={17} />开始第一门课程</Link>
+          }>
             告诉循课你想学什么，先看纲要，再逐课学习与练习。
           </EmptyState>
         </div>
+      ) : !query.data?.items.length ? (
+        <EmptyState title="这一页暂无课程" action={
+          <button type="button" className="button secondary" onClick={() => setPage(1)}>回到第一页</button>
+        }>可以重新读取课程列表。</EmptyState>
       ) : (
         <CourseBookshelf key={page} courses={query.data.items} />
       )}

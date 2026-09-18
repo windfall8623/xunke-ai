@@ -617,6 +617,26 @@ async def run_maintenance(*, apply=False, operator=None, owner_id=None):
         await _expire_debug(store, report, operator, owner_id)
         await _expire_evaluations(store, report, operator, owner_id)
         await _expire_auth(report, owner_id)
+        from app.services.experience_event_service import purge_experience_events
+
+        _count(report, "experience_events_expired", await purge_experience_events(
+            owner_id=owner_id, dry_run=not apply,
+        ))
+        from app.services.content_event_service import purge_content
+
+        _count(report, "content_previews_expired", await purge_content(owner_id=owner_id, dry_run=not apply))
+        from app.services.teaching_quality_service import purge_expired_quality_candidates
+
+        _count(report, "teaching_candidates_expired", await purge_expired_quality_candidates(
+            owner_id=owner_id, dry_run=not apply,
+        ))
+        if apply and owner_id is None:
+            from app.services import learning_notification_service as reminders
+
+            _count(report, "learning_weekly_digests_scheduled",
+                   await reminders.enqueue_weekly_digests(apply=True))
+            _count(report, "learning_reminders_delivered",
+                   await reminders.deliver_due_reminders(apply=True))
         await _tombstones(store, report, operator, owner_id)
         if apply:
             await _drain(store, report, owner_id=owner_id)

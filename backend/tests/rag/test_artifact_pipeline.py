@@ -147,6 +147,7 @@ async def test_valid_artifact_preserves_evidence_and_requires_model_semantic_che
 
     e, actor, context, scope = context_and_scope()
     dispatched = []
+    summaries = []
 
     async def retrieve(*args, **kwargs):
         return RetrievalResult(evidence=[e], candidates=[e])
@@ -174,6 +175,7 @@ async def test_valid_artifact_preserves_evidence_and_requires_model_semantic_che
             generate=generate,
             reauthorize=authorize,
             semantic_validator=semantic,
+            record_summary=summaries.append,
         ),
         resolved_scope=scope,
     )
@@ -192,6 +194,12 @@ async def test_valid_artifact_preserves_evidence_and_requires_model_semantic_che
         "validate",
     ]
     assert all("光合作用需要光。" not in str(stage) for stage in artifact.trace)
+    assert len(summaries) == 1
+    assert summaries[0].status == "completed"
+    assert summaries[0].usage == artifact.usage
+    assert [stage.stage for stage in summaries[0].stages] == [
+        "prepare", "retrieve", "assemble", "generate", "validate", "finish"
+    ]
 
 
 @pytest.mark.asyncio

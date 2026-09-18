@@ -10,7 +10,7 @@ from app.rag.budget import BudgetLedger
 from app.rag.contracts import BudgetLimits, ResolvedScope
 from app.services import course_tutor_service, job_service
 from app.services.evaluation_service import pipeline_config
-from app.teaching.contracts import TeachUnit
+from app.teaching.protocol import parse_teach_unit
 from app.teaching.tutor import HISTORY_TURNS, tutor_material
 
 
@@ -84,7 +84,7 @@ async def run_course_tutor(job, actor, engine, *, generator, usage_loader):
         deadline_seconds=max(.001, min(1800, (job["deadline_at"] - now()).total_seconds())),
     ))
     await job_service.heartbeat(job, "preparing_tutor_sources")
-    unit = TeachUnit.model_validate(load(lesson["unit_json"]))
+    unit = parse_teach_unit(load(lesson["unit_json"]), schema_version=load(course["outline_json"]).get("schema_version"))
     material = await tutor_material(
         engine, scope, unit, body.question, pipeline_config(job["request"]["pipeline_id"]),
         budget=budget, check_context=check_context,

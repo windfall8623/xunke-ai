@@ -36,6 +36,16 @@ from app.models.study import (
     StudyHistoryList,
     StudyConceptProgressView,
 )
+from app.models.course_preferences import LearningPreferencesUpdate, LearningPreferencesView
+from app.models.learning_notification import (
+    LearningReminderList, LearningReminderPreferences, LearningReminderPreferencesUpdate,
+    LearningReminderUpdate, LearningReminderView,
+)
+from app.models.learning_habit import (
+    HabitRestPreferences, HabitRestPreferencesUpdate, LearningHabitView,
+)
+from app.models.learning_summary import WeeklyLearningSummary
+from app.services import course_preferences_service, learning_habit_service, learning_notification_service, learning_summary_service
 from app.services import learning_concept_service as concepts
 from app.services import learning_space_service as spaces
 from app.services import learning_quiz_service, qa_practice_source
@@ -310,3 +320,86 @@ async def update_concept(
     concept_id: str, body: StudyConceptUpdate, actor=Depends(get_current_actor)
 ):
     return ApiResponse.success(await concepts.update_concept(actor, concept_id, body))
+
+
+@router.get("/preferences", response_model=ApiResponse[LearningPreferencesView])
+async def get_learning_preferences(actor=Depends(get_current_actor)):
+    return ApiResponse.success(
+        await course_preferences_service.get_preferences(actor.owner_id)
+    )
+
+
+@router.patch("/preferences", response_model=ApiResponse[LearningPreferencesView])
+async def update_learning_preferences(
+    body: LearningPreferencesUpdate, actor=Depends(get_current_actor)
+):
+    return ApiResponse.success(
+        await course_preferences_service.update_preferences(actor.owner_id, body)
+    )
+
+
+@router.get("/weekly-summary", response_model=ApiResponse[WeeklyLearningSummary])
+async def weekly_summary(
+    week_start: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    timezone: str = Query("Asia/Shanghai", min_length=1, max_length=64),
+    actor=Depends(get_current_actor),
+):
+    from datetime import date as date_type
+
+    return ApiResponse.success(
+        await learning_summary_service.weekly_summary(
+            actor.owner_id, date_type.fromisoformat(week_start), timezone,
+        )
+    )
+
+
+@router.get("/notification-preferences", response_model=ApiResponse[LearningReminderPreferences])
+async def get_notification_preferences(actor=Depends(get_current_actor)):
+    return ApiResponse.success(
+        await learning_notification_service.get_preferences(actor.owner_id)
+    )
+
+
+@router.patch("/notification-preferences", response_model=ApiResponse[LearningReminderPreferences])
+async def update_notification_preferences(
+    body: LearningReminderPreferencesUpdate, actor=Depends(get_current_actor)
+):
+    return ApiResponse.success(
+        await learning_notification_service.update_preferences(actor.owner_id, body)
+    )
+
+
+@router.get("/reminders", response_model=ApiResponse[LearningReminderList])
+async def list_reminders(actor=Depends(get_current_actor)):
+    return ApiResponse.success(await learning_notification_service.list_reminders(actor.owner_id))
+
+
+@router.patch("/reminders/{reminder_id}", response_model=ApiResponse[LearningReminderView])
+async def update_reminder(
+    reminder_id: str, body: LearningReminderUpdate, actor=Depends(get_current_actor)
+):
+    return ApiResponse.success(
+        await learning_notification_service.update_reminder(actor.owner_id, reminder_id, body)
+    )
+
+
+@router.get("/habits", response_model=ApiResponse[LearningHabitView])
+async def get_habits(
+    timezone: str = Query("Asia/Shanghai", min_length=1, max_length=64),
+    actor=Depends(get_current_actor),
+):
+    return ApiResponse.success(await learning_habit_service.get_learning_habits(
+        actor.owner_id, timezone))
+
+
+@router.get("/habit-preferences", response_model=ApiResponse[HabitRestPreferences])
+async def get_habit_preferences(actor=Depends(get_current_actor)):
+    return ApiResponse.success(await learning_habit_service.get_rest_preferences(actor.owner_id))
+
+
+@router.patch("/habit-preferences", response_model=ApiResponse[HabitRestPreferences])
+async def update_habit_preferences(
+    body: HabitRestPreferencesUpdate, actor=Depends(get_current_actor)
+):
+    return ApiResponse.success(await learning_habit_service.update_rest_preferences(
+        actor.owner_id, body))

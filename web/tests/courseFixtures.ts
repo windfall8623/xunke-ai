@@ -14,6 +14,8 @@ export const courseFixture: CourseView = {
   status: 'partial',
   outline_editable: false,
   revision: 1,
+  criteria_revision: 1,
+  teaching_mode: 'fast',
   created_at: '2026-09-14T08:00:00Z',
   updated_at: '2026-09-16T08:00:00Z',
   resume_lesson_id: 'lesson-functions',

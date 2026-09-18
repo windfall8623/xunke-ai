@@ -26,16 +26,26 @@ def _activity_tokens(item):
     return tokens
 
 
-def select_today_items(candidates, minutes_budget):
-    """Preserve priority, deduplicate activities, then fit at most three items."""
+def select_today_items(candidates, minutes_budget, daily_review_limit=None):
+    """Preserve priority, deduplicate activities, then fit at most three items.
+
+    daily_review_limit 只限制新推荐的复习类活动；未完成检查与续学不受影响，
+    上限为 0 时保留入口提示而不隐藏逾期事实。
+    """
     selected, seen, warnings = [], set(), []
     remaining = minutes_budget
+    review_count = 0
+    hidden_reviews = 0
     for candidate in candidates:
         item = CourseTodayItem.model_validate(candidate).model_dump(mode="json")
         tokens = _activity_tokens(item)
         if tokens & seen:
             continue
         seen.update(tokens)
+        is_review = item["kind"] in {"course_review", "study_review"}
+        if is_review and daily_review_limit is not None and review_count >= daily_review_limit:
+            hidden_reviews += 1
+            continue
         estimate = item["estimated_minutes"]
         if not selected and estimate > minutes_budget:
             item["reason"] += " 预计用时超过今日预算，可以分次学习。"
@@ -45,9 +55,15 @@ def select_today_items(candidates, minutes_budget):
         if estimate > remaining:
             continue
         selected.append(item)
+        if is_review:
+            review_count += 1
         remaining -= estimate
         if len(selected) == 3:
             break
+    if hidden_reviews:
+        warnings.append(
+            f"已按你的复习上限隐藏 {hidden_reviews} 项到期复习；可进入课程或复习队列手动安排。"
+        )
     return selected, warnings
 
 
@@ -102,6 +118,8 @@ async def _course_candidates(owner, course, now_utc):
     reviews = await course_review_service.list_course_reviews(owner, course_id)
     due, recoveries = [], []
     for review in reviews:
+        if review.get("paused"):
+            continue
         if review["status"] not in {"scheduled", "generating", "ready", "failed"}:
             continue
         lesson = by_lesson.get(review["lesson_id"])
@@ -143,7 +161,12 @@ async def _course_candidates(owner, course, now_utc):
     return unfinished, due, recoveries + next_steps
 
 
-async def get_today(actor, timezone: str = "Asia/Shanghai", minutes_budget: int = 20, *, now_utc=None):
+async def get_today(actor, timezone=None, minutes_budget=None, *, now_utc=None):
+    from app.services import course_preferences_service
+
+    prefs = await course_preferences_service.effective_preferences(actor.owner_id)
+    timezone = timezone or prefs.timezone
+    minutes_budget = minutes_budget or prefs.daily_minutes
     try:
         timezone = TypeAdapter(IanaTimezone).validate_python(timezone)
     except (ValidationError, ValueError) as exc:
@@ -191,7 +214,7 @@ async def get_today(actor, timezone: str = "Asia/Shanghai", minutes_budget: int 
         }
         due.append((datetime.fromisoformat(review["due_at"].replace("Z", "+00:00")), item))
     candidates = unfinished + [item for _, item in sorted(due, key=lambda pair: pair[0])] + next_steps
-    items, warnings = select_today_items(candidates, minutes_budget)
+    items, warnings = select_today_items(candidates, minutes_budget, prefs.daily_review_limit)
     if not items:
         warnings.append(
             "当前没有可继续的课程活动或到期复习，可进入课程查看学习记录与资料状态。"

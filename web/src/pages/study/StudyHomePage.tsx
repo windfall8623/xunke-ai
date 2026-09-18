@@ -7,6 +7,8 @@ import { Dialog } from '../../components/Dialog'
 import { EmptyState, ErrorNotice, Loading, PageHeading } from '../../components/ui'
 import { StudyScopePicker } from '../../features/study/StudyScopePicker'
 import { StudyActivitySummary } from '../../features/study/StudyActivitySummary'
+import { LearningHabitCard } from '../../features/study/LearningHabitCard'
+import { WeeklySummaryCard } from '../../features/study/WeeklySummaryCard'
 import { CourseListSection } from '../../features/courses/CourseListSection'
 import { StudyNavigation } from './ReviewPage'
 import {
@@ -44,7 +46,7 @@ function StudyHome({ identity }: { identity: string | number }) {
         title="我的课程"
         description="找到原课程，接着读一课、练一组，让每次学习接得上。"
         action={
-          <Link className="button primary" to="/study/courses/new">
+          <Link className="button secondary" to="/study/courses/new">
             <Plus size={17} />
             开始新课程
           </Link>
@@ -55,6 +57,8 @@ function StudyHome({ identity }: { identity: string | number }) {
       <div className="study-activity-grid">
         <StudyActivitySummary />
       </div>
+      <LearningHabitCard />
+      <WeeklySummaryCard />
       <div className="section-line">
         <h2>学习空间</h2>
         <button className="button secondary" onClick={() => setCreating(true)}>

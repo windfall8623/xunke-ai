@@ -33,6 +33,7 @@ export type RequestOptions = {
   signal?: AbortSignal
   idempotencyKey?: string
   timeoutMs?: number
+  silentAuthFailure?: boolean
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -70,6 +71,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (!response.ok || body.code !== 0) {
       if (
         (response.status === 401 || body.code === 4010) &&
+        !options.silentAuthFailure &&
         !/^\/auth\/(session|login|register|recover|bind|capabilities|email-code|password\/reset)$/.test(path)
       ) {
         expireSessionIfCurrent(requestSession)

@@ -7,6 +7,8 @@ import {
 } from '../../services/courses'
 import type { CourseTaskView } from '../../types/course'
 import { useCourseTask } from './useCourseTask'
+import { CourseOperationNotice } from './CourseOperationNotice'
+import { recordExperienceEvent } from '../../services/experienceEvents'
 
 // 只映射任务阶段流里的真实公开阶段；generating 走按 kind 的兜底文案，
 // 不虚构百分比或预计完成时间。
@@ -15,6 +17,10 @@ const stageLabels: Record<string, string> = {
   pending: '已排队，等待开始',
   starting: '正在准备生成',
   retrieving: '正在查找本课依据',
+  planning: '课程设计',
+  teaching: '讲解生成',
+  reviewing: '教学检查',
+  revising: '根据反馈修订',
 }
 
 export function CourseTaskStatus({
@@ -28,7 +34,7 @@ export function CourseTaskStatus({
   onRetry?: () => void
   disabled?: boolean
 }) {
-  const { task, query, cancel, cancelling, cancelError, settling } = useCourseTask(courseId, initial)
+  const { task, query, cancel, cancelling, cancelError, cancelState, settling, settleExpired, refreshBusiness } = useCourseTask(courseId, initial)
   if (!task) return null
   const running = courseTaskPending(task)
   const failed = task.status === 'failed' || task.status === 'cancelled'
@@ -41,7 +47,7 @@ export function CourseTaskStatus({
         <h3>
           {failed
             ? `${label}${task.status === 'cancelled' ? '已取消' : '生成未完成'}`
-            : `${label}已保存`}
+            : `${label}已生成，正在读取`}
         </h3>
       )}
       <p className="muted" role="status">
@@ -51,7 +57,7 @@ export function CourseTaskStatus({
             ? '已保存的其他课时仍可阅读。需要时可重新生成本次内容。'
             : failed
               ? courseTaskErrorMessage(task)
-              : '正在读取已保存的内容…'}
+              : query.error ? '结果读取暂未完成，请刷新结果。' : '正在核对并读取已保存的内容…'}
       </p>
       {task.status === 'failed' && <LlmSettingsLink code={task.error_code} />}
       {settling && <p className="tiny muted">任务已结束，记录同步中</p>}
@@ -61,7 +67,9 @@ export function CourseTaskStatus({
           void query.refetch()
         }}
       />
-      <ErrorNotice error={cancelError ? courseErrorMessage(cancelError) : null} />
+      <CourseOperationNotice state={cancelState} error={cancelError}
+        onRecover={() => { void query.refetch(); refreshBusiness() }} recoveryLabel="核对任务状态"
+        disabled={query.isFetching || cancelling} />
       <div className="button-row">
         {running && (
           <button
@@ -78,8 +86,12 @@ export function CourseTaskStatus({
           <button
             type="button"
             className="button primary"
-            onClick={onRetry}
-            disabled={disabled || cancelling}
+            onClick={() => {
+              void recordExperienceEvent({ event_id: crypto.randomUUID(), name: 'task_retry_clicked',
+                course_id: courseId, lesson_id: task.lesson_id || undefined, task_id: task.task_id })
+              onRetry()
+            }}
+            disabled={disabled || cancelling || (settling && !settleExpired)}
           >
             <RefreshCw size={16} />
             {disabled ? '正在提交…' : '重新生成'}
@@ -91,9 +103,10 @@ export function CourseTaskStatus({
           disabled={query.isFetching}
           onClick={() => {
             void query.refetch()
+            refreshBusiness()
           }}
         >
-          刷新状态
+          {task.status === 'completed' ? '刷新结果' : '刷新状态'}
         </button>
       </div>
     </section>

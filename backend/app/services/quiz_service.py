@@ -60,7 +60,10 @@ def resolved_quiz_request(actor, spec, scope):
     return spec, scope, request
 
 
-async def enqueue_resolved_quiz(actor, spec, scope, key, *, learning_context=None):
+async def enqueue_resolved_quiz(
+    actor, spec, scope, key, *, learning_context=None, conn=None, request_hash=None,
+    before_authorize=None,
+):
     """Enqueue an authorized fixed scope; never resolve an active source build."""
     from app.services import learning_quiz_service
     from app.services.source_service import reauthorize_scope
@@ -71,16 +74,18 @@ async def enqueue_resolved_quiz(actor, spec, scope, key, *, learning_context=Non
             spec, scope, learning_context
         )
         request["learning_context"] = learning_context.model_dump(mode="json")
-        request_hash = learning_quiz_service.learning_request_hash(
+        computed_hash = learning_quiz_service.learning_request_hash(
             spec, learning_context
         )
     else:
-        request_hash = digest(
+        computed_hash = digest(
             dump({"spec": request["spec"], "scope": scope.model_dump(mode="json")})
         )
     # Inserting the durable key precedes space/source locks, matching worker and
     # cleanup order. Reauthorize the actual saved envelope on a racing replay.
-    async with transaction() as conn:
+    request_hash = request_hash or computed_hash
+
+    async def enqueue(conn):
         job = await job_service.enqueue_job(
             actor.owner_id,
             "quiz",
@@ -93,6 +98,10 @@ async def enqueue_resolved_quiz(actor, spec, scope, key, *, learning_context=Non
         job = await job_service.existing_job(
             actor.owner_id, "quiz", key, request_hash, conn=conn, lock=True
         )
+        if before_authorize is not None:
+            # Course callers acquire their aggregate lock after the job and
+            # before any source locks, matching publication and revocation.
+            await before_authorize(job, conn)
         if learning_context is not None:
             await learning_quiz_service.authorize_job(actor.owner_id, job, conn=conn)
         else:
@@ -101,6 +110,13 @@ async def enqueue_resolved_quiz(actor, spec, scope, key, *, learning_context=Non
             if saved_context is not None or saved_spec != spec or saved_scope != scope:
                 raise conflict("quiz_scope_changed", "练习请求与已保存的来源范围不一致")
             await reauthorize_scope(saved_scope, conn=conn)
+        return job
+    if conn is not None:
+        # A course assessment inserts its separate association before this
+        # caller-owned transaction commits; no private envelope extras are used.
+        return await enqueue(conn)
+    async with transaction() as conn:
+        job = await enqueue(conn)
     return await job_service.get_task(actor.owner_id, job["task_id"])
 
 

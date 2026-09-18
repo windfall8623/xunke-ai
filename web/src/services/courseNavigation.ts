@@ -10,6 +10,20 @@ export function courseReturnPath(context?: CourseReturnContext | null, legacy?: 
   return context ? coursePath(context.course_id, context.lesson_id) : safeCourseReturn(legacy)
 }
 
+/** The fixed summary anchor is appended after validating the destination, never accepted from a URL hint. */
+export function courseSummaryReturnPath(context?: CourseReturnContext | null, legacy?: string | null) {
+  const path = courseReturnPath(context, legacy)
+  return path ? `${path}#lesson-summary` : null
+}
+
+export function scrollCourseSection(id: string, block: ScrollLogicalPosition = 'start', focus = false) {
+  const element = document.getElementById(id)
+  if (!element) return
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  element.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block })
+  if (focus) element.focus({ preventScroll: true })
+}
+
 export function courseTodayPath(item: CourseTodayItem) {
   const back = item.course_id ? coursePath(item.course_id, item.lesson_id) : null
   if (item.kind === 'continue_quiz') {

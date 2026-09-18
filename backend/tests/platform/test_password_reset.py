@@ -63,15 +63,62 @@ async def test_email_code_reset_logs_in_revokes_password_and_keeps_recovery(api)
 
 
 @pytest.mark.asyncio
-async def test_reset_send_requires_registered_verified_account(api):
+async def test_reset_send_response_does_not_reveal_registration(api):
+    """未知/未验证地址与真实发送返回同一 200 口径，不能用来枚举账号。"""
+    from app.services import email_verification as ev
+
     stranger = f"s_{uuid.uuid4().hex[:12]}@example.test"
-    response = await api.post(
+    stranger_response = await api.post(
         "/api/v1/auth/email-code",
         json={"email": stranger, "purpose": "password_reset"},
         headers={"Origin": "http://testserver"},
     )
-    assert response.status_code == 401
-    assert response.json()["error_code"] == "invalid_credentials"
+    assert stranger_response.status_code == 200, stranger_response.text
+    body = stranger_response.json()["data"]
+    assert body["message"] == ev.RESET_MESSAGE
+    assert set(body) == {"message", "retry_after_seconds", "expires_in_seconds"}
+
+
+@pytest.mark.asyncio
+async def test_wrong_reset_codes_consume_attempts(api):
+    """错误验证码的失败计数必须随事务提交，耗尽后正确码也被拒绝。"""
+    from app.services.email_verification import MAX_VERIFICATION_ATTEMPTS
+
+    session, account = await register_email_account(api, password="Original-secure-135!")
+    code = await send_reset_code(account)
+    for _ in range(MAX_VERIFICATION_ATTEMPTS - 1):
+        wrong = await api.post(
+            "/api/v1/auth/password/reset",
+            json={
+                "account": account,
+                "verification_code": "000000" if code != "000000" else "111111",
+                "new_password": "Wrong-secure-000!",
+            },
+            headers={"Origin": "http://testserver"},
+        )
+        assert wrong.status_code == 400, wrong.text
+        assert wrong.json()["error_code"] == "registration_unavailable"
+    # 第 5 次错误命中尝试上限；此后即使持有正确代码也被拒绝，证明计数已提交。
+    last_wrong = await api.post(
+        "/api/v1/auth/password/reset",
+        json={
+            "account": account,
+            "verification_code": "000000" if code != "000000" else "111111",
+            "new_password": "Wrong-secure-000!",
+        },
+        headers={"Origin": "http://testserver"},
+    )
+    assert last_wrong.status_code == 429, last_wrong.text
+    exhausted = await api.post(
+        "/api/v1/auth/password/reset",
+        json={
+            "account": account,
+            "verification_code": code,
+            "new_password": "Reset-secure-9271!",
+        },
+        headers={"Origin": "http://testserver"},
+    )
+    assert exhausted.status_code == 429, exhausted.text
 
 
 @pytest.mark.asyncio

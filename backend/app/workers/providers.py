@@ -42,6 +42,8 @@ from app.services.provider_meter import MeteredChat, MeteredHTTP, call_external
 from app.services.source_service import reauthorize_scope
 from app.teaching.generator import CourseGenerator
 from app.teaching.tutor import CourseTutorGenerator
+from app.teaching.reviewer import TeachingReviewer
+from app.teaching.application import CourseApplicationGenerator
 
 
 class UnconfiguredEmbedding:
@@ -157,6 +159,7 @@ class Runtime:
     grading_provider: LangChainShortAnswerProvider | None = None
     course_generator: CourseGenerator | None = None
     course_tutor_generator: CourseTutorGenerator | None = None
+    course_application_generator: CourseApplicationGenerator | None = None
 
     async def close(self):
         try:
@@ -238,6 +241,7 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
             clients.append(embedding)
         chat, llm_reranker, qa_generator, practice_provider = None, None, None, None
         grading_provider, course_generator, course_tutor_generator = None, None, None
+        course_application_generator = None
         llm_config = resolve_llm_config(settings)
 
         def system_chat(value, **kwargs):
@@ -257,18 +261,39 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
                     timeout_seconds=settings.course_provider_timeout_seconds,
                 )
                 clients.append(ChatModelCloser(course_model))
+                teaching_identity = {
+                    "provider": llm_config.provider, "model": llm_config.model,
+                    "endpoint_hash": text_hash(llm_config.base_url), "config_source": "system",
+                }
+                reviewer = TeachingReviewer(
+                    system_chat(
+                        course_model.bind(max_tokens=1200, temperature=0),
+                        purpose="course_teaching_review", output_upper=1200,
+                    ),
+                    model_configuration={**teaching_identity, "temperature": 0},
+                )
                 course_generator = CourseGenerator(
                     system_chat(course_model.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
                     system_chat(course_model, purpose="course_lesson", output_upper=4500),
                     timeout_seconds=settings.course_provider_timeout_seconds,
-                    model_configuration={"provider": llm_config.provider, "model": llm_config.model,
-                                         "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
+                    model_configuration={**teaching_identity, "temperature": 0.3},
+                    reviewer=reviewer,
                 )
                 course_tutor_generator = CourseTutorGenerator(
                     system_chat(course_model.bind(max_tokens=1500), purpose="course_tutor", output_upper=1500),
                     timeout_seconds=settings.course_provider_timeout_seconds,
-                    model_configuration={"provider": llm_config.provider, "model": llm_config.model,
-                                         "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
+                    model_configuration={**teaching_identity, "temperature": 0.3},
+                )
+                course_application_generator = CourseApplicationGenerator(
+                    system_chat(
+                        course_model.bind(max_tokens=4096),
+                        purpose="course_application_generate", output_upper=4096,
+                    ),
+                    system_chat(
+                        course_model.bind(max_tokens=1600, temperature=0),
+                        purpose="course_application_feedback", output_upper=1600,
+                    ),
+                    timeout_seconds=settings.course_provider_timeout_seconds,
                 )
             # Registry profiles share these output/context bounds. The job
             # additionally checks its pinned bounds before any practice call.
@@ -385,6 +410,7 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
             grading_provider=grading_provider,
             course_generator=course_generator,
             course_tutor_generator=course_tutor_generator,
+            course_application_generator=course_application_generator,
         )
     except BaseException:
         # Client constructors do not make network calls. A failed configuration

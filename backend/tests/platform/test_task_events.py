@@ -171,7 +171,9 @@ async def test_finalize_terminal_rows_records_cancel_and_deadline(learner):
         (now() - timedelta(seconds=1), expired["task_id"]),
     )
     async with transaction() as conn:
-        await job_service.finalize_terminal_rows(conn)
+        # Other verification processes may share the isolated database.
+        await job_service.finalize_terminal_rows(conn, task_id=cancelled["task_id"])
+        await job_service.finalize_terminal_rows(conn, task_id=expired["task_id"])
     cancel_events = await _events(cancelled["task_id"])
     assert cancel_events[-1]["type"] == "cancelled"
     assert cancel_events[-1]["payload"]["business_settled"] is False

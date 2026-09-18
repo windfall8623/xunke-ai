@@ -24,6 +24,7 @@ import {
   safeImageUrl,
 } from '../components/ui'
 import { api } from '../services/api'
+import { LearningReminderSettings } from '../features/study/LearningReminderSettings'
 import { ChangePasswordDialog } from '../features/auth/ChangePasswordDialog'
 import { LlmSettingsCard } from '../features/auth/LlmSettingsCard'
 
@@ -97,6 +98,7 @@ export function ProfilePage() {
           {notice}
         </div>
       )}
+      <LearningReminderSettings />
       <section className="card profile-card">
         <div className="profile-identity">
           <div className="large-avatar">

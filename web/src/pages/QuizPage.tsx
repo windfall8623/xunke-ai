@@ -17,7 +17,7 @@ import { ErrorNotice, Loading, StatusBadge, safeImageUrl } from '../components/u
 import { useQuizProgress } from '../features/quiz/useQuizProgress'
 import { EvidencePanel } from '../features/evidence/EvidencePanel'
 import { FeedbackForm } from '../features/quiz/FeedbackForm'
-import { courseReturnPath, withCourseReturn } from '../services/courseNavigation'
+import { courseReturnPath, courseSummaryReturnPath, withCourseReturn } from '../services/courseNavigation'
 
 export function QuizPage() {
   const { quizId = '' } = useParams()
@@ -30,6 +30,7 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
   const { quizQuery, answerMutation, completion } = useQuizProgress(quizId)
   const quiz = quizQuery.data
   const courseReturn = courseReturnPath(quiz?.course_context, params.get('returnTo'))
+  const courseSummary = courseSummaryReturnPath(quiz?.course_context, params.get('returnTo'))
   const reportPath = withCourseReturn(`/quizzes/${encodeURIComponent(quizId)}/report`, courseReturn)
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string[]>([])
@@ -69,15 +70,17 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
     )
   const answered = quiz.answered_count ?? (quiz.answer_records || []).length
   const allAnswered = answered === quiz.questions.length
-  const settled = ['settled', 'completed'].includes(quiz.status)
+  const settled = quiz.status === 'settled'
+  const historicalUnconfirmed = quiz.status === 'completed'
+  const readOnly = settled || historicalUnconfirmed
   const typeLabel = { single: '单选题', multiple: '多选题', judge: '判断题' }[question.type]
   const citations = [...new Set(saved?.citation_refs || question.citation_refs || [])]
   return (
     <div className="quiz-page">
       <div className="quiz-topline">
-        <Link to={courseReturn || '/me'} className="back-link">
+        <Link to={(settled ? courseSummary : courseReturn) || '/me'} className="back-link">
           <ArrowLeft size={16} />
-          {courseReturn ? '返回本课' : '学习记录'}
+          {courseReturn ? settled ? '返回本课小结' : '返回本课' : '学习记录'}
         </Link>
         <div>
           <StatusBadge status={quiz.source_policy} />
@@ -98,6 +101,11 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
           <span>已保存作答</span>
         </div>
       </header>
+      {historicalUnconfirmed && <p className="notice" role="status">
+        历史练习状态待确认。已保存作答可回看，暂不将它计为已结算练习。
+        <button type="button" className="text-button" disabled={quizQuery.isFetching}
+          onClick={() => { void quizQuery.refetch() }}>刷新练习记录</button>
+      </p>}
       <div
         className="progress-track"
         aria-label={`已保存 ${answered} / ${quiz.questions.length} 题`}
@@ -126,7 +134,7 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
           )}
           <fieldset
             className="answer-options"
-            disabled={!!saved || answerMutation.isPending || settled}
+            disabled={!!saved || answerMutation.isPending || readOnly}
           >
             <legend className="sr-only">选择答案</legend>
             {question.options.map((option) => {
@@ -190,7 +198,7 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
               <ArrowLeft size={16} />
               上一题
             </button>
-            {!saved && !settled ? (
+            {!saved && !readOnly ? (
               <button
                 className="button primary"
                 disabled={!selected.length || answerMutation.isPending}
@@ -230,15 +238,20 @@ function QuizWorkspace({ quizId }: { quizId: string }) {
               <div>
                 <CheckCircle2 size={18} />
                 <span>
-                  {settled
+                  {historicalUnconfirmed ? '历史作答已保存，结算状态尚待确认。' : settled
                     ? '这组练习已完成，欢迎随时回看。'
                     : '所有作答已保存，准备看看你的收获。'}
                 </span>
               </div>
               {settled ? (
-                <Link to={reportPath} className="button primary">
-                  查看学习报告
-                </Link>
+                <div className="button-row">
+                  {courseSummary && <Link to={courseSummary} className="button primary">返回本课小结<ArrowRight size={16} /></Link>}
+                  <Link to={reportPath} className={`button ${courseSummary ? 'secondary' : 'primary'}`}>
+                    查看学习报告
+                  </Link>
+                </div>
+              ) : historicalUnconfirmed ? (
+                courseSummary && <Link to={courseSummary} className="button secondary">返回本课小结</Link>
               ) : (
                 <button
                   className="button primary"

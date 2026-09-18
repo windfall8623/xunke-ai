@@ -175,14 +175,34 @@ class CourseTutorGenerator:
                                   "generation_attempts": 0, "response_status": "insufficient_evidence"},
             )
         messages = bounded_tutor_messages(spec, lesson, turn, material, history, check_context)
+        from app.llm.streaming import JsonContentDecoder
+        from app.services.content_event_service import current_preview
+
+        preview = current_preview() if spec.source_policy == "topic" and turn["mode"] in {"explain", "example", "hint"} else None
         for attempt in range(2):
             input_size = 32 + sum(count_tokens(message.content) for message in messages)
             if input_size > INPUT_LIMIT:
                 raise AppError(422, "course_scope_too_large", "助教输入超出上限，请缩短问题")
             budget.reserve("llm", input_tokens=input_size)
-            response = await asyncio.wait_for(
-                self.llm.ainvoke(messages), timeout=min(self.timeout_seconds, budget.remaining_seconds)
+            decoder = JsonContentDecoder()
+            if preview:
+                await preview.reset(attempt + 1)
+
+            async def on_chunk(chunk):
+                decoder.feed(chunk)
+                delta = decoder.answer_delta()
+                if delta:
+                    await preview.text(delta)
+
+            invoke = (
+                self.llm.ainvoke_streamed(messages, on_chunk=on_chunk)
+                if preview and callable(getattr(self.llm, "ainvoke_streamed", None)) else self.llm.ainvoke(messages)
             )
+            response = await asyncio.wait_for(
+                invoke, timeout=min(self.timeout_seconds, budget.remaining_seconds)
+            )
+            if preview:
+                await preview.flush()
             try:
                 raw = response_text(response).strip()
                 fenced = re.fullmatch(r"```(?:json)?\s*([\s\S]*?)\s*```", raw)

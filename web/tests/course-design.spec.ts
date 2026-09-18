@@ -45,6 +45,9 @@ async function installCourseDesignApi(page: Page) {
       if (path === `/courses/${course.course_id}`) return respond(course)
       if (path === `/courses/${course.course_id}/progress`) return respond(progress)
       if (path === `/courses/${course.course_id}/reviews`) return respond([])
+      if (path === `/courses/${course.course_id}/outcomes`)
+        return respond({ course_id: course.course_id, criteria_revision: course.criteria_revision, criteria: [] })
+      if (path === `/courses/${course.course_id}/assessments`) return respond([])
       if (path === `/courses/${course.course_id}/lessons/${lesson.lesson_id}`)
         return respond(lesson)
       if (
@@ -56,6 +59,14 @@ async function installCourseDesignApi(page: Page) {
         return respond([])
       if (['/study/reviews', '/study/history'].includes(path))
         return respond({ items: [], total: 0, next_cursor: null })
+    }
+    if (request.method() === 'POST' &&
+      path === `/courses/${course.course_id}/lessons/${lesson.lesson_id}/quiz-jobs`) {
+      return route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 5030, error_code: 'queue_unavailable', message: '练习暂未准备好' }),
+      })
     }
     if (
       request.method() === 'PATCH' &&
@@ -85,7 +96,7 @@ async function expectLesson(page: Page) {
   await expect(
     lesson.getByRole('heading', { name: courseLessonFixture.title, exact: true }),
   ).toBeVisible()
-  await expect(lesson.getByRole('region', { name: '课文', exact: true })).toBeVisible()
+  await expect(lesson.getByRole('region', { name: '本课正文', exact: true })).toBeVisible()
   return lesson
 }
 
@@ -128,7 +139,9 @@ test('course covers expose saved reading progress, hide revoked content and open
     await expect(lesson.getByRole('region', { name: label, exact: true })).toBeVisible()
   }
   await expect(lesson.getByText('示意示例', { exact: true })).toBeVisible()
-  await lesson.getByRole('button', { name: '标记已读', exact: true }).click()
+  await lesson.getByRole('button', { name: '记录已读，进入本课练习', exact: true }).click()
+  // A quiz-generation failure must not undo the confirmed reading record.
+  await expect(lesson.getByRole('status').filter({ hasText: '结果尚未确认' })).toBeVisible()
   await expect(lesson.getByRole('button', { name: '取消已读标记' })).toBeVisible()
   await expect(
     page.getByRole('progressbar', { name: '课程阅读进度', exact: true }),
@@ -187,7 +200,7 @@ test('reduced motion removes cover movement and reading scroll animation', async
   await cover.click()
   await page.getByRole('link', { name: '继续学习', exact: true }).click()
   await expectLesson(page)
-  await expect(page.getByRole('region', { name: '课文', exact: true })).toHaveCSS(
+  await expect(page.getByRole('region', { name: '本课正文', exact: true })).toHaveCSS(
     'scroll-behavior',
     'auto',
   )

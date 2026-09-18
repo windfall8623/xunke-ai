@@ -1,5 +1,11 @@
 """知识库 Agentic RAG 检索 Agent Prompt"""
 
+COURSE_CRITERION_RULES = """本次另有 course_criteria 指定的课程检查目标。
+每题增加 course_criterion_refs，只引用输入中实际检查到的局部引用，至少一个、最多三个，不得杜撰。
+这些引用与 coverage_target_id、citation_refs 分别处理，不能互相替代。
+不要凭知识点标题猜测目标对应；客观题只检查识别表现，不声称能证明创作或独立应用能力。
+没有提供 course_criteria 的普通题库保持 course_criterion_refs 为空或省略。"""
+
 RAG_AGENT_SYSTEM_PROMPT = """你是一名专业的知识获取助手。你的任务是为用户指定的学习内容，从其上传的私有知识库文档中检索相关内容，必要时辅以联网搜索补充，最终输出一份结构化的知识摘要，供后续出题使用。
 
 ## 你拥有的工具

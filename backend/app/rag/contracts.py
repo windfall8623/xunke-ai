@@ -93,6 +93,15 @@ class RequestedScope(Contract):
         return result
 
 
+class QuizCourseCriterion(Contract):
+    """Server-selected local goal references; not authorization identities."""
+
+    course_criterion_ref: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_]{0,79}$")
+    description: str = Field(min_length=1, max_length=1000)
+    evidence_type: Literal["recognition", "recall", "application", "explanation", "creation"]
+    expectation: str = Field(min_length=1, max_length=1500)
+
+
 class QuizSpec(Contract):
     user_input: str = Field(min_length=1, max_length=2000)
     question_count: int = Field(default=5, ge=3, le=10)
@@ -100,6 +109,17 @@ class QuizSpec(Contract):
     source_policy: SourcePolicy = "topic"
     scope: RequestedScope | None = None
     objective_titles: list[str] = Field(default_factory=list, max_length=10)
+    course_criteria: list[QuizCourseCriterion] = Field(
+        default_factory=list, max_length=10, exclude_if=lambda value: not value
+    )
+
+    @field_validator("course_criteria")
+    @classmethod
+    def unique_course_criteria(cls, value):
+        refs = [item.course_criterion_ref for item in value]
+        if len(refs) != len(set(refs)):
+            raise ValueError("Course criterion references must be distinct")
+        return value
 
     @model_validator(mode="before")
     @classmethod
@@ -668,6 +688,9 @@ class ArtifactQuestion(Contract):
     difficulty: Literal["easy", "medium", "hard"]
     citation_refs: list[str] = Field(default_factory=list)
     coverage_target_id: str | None = None
+    course_criterion_refs: list[str] = Field(
+        default_factory=list, max_length=3, exclude_if=lambda value: not value
+    )
     # Supporting quotes are verbatim source, and are checked independently of IDs.
     support_quotes: list[str] = Field(default_factory=list)
 

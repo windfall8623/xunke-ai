@@ -1,0 +1,622 @@
+{
+  "$defs": {
+    "ComparisonVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "title": "Columns",
+          "type": "array"
+        },
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "comparison",
+          "title": "Kind",
+          "type": "string"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Rows",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "columns",
+        "rows",
+        "fallback_text"
+      ],
+      "title": "ComparisonVisual",
+      "type": "object"
+    },
+    "CriterionAlignment": {
+      "additionalProperties": false,
+      "properties": {
+        "check_refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Check Refs",
+          "type": "array"
+        },
+        "course_criterion_ref": {
+          "maxLength": 16,
+          "pattern": "^cc[1-9][0-9]*$",
+          "title": "Course Criterion Ref",
+          "type": "string"
+        },
+        "example_block_refs": {
+          "items": {
+            "maxLength": 16,
+            "pattern": "^b[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Example Block Refs",
+          "type": "array"
+        },
+        "explanation_block_refs": {
+          "items": {
+            "maxLength": 16,
+            "pattern": "^b[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Explanation Block Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "course_criterion_ref",
+        "explanation_block_refs",
+        "example_block_refs",
+        "check_refs"
+      ],
+      "title": "CriterionAlignment",
+      "type": "object"
+    },
+    "FlowVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "flow",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/VisualStep"
+          },
+          "maxItems": 8,
+          "minItems": 2,
+          "title": "Steps",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "steps",
+        "fallback_text"
+      ],
+      "title": "FlowVisual",
+      "type": "object"
+    },
+    "LessonBlockV2": {
+      "additionalProperties": false,
+      "properties": {
+        "block_ref": {
+          "maxLength": 16,
+          "pattern": "^b[1-9][0-9]*$",
+          "title": "Block Ref",
+          "type": "string"
+        },
+        "course_criterion_refs": {
+          "items": {
+            "maxLength": 16,
+            "pattern": "^cc[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Course Criterion Refs",
+          "type": "array"
+        },
+        "source_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "synthetic": {
+          "default": false,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "text": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "explanation",
+            "example",
+            "reference",
+            "recap"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "visual": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "comparison": "#/$defs/ComparisonVisual",
+                  "flow": "#/$defs/FlowVisual",
+                  "steps": "#/$defs/StepsVisual"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/FlowVisual"
+                },
+                {
+                  "$ref": "#/$defs/ComparisonVisual"
+                },
+                {
+                  "$ref": "#/$defs/StepsVisual"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visual"
+        }
+      },
+      "required": [
+        "type",
+        "text",
+        "block_ref",
+        "course_criterion_refs"
+      ],
+      "title": "LessonBlockV2",
+      "type": "object"
+    },
+    "LessonCheckOption": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "text"
+      ],
+      "title": "LessonCheckOption",
+      "type": "object"
+    },
+    "LessonCheckV2": {
+      "additionalProperties": false,
+      "properties": {
+        "check_ref": {
+          "title": "Check Ref",
+          "type": "string"
+        },
+        "course_criterion_refs": {
+          "items": {
+            "maxLength": 16,
+            "pattern": "^cc[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Course Criterion Refs",
+          "type": "array"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/LessonCheckOption"
+          },
+          "maxItems": 10,
+          "title": "Options",
+          "type": "array"
+        },
+        "prompt": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "question_type": {
+          "default": "reflection",
+          "enum": [
+            "single",
+            "multiple",
+            "judge",
+            "short_answer",
+            "reflection"
+          ],
+          "title": "Question Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_ref",
+        "prompt",
+        "course_criterion_refs"
+      ],
+      "title": "LessonCheckV2",
+      "type": "object"
+    },
+    "LessonPayloadV2": {
+      "additionalProperties": false,
+      "properties": {
+        "alignments": {
+          "items": {
+            "$ref": "#/$defs/CriterionAlignment"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Alignments",
+          "type": "array"
+        },
+        "blocks": {
+          "items": {
+            "$ref": "#/$defs/LessonBlockV2"
+          },
+          "maxItems": 20,
+          "minItems": 3,
+          "title": "Blocks",
+          "type": "array"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/LessonCheckV2"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        },
+        "estimated_minutes": {
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Estimated Minutes",
+          "type": "integer"
+        },
+        "next_step": {
+          "title": "Next Step",
+          "type": "string"
+        },
+        "objective": {
+          "title": "Objective",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "unit_ref": {
+          "title": "Unit Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_ref",
+        "title",
+        "objective",
+        "estimated_minutes",
+        "blocks",
+        "checks",
+        "next_step",
+        "alignments"
+      ],
+      "title": "LessonPayloadV2",
+      "type": "object"
+    },
+    "StepsVisual": {
+      "additionalProperties": false,
+      "properties": {
+        "fallback_text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Fallback Text",
+          "type": "string"
+        },
+        "kind": {
+          "const": "steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/VisualStep"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "title",
+        "steps",
+        "fallback_text"
+      ],
+      "title": "StepsVisual",
+      "type": "object"
+    },
+    "TeachContext": {
+      "additionalProperties": false,
+      "properties": {
+        "course_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Course Id"
+        },
+        "scope_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Revision"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        }
+      },
+      "title": "TeachContext",
+      "type": "object"
+    },
+    "TeachSource": {
+      "additionalProperties": false,
+      "properties": {
+        "document_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Version Id"
+        },
+        "evidence_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Id"
+        },
+        "kind": {
+          "default": "rag_evidence",
+          "enum": [
+            "provided_material",
+            "rag_evidence"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locator"
+        },
+        "source_ref": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "title"
+      ],
+      "title": "TeachSource",
+      "type": "object"
+    },
+    "VisualStep": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "maxLength": 400,
+          "title": "Detail",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "VisualStep",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "context": {
+      "$ref": "#/$defs/TeachContext"
+    },
+    "kind": {
+      "const": "lesson_draft",
+      "default": "lesson_draft",
+      "title": "Kind",
+      "type": "string"
+    },
+    "payload": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LessonPayloadV2"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Questions",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "xunke-teach.v2",
+      "default": "xunke-teach.v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_policy": {
+      "enum": [
+        "topic",
+        "strict_docs"
+      ],
+      "title": "Source Policy",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/TeachSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "status": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "needs_input",
+        "needs_sources",
+        "insufficient_evidence"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_policy"
+  ],
+  "title": "LessonDraftV2",
+  "type": "object"
+}
