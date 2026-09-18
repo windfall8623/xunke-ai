@@ -14,6 +14,7 @@ import re
 from datetime import timedelta
 from decimal import ROUND_CEILING, Decimal
 
+from app.core.auth import require_system_model_admin
 from app.core.config import get_settings
 from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict
@@ -83,6 +84,7 @@ async def _locked_context(result_id, conn, *, skip_locked=False):
     )
     if not preview:
         raise stale()
+    await require_system_model_admin(preview["owner_id"], conn=conn)
     manifest = load(preview["manifest_json"])
     if (
         manifest.get("raw_artifacts_status") == "expired"

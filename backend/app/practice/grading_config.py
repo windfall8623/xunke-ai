@@ -24,8 +24,21 @@ def require_short_answer_grading():
 
 
 def grading_model_configuration(settings=None):
+    """Frozen system identity for evaluation; do not add production metadata."""
     settings = settings or get_settings()
-    model = resolve_llm_config(settings)
+    return _grading_model_configuration(resolve_llm_config(settings), settings)
+
+
+def grading_model_configuration_from_config(config, settings=None):
+    """Secret-free production identity shared by submission and runtime adapters."""
+    settings = settings or get_settings()
+    return {
+        **_grading_model_configuration(config, settings),
+        "config_source": config.source,
+    }
+
+
+def _grading_model_configuration(model, settings):
     return {
         "provider": model.provider,
         "model": model.model,

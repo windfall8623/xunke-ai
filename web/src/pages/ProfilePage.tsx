@@ -25,6 +25,7 @@ import {
 } from '../components/ui'
 import { api } from '../services/api'
 import { ChangePasswordDialog } from '../features/auth/ChangePasswordDialog'
+import { LlmSettingsCard } from '../features/auth/LlmSettingsCard'
 
 export function ProfilePage() {
   const auth = useAuth()
@@ -169,6 +170,7 @@ export function ProfilePage() {
           </div>
         </div>
       </section>
+      <LlmSettingsCard />
       <section className="card history-card">
         <p className="muted">
           这里展示题目练习记录；课程与学习空间活动请查看

@@ -239,10 +239,18 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
         chat, llm_reranker, qa_generator, practice_provider = None, None, None, None
         grading_provider, course_generator, course_tutor_generator = None, None, None
         llm_config = resolve_llm_config(settings)
+
+        def system_chat(value, **kwargs):
+            # Retrieval ranking and internal evaluation explicitly use system
+            # identity even while running inside a user's production job.
+            return MeteredChat(
+                value, config_source="system", api_key=llm_config.api_key, **kwargs
+            )
+
         if llm_config.configured:
             model = create_chat_model(settings, temperature=0.2)
             clients.append(ChatModelCloser(model))
-            chat = MeteredChat(model)
+            chat = system_chat(model)
             if settings.course_enabled:
                 course_model = chat_model_from_config(
                     llm_config, temperature=0.3, max_tokens=4500,
@@ -250,14 +258,14 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
                 )
                 clients.append(ChatModelCloser(course_model))
                 course_generator = CourseGenerator(
-                    MeteredChat(course_model.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
-                    MeteredChat(course_model, purpose="course_lesson", output_upper=4500),
+                    system_chat(course_model.bind(max_tokens=3000), purpose="course_outline", output_upper=3000),
+                    system_chat(course_model, purpose="course_lesson", output_upper=4500),
                     timeout_seconds=settings.course_provider_timeout_seconds,
                     model_configuration={"provider": llm_config.provider, "model": llm_config.model,
                                          "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
                 )
                 course_tutor_generator = CourseTutorGenerator(
-                    MeteredChat(course_model.bind(max_tokens=1500), purpose="course_tutor", output_upper=1500),
+                    system_chat(course_model.bind(max_tokens=1500), purpose="course_tutor", output_upper=1500),
                     timeout_seconds=settings.course_provider_timeout_seconds,
                     model_configuration={"provider": llm_config.provider, "model": llm_config.model,
                                          "endpoint_hash": text_hash(llm_config.base_url), "temperature": 0.3},
@@ -267,12 +275,12 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
             practice_limits = PipelineConfig()
             practice_model = model.bind(max_tokens=practice_limits.output_token_reserve)
             practice_provider = LangChainPracticeProvider(
-                MeteredChat(
+                system_chat(
                     practice_model,
                     purpose="practice_generation",
                     output_upper=practice_limits.output_token_reserve,
                 ),
-                semantic_llm=MeteredChat(
+                semantic_llm=system_chat(
                     practice_model,
                     purpose="practice_validation",
                     output_upper=practice_limits.output_token_reserve,
@@ -291,7 +299,7 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
                 max_tokens=settings.practice_grading_output_tokens
             )
             grading_provider = LangChainShortAnswerProvider(
-                MeteredChat(
+                system_chat(
                     grading_model,
                     purpose="practice_grading",
                     output_upper=settings.practice_grading_output_tokens,
@@ -301,9 +309,9 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
                 model_configuration=grading_configuration,
             )
             qa_generator = LangChainQaGenerator(
-                MeteredChat(model, purpose="qa_answer"),
-                rewrite_llm=MeteredChat(model, purpose="qa_rewrite"),
-                semantic_llm=MeteredChat(model, purpose="qa_validate"),
+                system_chat(model, purpose="qa_answer"),
+                rewrite_llm=system_chat(model, purpose="qa_rewrite"),
+                semantic_llm=system_chat(model, purpose="qa_validate"),
                 model_configuration={
                     "provider": llm_config.provider,
                     "model": llm_config.model,
@@ -316,7 +324,7 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
                 max_tokens=ranking_config.llm.max_output_tokens, temperature=0
             )
             llm_reranker = LLMReranker(
-                MeteredChat(
+                system_chat(
                     ranking_model,
                     purpose="reranker",
                     output_upper=ranking_config.llm.max_output_tokens,
@@ -357,6 +365,9 @@ def build_runtime(settings=None, *, role="owner") -> Runtime:
             llm_reranker=llm_reranker,
             qa_generator=qa_generator,
         )
+        # A real production engine must never silently fall back to shared
+        # system credentials for an ordinary user's chat work.
+        engine.requires_actor_llm = True
         archive = settings.legacy_source_archive
         checksum = settings.legacy_source_archive_sha256
         if archive and checksum and chat:

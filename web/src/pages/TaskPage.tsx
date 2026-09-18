@@ -3,7 +3,7 @@ import { ArrowLeft, Check, FileSearch, Pause, Play, RefreshCw, Sparkles } from '
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useIdentityKey } from '../app/AuthProvider'
-import { ErrorNotice, Loading, StatusBadge } from '../components/ui'
+import { ErrorNotice, LlmSettingsLink, Loading, StatusBadge } from '../components/ui'
 import { useSettleWatch, useTaskEvents, type SettleWatch } from '../features/tasks/useTaskEvents'
 import { api } from '../services/api'
 import { providerErrorMessage } from '../services/providerErrors'
@@ -162,6 +162,7 @@ export function TaskPage() {
                   '任务已停止，可调整目标后重试。'
                 : stage.label}
             </div>
+            {failed && <LlmSettingsLink code={task.error_code} />}
             {settle.active && (
               <p className="tiny muted" role="status">
                 记录同步中

@@ -130,6 +130,32 @@ async def get_current_actor(request: Request):
 async def get_evaluator(actor=Depends(get_current_actor)):
     from app.core.errors import AppError
 
-    if "evaluator" not in actor.roles:
+    if not {"evaluator", "admin"}.intersection(actor.roles):
         raise AppError(403, "evaluator_required", "需要评测维护权限")
+    return actor
+
+
+async def require_system_model_admin(owner_id, *, conn=None):
+    """Recheck this owner's current role, without granting access to other owners.
+
+    Transactional callers hold a shared user-row lock through scheduling or
+    publication so a concurrent demotion cannot race the authorization check.
+    """
+    from app.core.db import fetch_one
+    from app.core.errors import AppError
+
+    user = await fetch_one(
+        "SELECT role FROM users WHERE id=%s"
+        + (" FOR SHARE" if conn is not None else ""),
+        (owner_id,),
+        conn=conn,
+    )
+    if not user or user.get("role") != "admin":
+        raise AppError(
+            403, "system_model_admin_required", "仅管理员可使用系统模型执行评测"
+        )
+
+
+async def get_admin(actor=Depends(get_current_actor)):
+    await require_system_model_admin(actor.owner_id)
     return actor

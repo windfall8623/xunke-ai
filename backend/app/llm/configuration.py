@@ -10,8 +10,11 @@ class LLMConfig:
     model: str
     base_url: str
     api_key: str = field(repr=False)
+    source: str = "system"
 
     def __post_init__(self):
+        if self.source not in {"system", "user"}:
+            raise ValueError("Unknown LLM configuration source")
         if self.provider not in {"deepseek", "anthropic", "openai_compatible"}:
             raise ValueError("Unknown LLM_PROVIDER")
         endpoint = self.base_url.strip().rstrip("/")

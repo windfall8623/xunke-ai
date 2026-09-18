@@ -252,6 +252,14 @@ def _money(row, raw):
     actual, reservation = None, None
     complete = True
     financial_row = row["cny_status"] is not None
+    if raw.get("config_source") == "user":
+        complete = (
+            not financial_row
+            and raw.get("cost_status") == "not_applicable"
+            and raw.get("cost_cny") is None
+            and raw.get("reserved_cost_cny") is None
+        )
+        return None, None, Decimal("0") if complete else None, complete
     reported = _amount(raw.get("cost_cny"))
     quoted_reservation = _amount(raw.get("reserved_cost_cny"))
     if financial_row:
@@ -362,6 +370,7 @@ async def load_practice_usage(
     calls, counters, stage_ms = [], dict.fromkeys(_STAGES, 0), {}
     complete, all_known, tokens_complete, reservations_known = True, True, True, True
     known, reserved = Decimal("0"), Decimal("0")
+    personal_only = bool(rows)
     inputs = outputs = embeddings = 0
     expected_accounts = dict.fromkeys(account_keys, 0)
     for row in rows:
@@ -394,11 +403,16 @@ async def load_practice_usage(
             or _amount(row["call_actual"]) != 1
         ):
             complete = False
+        source = raw.get("config_source")
+        personal = source == "user"
+        personal_only = personal_only and personal
+        if source not in (None, "user", "system") or personal and stage != "llm":
+            complete = False
         actual, ceiling, outstanding, financial_complete = _money(row, raw)
         complete = complete and financial_complete
         if actual is not None:
             known += actual
-        else:
+        elif not personal:
             all_known = False
         if outstanding is None:
             reservations_known = False
@@ -422,9 +436,12 @@ async def load_practice_usage(
                     attempt=attempt,
                     stage=stage,
                     status=status,
+                    config_source=source if source in ("user", "system") else None,
                     cost_cny=actual,
                     reserved_cost_cny=ceiling,
-                    cost_status="estimated" if actual is not None else "unknown",
+                    cost_status="not_applicable"
+                    if personal
+                    else "estimated" if actual is not None else "unknown",
                 )
             )
         else:
@@ -474,10 +491,12 @@ async def load_practice_usage(
         if tokens_complete
         else "durable-provider-reported-partial-v1",
         stage_ms=stage_ms,
-        cost_cny=known if complete and all_known else None,
+        cost_cny=known if complete and all_known and not personal_only else None,
         known_cost_cny=known,
-        reserved_cost_cny=reserved if reservations_known else None,
-        cost_status_cny="estimated"
+        reserved_cost_cny=reserved if reservations_known and not personal_only else None,
+        cost_status_cny="not_applicable"
+        if complete and personal_only
+        else "estimated"
         if complete and all_known
         else "unknown"
         if rows or not complete

@@ -10,7 +10,7 @@ async def create_provider_run(learner):
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     payload = policy_dataset()
     payload["samples"] = [

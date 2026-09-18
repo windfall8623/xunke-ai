@@ -99,8 +99,10 @@ async def run_eval_sample(
     """Dispatch evaluation artifacts without any learning persistence port."""
     if hasattr(sample, "model_dump"):
         sample = sample.model_dump(mode="json")
-    if context.mode != "evaluation" or "evaluator" not in actor.roles:
-        raise ScopeRevoked("Evaluation permission and execution context are required")
+    if context.mode != "evaluation" or "admin" not in actor.roles:
+        raise ScopeRevoked(
+            "System model admin permission and evaluation context are required"
+        )
     if scope.namespace != "evaluation" and not scope.namespace.startswith(
         "evaluation:"
     ):

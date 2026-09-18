@@ -18,6 +18,7 @@ from app.api.v1.routes import (
     health,
     internal_eval,
     knowledge,
+    me_llm,
     practice,
     practice_grading,
     practice_views,
@@ -99,6 +100,7 @@ app.include_router(practice_views.router, prefix="/api/v1")
 app.include_router(evaluation.router, prefix="/api/v1")
 app.include_router(internal_eval.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
+app.include_router(me_llm.router, prefix="/api/v1")
 
 
 @app.exception_handler(RagError)

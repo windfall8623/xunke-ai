@@ -21,7 +21,7 @@ async def qa_dataset(ctx, *, expected_error=None):
     from app.rag.contracts import BuildResult
 
     owner = ctx["actor"].owner_id
-    await execute("UPDATE users SET role='evaluator' WHERE id=%s", (owner,))
+    await execute("UPDATE users SET role='admin' WHERE id=%s", (owner,))
     uploaded = await ctx["api"].post(
         "/api/v1/eval/documents",
         files={"file": ("qa-synthetic.txt", "光合作用需要光。".encode(), "text/plain")},

@@ -16,6 +16,23 @@ import type {
   Task,
 } from '../types/api'
 
+export type LlmSettingsInput = ApiSchemas['LLMConfigRequest']
+export type LlmProvider = LlmSettingsInput['provider']
+export type LlmSettings = ApiSchemas['LLMConfigView']
+
+// Only public metadata belongs in the query cache, even if a server adds fields.
+function llmMetadata(data: LlmSettings): LlmSettings {
+  return {
+    configured: data.configured,
+    provider: data.provider,
+    model: data.model,
+    base_url: data.base_url,
+    api_key_hint: data.api_key_hint,
+    can_use_system: data.can_use_system,
+    source: data.source,
+  }
+}
+
 const segment = encodeURIComponent
 export const api = {
   authCapabilities: (signal?: AbortSignal) =>
@@ -39,6 +56,14 @@ export const api = {
   logout: () => request<null>('/auth/logout', { method: 'POST' }),
   changePassword: (data: ApiSchemas['PasswordBody']) =>
     request<null>('/auth/change-password', { method: 'POST', data }),
+  llmSettings: (signal?: AbortSignal) =>
+    request<LlmSettings>('/me/llm', { signal }).then(llmMetadata),
+  saveLlmSettings: (data: LlmSettingsInput, signal?: AbortSignal) =>
+    request<LlmSettings>('/me/llm', { method: 'PUT', data, signal, timeoutMs: 60_000 }).then(
+      llmMetadata,
+    ),
+  deleteLlmSettings: (signal?: AbortSignal) =>
+    request<LlmSettings>('/me/llm', { method: 'DELETE', signal }).then(llmMetadata),
   profile: (signal?: AbortSignal) => request<Profile>('/user/profile', { signal }),
   updateProfile: (nickname: string) =>
     request<null>('/user/profile', { method: 'PUT', data: { nickname } }),

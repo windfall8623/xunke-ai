@@ -30,6 +30,17 @@ def chat_model_from_config(
         max_retries=0,
         callbacks=callbacks,
     )
+    user_clients = {}
+    if config.source == "user":
+        from app.llm.user_endpoint import (
+            create_user_llm_async_http_client,
+            create_user_llm_http_client,
+        )
+
+        user_clients = {
+            "http_client": create_user_llm_http_client(timeout=timeout_seconds),
+            "http_async_client": create_user_llm_async_http_client(timeout=timeout_seconds),
+        }
     if config.provider == "anthropic":
         import anthropic
         from langchain_anthropic import ChatAnthropic
@@ -43,13 +54,18 @@ def chat_model_from_config(
             timeout=timeout_seconds,
             max_retries=0,
         )
-        model._client = anthropic.Anthropic(**clients)
-        model._async_client = anthropic.AsyncAnthropic(**clients)
+        model._client.close()
+        model._client = anthropic.Anthropic(
+            **clients, **({"http_client": user_clients["http_client"]} if user_clients else {})
+        )
+        model._async_client = anthropic.AsyncAnthropic(
+            **clients, **({"http_client": user_clients["http_async_client"]} if user_clients else {})
+        )
         return model
 
     from langchain_openai import ChatOpenAI
 
-    return ChatOpenAI(**parameters)
+    return ChatOpenAI(**parameters, **user_clients)
 
 
 def create_chat_model(settings=None, *, temperature: float = 0.4, callbacks=None):

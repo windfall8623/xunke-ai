@@ -33,8 +33,14 @@ function ProtectedRoute({ evaluation = false }: { evaluation?: boolean }) {
   const location = useLocation()
   if (status === 'initializing') return <Loading>正在确认登录状态…</Loading>
   if (status !== 'authenticated')
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
-  if (evaluation && user?.role !== 'evaluator')
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search + location.hash }}
+      />
+    )
+  if (evaluation && !['evaluator', 'admin'].includes(user?.role || ''))
     return <PageHeading title="此页面需要评测权限" description="你的学习与资料仍可正常使用。" />
   return <Outlet />
 }

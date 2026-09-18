@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Download, Pause, Play, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useIdentityKey } from '../../app/AuthProvider'
+import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading, StatusBadge } from '../../components/ui'
 import { SampleInspector } from '../../features/evaluation/SampleInspector'
 import { caseLabels } from '../../features/evaluation/dataset'
@@ -18,6 +18,7 @@ import { ApiError, saveDownload } from '../../services/http'
 
 const activeStates = ['queued', 'running', 'scoring', 'pending']
 export function RunDetailPage() {
+  const canRun = useAuth().user?.role === 'admin'
   const { runId = '' } = useParams()
   const identity = useIdentityKey()
   const [selected, setSelected] = useState('')
@@ -41,8 +42,10 @@ export function RunDetailPage() {
     void results.refetch()
   }
   const action = useMutation({
-    mutationFn: (kind: 'cancel' | 'resume') =>
-      kind === 'cancel' ? evaluationApi.cancel(runId) : evaluationApi.resume(runId),
+    mutationFn: (kind: 'cancel' | 'resume') => {
+      if (kind === 'resume' && !canRun) throw new Error('恢复评测运行需要管理员权限。')
+      return kind === 'cancel' ? evaluationApi.cancel(runId) : evaluationApi.resume(runId)
+    },
     onSuccess: refresh,
   })
   const exportRun = useMutation({
@@ -91,7 +94,7 @@ export function RunDetailPage() {
                 取消运行
               </button>
             )}
-            {data &&
+            {canRun && data &&
               (data.can_resume === true ||
                 (data.can_resume !== false && ['failed', 'cancelled'].includes(data.status))) && (
                 <button

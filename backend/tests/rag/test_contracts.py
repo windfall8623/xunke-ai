@@ -11,6 +11,24 @@ def test_rag_contract_module_exists():
     assert importlib.util.find_spec("app.rag.contracts") is not None
 
 
+@pytest.mark.parametrize(
+    "roles,expected",
+    [
+        (["learner"], "learner"),
+        (["evaluator"], "evaluator"),
+        (["admin"], "admin"),
+        (["evaluator", "admin"], "admin"),
+        (["unknown"], "learner"),
+    ],
+)
+def test_actor_role_preserves_admin_identity(roles, expected):
+    from app.rag.contracts import ActorContext
+
+    actor = ActorContext(owner_id=7, roles=roles)
+    assert actor.role == expected
+    assert ActorContext(owner_id=7, role=expected).role == expected
+
+
 def document_payload():
     return {
         "source_type": "document",

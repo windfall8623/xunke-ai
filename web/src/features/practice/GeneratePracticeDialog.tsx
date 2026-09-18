@@ -220,14 +220,19 @@ export function GeneratePracticeDialog({
             }
           }}
         >
-          {previewing ? '正在估算…' : '查看生成与评分费用上限'}
+          {previewing ? '正在估算…' : '查看用量与系统费用上限'}
         </button>
         {preview && (
           <p className="notice">
-            {preview.cost_status === 'estimated' && preview.cost_cny_upper != null
-              ? `按当前价格保守估算，上限 ¥${Number(preview.cost_cny_upper).toFixed(4)}`
-              : '部分服务尚未配置单价，暂无法给出完整费用上限'}
-            。最多 {preview.generation_llm_call_upper} 次生成与核验调用、
+            {preview.config_source === 'user' && (
+              <>个人模型生成与评分平台不计费，费用由服务商收取。以下金额仅为系统检索服务的成本预估，不包含个人模型账单。</>
+            )}
+            {preview.system_cost_status === 'not_applicable'
+              ? '本次没有需要估算的系统模型费用'
+              : preview.system_cost_status === 'estimated' && preview.system_cost_cny_upper != null
+                ? `${preview.config_source === 'user' ? '系统检索服务' : '系统模型'}成本上限 ¥${Number(preview.system_cost_cny_upper).toFixed(4)}`
+                : '系统服务尚有单价未配置，暂无法给出完整系统成本上限'}
+            。最多 {preview.generation_llm_call_upper} 次生成、核验与重排序调用、
             {preview.grading_llm_call_upper} 次评分调用。此预览不会调用模型或预扣费用。
           </p>
         )}

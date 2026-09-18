@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apiFailure, json, session } from '../test/fixtures'
@@ -137,6 +137,6 @@ describe('run cost preview', () => {
     await userEvent.click(screen.getByText('费用依据与用量假设'))
     expect(screen.getByText('缺少输出单价，费用未知。')).toBeVisible()
     expect(screen.getByText('索引：不适用')).toBeVisible()
-    await waitFor(() => expect(screen.getByRole('button', { name: '创建运行' })).toBeEnabled())
+    expect(screen.getByRole('button', { name: '创建运行' })).toBeDisabled()
   })
 })

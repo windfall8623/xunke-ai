@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     legacy_link_enabled: bool = False
     email_registration_enabled: bool = True
     email_code_secret: str = Field(default="", repr=False)
+    # Separate secret for user-owned LLM credentials (HKDF-derived AES-GCM key);
+    # deliberately independent of JWT_SECRET so one leak never unlocks the other.
+    user_llm_key_secret: str = Field(default="", repr=False)
     smtp_host: str = ""
     smtp_port: int = Field(default=465, ge=1, le=65535)
     smtp_security: str = "ssl"

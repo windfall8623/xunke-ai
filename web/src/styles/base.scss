@@ -1929,6 +1929,50 @@ label {
     color: var(--muted);
   }
 }
+.llm-settings-card {
+  margin-bottom: 26px;
+  scroll-margin-top: 100px;
+  > .section-line {
+    flex-wrap: wrap;
+  }
+  > p {
+    max-width: 76ch;
+  }
+  .llm-system-notice {
+    flex-direction: column;
+    > p {
+      margin: 0;
+    }
+  }
+  .llm-settings-fields {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    p {
+      margin: -8px 0 0;
+      overflow-wrap: anywhere;
+    }
+    label {
+      min-width: 0;
+    }
+    input,
+    select {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+  .llm-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    @media (max-width: 600px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
 .profile-account-actions {
   justify-content: flex-end;
   margin-top: 16px;

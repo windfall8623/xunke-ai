@@ -1,7 +1,7 @@
 {
   "files": {
     "ActorContext.schema.json": "02dc26fabc134650ba189784cf3957568b6e58296b4b18d5824bfe6fcdd7de66",
-    "AnswerGradingEvalArtifact.schema.json": "9e19297fd247b192462f37a87ee0f8864306071d3db0ed13ef7a7c81eb7a9999",
+    "AnswerGradingEvalArtifact.schema.json": "7e600ebf1521d07d7dab80f6bb9947d080b04d053cd3aa595f86834e3213fc1b",
     "AssessmentDraft.schema.json": "682f7bb754f0e52d0af1eb940c51e03fe8f2590e7a5f2259b081fe051bfe8896",
     "AssessmentRef.schema.json": "f6ad14d75efc8ecf32f41dbefd98f552f7c74f812f02590eff1366d77258fe5f",
     "AttemptRef.schema.json": "a0889e6a2d80d8da7a7ec57641ef44f954ff1e808204b53c21e67ac19b7345d3",
@@ -13,10 +13,10 @@
     "DatasetManifest.schema.json": "a407196a0164f5501685d0125841b5983069b257af8792e6dcb783420111d340",
     "DocumentEvidence.schema.json": "ad83d2a6f59567ea1ec1074fbabee9b4c70042e8128b04ca9ea7781a89b872cb",
     "EvalSample.schema.json": "204c659501ed520a8170e202cb0f988f15189c2b4aa57c98f32321dcedbb5fd6",
-    "EvaluationArtifact.schema.json": "4434ba531a72af08c930297149ffcaf6deb8728bf41d0db9118266ea8451e6fa",
+    "EvaluationArtifact.schema.json": "955c40d4dfbc41fbe915cd0c53582d79aa11f6a648b7abce2777ff01133c6d6d",
     "EvidencePack.schema.json": "5276a3637eee59ae573e6a42b578f173e92b381023c78ebe0346ad9b3e148191",
     "ExecutionContext.schema.json": "82e529ee8e3f54bd32833d7c00360974c272c143216ed02dcad7bd3528bcddba",
-    "GradeArtifact.schema.json": "113c5bee0a7360b1b0bf33a5167ca03b18ccba1667a96b606538d184c0a040dd",
+    "GradeArtifact.schema.json": "2cde0a3e28cc84234d255a5d327a59ac22eb1d2c2a09db4850dbff8c0779335c",
     "LearningAttemptDraft.schema.json": "eb6b864dbf5d7531e4a128ba7940014376d759f6fec54e6e48f16da2deabde8a",
     "LearningCompletionRef.schema.json": "45601c364d6d5851299905886ff1dc43f5b490d9ab214b06f17d1127f9b3404d",
     "LearningOutcome.schema.json": "5880bd3e855d88dc599174f7150e9ca1f3eb0fee51294e2bc6936494216f7738",
@@ -25,8 +25,8 @@
     "ObjectiveRef.schema.json": "12904cad52b45e6b130cdd6d2afb746121a75cd4f027177ae51e4031b8626cbe",
     "PipelineManifest.schema.json": "cf363055ceb0a43070ad989513c40cfc5ba94513b52148f15a299c1af3446cd3",
     "PolicyArtifact.schema.json": "175650b366bdc8ee4dd5bdbe894208836b23afbc309379f57a40aa8492d15855",
-    "PracticeArtifact.schema.json": "1f8c5e6c695102be388987eceb976bacdb9dcc9a886a7e96a119179b765ccd4f",
-    "PracticeGenerationEvalArtifact.schema.json": "b9f08155e96ae66f5262aa153ecb3e82a26ae19ee2cb3bdc7f41d3e832659648",
+    "PracticeArtifact.schema.json": "0854ee5316c4435e76fe7aebcc2c409973877c6341892e90681a360cf9a582fd",
+    "PracticeGenerationEvalArtifact.schema.json": "4bd71bebaa44023e74bbcd454ae92432ecfa60b02274936f45ee8519f00c9f13",
     "PracticeSpec.schema.json": "54beb31c56fce5cf39b73b125f26c4227f592f7ab528b6d079c17ea65e07b8ff",
     "PublicResolvedScope.schema.json": "87e372d3eb5aabcdfb1395ca8f8cfc48404a415aa8dbfe364ea035e7fcb79d5f",
     "PublicSourceManifest.schema.json": "c94fa98fc608963ee71562dff1018c59c08bddd7e4f9e76cf472a9d48d30e32c",
@@ -71,7 +71,7 @@
     "StudyWrongQuestionView.schema.json": "4cafff6bddae7e2785f3b09fc0c5c689fc09a9a1294ee8a63003b4caf2b17c89",
     "TaskEvent.schema.json": "57646e618875c7e6d79c59903030a240301436033a58b0a023d1b74d31ac1410",
     "WebEvidence.schema.json": "b49473859ac844c797e1f5c75be54741918379e44857989f9a12fd924e1a7e2c",
-    "openapi.json": "737cadad9fe3c3d67c27fa9d59492e6c3826e30a2cb7dcef095f7aa37fed353c"
+    "openapi.json": "ed57ce20399a0cff982dd4943a190696f40aa11049fc996d545df637a4cd3590"
   },
   "schema_version": "1"
 }

@@ -39,7 +39,7 @@ async def scoring_setup(database, platform_settings):
     from app.api.v1.routes.internal_eval import router
 
     owner = await insert(
-        "INSERT INTO users(nickname,role) VALUES(%s,'evaluator')",
+        "INSERT INTO users(nickname,role) VALUES(%s,'admin')",
         ("Scoring integration fixture",),
     )
     dataset_id, run_id, result_id = uid("dataset"), uid("eval"), uid("result")
@@ -195,6 +195,62 @@ def scores(value=1):
             "unknown_count": 0,
         }
     }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["evaluator", "learner"])
+async def test_demoted_owner_scoring_claim_returns_no_work(scoring_setup, role):
+    await execute("UPDATE users SET role=%s WHERE id=%s", (role, scoring_setup["owner"]))
+    for _ in range(2):
+        response = await scoring_setup["api"].post(
+            PREFIX + "/claim",
+            json={"worker_id": "demotion-check", "run_id": scoring_setup["run_id"]},
+        )
+        assert response.status_code == 204, response.text
+    row = await fetch_one(
+        "SELECT status,error_code,scoring_attempt FROM eval_results WHERE result_id=%s",
+        (scoring_setup["result_id"],),
+    )
+    assert row == {
+        "status": "failed", "error_code": "system_model_admin_required", "scoring_attempt": 0
+    }
+
+
+@pytest.mark.asyncio
+async def test_demotion_blocks_active_scoring_but_preserves_inflight_settlement(scoring_setup):
+    lease = await claim(scoring_setup)
+    endpoint = PREFIX + f"/{scoring_setup['result_id']}"
+    call = {
+        "call_id": "before-demotion", "stage": "judge", "status": "reserved",
+        "reserved_cost_cny": 0.5, "cost_status": "unknown",
+    }
+    assert (await scoring_setup["api"].post(
+        endpoint + "/calls", json={**fence(lease), "call": call}
+    )).status_code == 200
+    await execute("UPDATE users SET role='evaluator' WHERE id=%s", (scoring_setup["owner"],))
+    for suffix, payload in (
+        ("/heartbeat", {"lease_seconds": 60}),
+        ("/complete", {"metrics": scores()}),
+        ("/calls", {"call": {**call, "call_id": "after-demotion"}}),
+    ):
+        response = await scoring_setup["api"].post(endpoint + suffix, json={**fence(lease), **payload})
+        assert response.status_code == 403, response.text
+        assert response.json()["error_code"] == "system_model_admin_required"
+    settled = {**call, "status": "completed", "cost_status": "estimated", "cost_cny": 0.2}
+    for _ in range(2):
+        response = await scoring_setup["api"].post(endpoint + "/calls", json={**fence(lease), "call": settled})
+        assert response.status_code == 200, response.text
+    account = await fetch_one(
+        "SELECT used,reserved FROM budget_accounts WHERE account_key=%s",
+        (f"eval_run:{scoring_setup['run_id']}:cny",),
+    )
+    assert account["used"] == Decimal("0.2") and account["reserved"] == 0
+    row = await fetch_one(
+        "SELECT metrics_json FROM eval_results WHERE result_id=%s", (scoring_setup["result_id"],)
+    )
+    assert row["metrics_json"] is None
+    calls = await fetch_all("SELECT call_id FROM provider_calls WHERE owner_id=%s", (scoring_setup["owner"],))
+    assert len(calls) == 1
 
 
 @pytest.mark.asyncio

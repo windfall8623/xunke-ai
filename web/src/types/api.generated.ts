@@ -1119,6 +1119,25 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/me/llm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get My Llm */
+    get: operations['get_my_llm_api_v1_me_llm_get']
+    /** Put My Llm */
+    put: operations['put_my_llm_api_v1_me_llm_put']
+    post?: never
+    /** Delete My Llm */
+    delete: operations['delete_my_llm_api_v1_me_llm_delete']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/practice/attempts/{attempt_id}': {
     parameters: {
       query?: never
@@ -2784,6 +2803,22 @@ export interface components {
        */
       code: number
       data?: components['schemas']['JudgeProfileList'] | null
+      /** Error Code */
+      error_code?: string | null
+      /**
+       * Message
+       * @default ok
+       */
+      message: string
+    }
+    /** ApiResponse[LLMConfigView] */
+    ApiResponse_LLMConfigView_: {
+      /**
+       * Code
+       * @default 0
+       */
+      code: number
+      data?: components['schemas']['LLMConfigView'] | null
       /** Error Code */
       error_code?: string | null
       /**
@@ -5211,6 +5246,37 @@ export interface components {
       /** Total */
       total: number
     }
+    /** LLMConfigRequest */
+    LLMConfigRequest: {
+      /** Api Key */
+      api_key?: string | null
+      /** Base Url */
+      base_url: string
+      /** Model */
+      model: string
+      /**
+       * Provider
+       * @enum {string}
+       */
+      provider: 'deepseek' | 'anthropic' | 'openai_compatible'
+    }
+    /** LLMConfigView */
+    LLMConfigView: {
+      /** Api Key Hint */
+      api_key_hint: string | null
+      /** Base Url */
+      base_url: string | null
+      /** Can Use System */
+      can_use_system: boolean
+      /** Configured */
+      configured: boolean
+      /** Model */
+      model: string | null
+      /** Provider */
+      provider: ('deepseek' | 'anthropic' | 'openai_compatible') | null
+      /** Source */
+      source: ('user' | 'system') | null
+    }
     /**
      * LearningEvaluationUsage
      * @description One outer provider ledger; private artifact usage is trace-only.
@@ -5236,7 +5302,7 @@ export interface components {
        * @default unreported
        * @enum {string}
        */
-      cost_status_cny: 'unreported' | 'estimated' | 'unknown'
+      cost_status_cny: 'unreported' | 'estimated' | 'unknown' | 'not_applicable'
       /**
        * Cost Usd
        * @default null
@@ -5733,6 +5799,11 @@ export interface components {
       /** Call Id */
       call_id: string
       /**
+       * Config Source
+       * @default null
+       */
+      config_source: ('user' | 'system') | null
+      /**
        * Cost Cny
        * @default null
        */
@@ -5742,7 +5813,7 @@ export interface components {
        * @default unknown
        * @enum {string}
        */
-      cost_status: 'estimated' | 'unknown'
+      cost_status: 'estimated' | 'unknown' | 'not_applicable'
       /**
        * Reserved Cost Cny
        * @default null
@@ -5786,13 +5857,18 @@ export interface components {
     }
     /** PracticeCostPreview */
     PracticeCostPreview: {
+      /**
+       * Config Source
+       * @enum {string}
+       */
+      config_source: 'user' | 'system'
       /** Cost Cny Upper */
       cost_cny_upper: string | null
       /**
        * Cost Status
        * @enum {string}
        */
-      cost_status: 'estimated' | 'unknown'
+      cost_status: 'estimated' | 'unknown' | 'not_applicable'
       /** Embedding Token Upper */
       embedding_token_upper: number
       /**
@@ -5806,8 +5882,17 @@ export interface components {
       input_token_upper: number
       /** Output Token Upper */
       output_token_upper: number
+      /** Personal Model Cost Status */
+      personal_model_cost_status?: 'not_applicable' | null
       /** Pricing Version */
-      pricing_version: string
+      pricing_version: string | null
+      /** System Cost Cny Upper */
+      system_cost_cny_upper: string | null
+      /**
+       * System Cost Status
+       * @enum {string}
+       */
+      system_cost_status: 'estimated' | 'unknown' | 'not_applicable'
     }
     /** PracticeCriterionResultView */
     PracticeCriterionResultView: {
@@ -6174,7 +6259,7 @@ export interface components {
        * @default unreported
        * @enum {string}
        */
-      cost_status_cny: 'unreported' | 'estimated' | 'unknown'
+      cost_status_cny: 'unreported' | 'estimated' | 'unknown' | 'not_applicable'
       /**
        * Cost Usd
        * @default null
@@ -11102,6 +11187,79 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_my_llm_api_v1_me_llm_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LLMConfigView_']
+        }
+      }
+    }
+  }
+  put_my_llm_api_v1_me_llm_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LLMConfigRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LLMConfigView_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  delete_my_llm_api_v1_me_llm_delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiResponse_LLMConfigView_']
         }
       }
     }

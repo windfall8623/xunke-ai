@@ -6,7 +6,7 @@ locks. A retry keeps the exact original grading snapshot and logical quota.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from pydantic import Field, ValidationError
 from pymysql import IntegrityError, OperationalError
@@ -24,7 +24,7 @@ from app.practice.calibration import calibration_profile_applies
 from app.practice.contracts import ShortAnswer
 from app.practice.grade_contracts import GradeInputSnapshot, ShortAnswerProposal
 from app.practice.grading_config import (
-    grading_model_configuration,
+    grading_model_configuration_from_config,
     load_grading_profile,
     require_generation_types as require_generation_types,
     require_short_answer_grading as require_short_answer_grading,
@@ -69,6 +69,7 @@ class GradingState:
     snapshot: GradeInputSnapshot
     attempt: dict
     head: dict | None
+    model_configuration: dict | None = None
 
 
 def _changed():
@@ -159,8 +160,13 @@ def require_grading_job(job, state, *, current=False):
     return request
 
 
-def require_current_grader(snapshot):
-    if snapshot.model_fingerprint != stable_hash(grading_model_configuration()) or (
+def require_current_grader(snapshot, configuration):
+    """Runtime use is authorized against the owner's own frozen model identity.
+
+    The snapshot is sealed at submission; a retry cannot switch source, endpoint
+    or model. Key rotation alone is intentionally outside the public identity.
+    """
+    if snapshot.model_fingerprint != stable_hash(configuration) or (
         snapshot.prompt_hash,
         snapshot.prompt_version,
         snapshot.grader_version,
@@ -168,6 +174,16 @@ def require_current_grader(snapshot):
         raise conflict(
             "grading_configuration_changed", "评分配置已变化，不能用重试改变原评分依据"
         )
+
+
+async def current_grader_configuration(owner_id, settings=None, *, conn=None):
+    """Resolve the owner's exact production configuration or fail without fallback."""
+    from app.services.user_llm_config_service import resolve_actor_llm_config
+
+    config = await resolve_actor_llm_config(owner_id, settings=settings, conn=conn)
+    if not config.configured:
+        raise AppError(409, "llm_configuration_required", "请先配置可用的大模型服务")
+    return grading_model_configuration_from_config(config, settings)
 
 
 def current_snapshot_profile(snapshot):
@@ -277,9 +293,14 @@ async def checked_grading_task(conn, owner_id, job):
 
 async def authorize_grading_execution(job, *, conn=None):
     """The exact same pre-call fence is used by the worker and money meter."""
+    configuration = await current_grader_configuration(job["user_id"], conn=conn)
     if conn is None:
         async with transaction() as tx:
-            return await authorize_grading_execution(job, conn=tx)
+            return await _authorize_grading_execution(job, tx, configuration)
+    return await _authorize_grading_execution(job, conn, configuration)
+
+
+async def _authorize_grading_execution(job, conn, configuration):
     current = await job_service.locked_job(job, conn)
     if any(
         current.get(field) != job.get(field)
@@ -301,8 +322,8 @@ async def authorize_grading_execution(job, *, conn=None):
         conn, current["user_id"], request.attempt_id, job=current
     )
     require_grading_job(current, state, current=True)
-    require_current_grader(state.snapshot)
-    return state
+    require_current_grader(state.snapshot, configuration)
+    return replace(state, model_configuration=configuration)
 
 
 async def queue_short_answer(
@@ -363,7 +384,9 @@ async def queue_short_answer(
         response_hash=attempt["response_hash"],
         evidence=artifact.evidence_pack.evidence,
         help_usage=attempt["help_usage"],
-        model_fingerprint=stable_hash(grading_model_configuration()),
+        model_fingerprint=stable_hash(
+            await current_grader_configuration(actor.owner_id, conn=conn)
+        ),
         prompt_hash=PROMPT_HASH,
         prompt_version=PROMPT_VERSION,
         grader_version=GRADER_VERSION,
@@ -431,7 +454,10 @@ async def _retry_once(actor, attempt_id, key):
                 raise _changed()
             return state.grading["active_task_id"]
         require_short_answer_grading()
-        require_current_grader(state.snapshot)
+        require_current_grader(
+            state.snapshot,
+            await current_grader_configuration(actor.owner_id, conn=conn),
+        )
         if (
             state.grading["status"] not in {"failed", "cancelled"}
             or state.head
@@ -506,9 +532,9 @@ async def retry_practice_grading(actor, attempt_id, key):
 
 async def _review_once(actor, attempt_id, body, key, request_hash):
     async with transaction() as conn:
-        # Foreign attempts stay hidden even from an evaluator.
+        # Foreign attempts stay hidden even from an evaluator or admin.
         await _attempt_preview(conn, actor.owner_id, attempt_id)
-        if "evaluator" not in actor.roles:
+        if not {"evaluator", "admin"}.intersection(actor.roles):
             raise AppError(403, "evaluator_required", "权威复核需要评测维护权限")
         state = await locked_grading_state(conn, actor.owner_id, attempt_id)
         replay = await fetch_one(

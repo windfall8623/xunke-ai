@@ -48,6 +48,8 @@ class ActorContext(Contract):
 
     @property
     def role(self) -> str:
+        if "admin" in self.roles:
+            return "admin"
         return "evaluator" if "evaluator" in self.roles else "learner"
 
 

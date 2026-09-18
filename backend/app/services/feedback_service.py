@@ -6,6 +6,7 @@ source lineage; final datasets are newly versioned and still need annotation.
 
 import copy
 
+from app.core.auth import require_system_model_admin
 from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict, not_found
 from app.core.values import digest, dump, iso, load, now
@@ -133,6 +134,7 @@ def _promotion_response(row, documents):
 
 
 async def promote_feedback(actor, feedback_id, body):
+    await require_system_model_admin(actor.owner_id)
     row = await owned_feedback(actor.owner_id, feedback_id)
     if not row["allow_evaluation"]:
         raise conflict("evaluation_consent_required", "反馈提交时未授权资料用于评测")
@@ -161,6 +163,7 @@ async def promote_feedback(actor, feedback_id, body):
     # Reserve the promotion identity before copying. Copy operations themselves
     # use stable owner+feedback+source keys, and never inherit a feedback row lock.
     async with transaction() as conn:
+        await require_system_model_admin(actor.owner_id, conn=conn)
         current = await owned_feedback(
             actor.owner_id, feedback_id, conn=conn, lock=True
         )
@@ -197,6 +200,7 @@ async def promote_feedback(actor, feedback_id, body):
             )
         )
     async with transaction() as conn:
+        await require_system_model_admin(actor.owner_id, conn=conn)
         current = await owned_feedback(
             actor.owner_id, feedback_id, conn=conn, lock=True
         )
@@ -379,6 +383,7 @@ async def promote_feedback(actor, feedback_id, body):
         manifest["sources"] = [*manifest.get("sources", []), *refs]
         samples = [*load(parent["samples_json"]), sample]
     async with transaction() as conn:
+        await require_system_model_admin(actor.owner_id, conn=conn)
         await sources.reauthorize_scope(scope, conn=conn)
         await datasets.validated(actor.owner_id, manifest, samples, conn=conn)
         current = await owned_feedback(

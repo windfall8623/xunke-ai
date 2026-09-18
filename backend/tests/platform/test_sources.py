@@ -114,7 +114,7 @@ async def test_eval_documents_do_not_use_production_quota(learner):
     from app.core.db import execute, fetch_one
 
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     for i in range(12):
         r = await api.post(
@@ -197,9 +197,9 @@ async def test_evaluation_copy_is_idempotent_and_revoked_with_original(
     platform_settings.dashscope_embedding_model = "fixture-vector-v1"
     platform_settings.embedding_dimensions = 3
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
-    actor = ActorContext(owner_id=session["user"]["id"], roles=["evaluator"])
+    actor = ActorContext(owner_id=session["user"]["id"], roles=["admin"])
     with OwnerIndexStore(platform_settings.data_dir, process_role="rag_owner") as store:
         worker = OwnerWorker(
             RagEngine(

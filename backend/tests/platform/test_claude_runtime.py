@@ -187,13 +187,17 @@ def claude_runtime_settings(platform_settings, claude_service, monkeypatch):
 async def test_native_claude_learning_flow_journals_calls_and_preserves_settlement(
     claude_runtime_settings, learner, claude_service, report_status
 ):
-    from app.core.db import fetch_all, fetch_one
+    from app.core.db import execute, fetch_all, fetch_one
     from app.core.values import load
     from app.workers.providers import build_runtime
     from app.workers.rag_owner import OwnerWorker
 
     api, session = learner
     owner = session["user"]["id"]
+    # This SDK/protocol test intentionally exercises the configured system model.
+    # Only a current database admin may use it; ordinary-user isolation is tested
+    # separately without relaxing the real worker/admission resolver.
+    await execute("UPDATE users SET role='admin' WHERE id=%s", (owner,))
     server, scenario = claude_service
     scenario.report_status = report_status
     runtime = build_runtime(claude_runtime_settings)

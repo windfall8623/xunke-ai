@@ -8,9 +8,19 @@ import jwt
 import pytest
 from starlette.requests import Request
 
-from app.core.auth import create_token, decode_token, get_current_actor, get_current_user, get_optional_user
+from app.core.auth import (
+    create_token,
+    decode_token,
+    get_admin,
+    get_current_actor,
+    get_current_user,
+    get_evaluator,
+    get_optional_user,
+    require_system_model_admin,
+)
 from app.core.errors import AppError
 from app.core.exceptions import AuthenticationError
+from app.rag.contracts import ActorContext
 
 
 def http_request(headers=None, method="GET"):
@@ -156,6 +166,16 @@ class TestPersistedIdentity:
         assert actor.owner_id == 7 and actor.roles == ["evaluator"]
         assert request.state.auth_type == "cookie"
 
+    async def test_role_demotion_is_visible_on_the_next_cookie_request(self, session_settings):
+        with patch("app.core.db.fetch_one", AsyncMock(side_effect=[
+            {"id": 7, "role": "admin", "csrf_token": "csrf-test"},
+            {"id": 7, "role": "evaluator", "csrf_token": "csrf-test"},
+        ])):
+            before = await get_current_actor(http_request({"Cookie": "test_session=test-cookie"}))
+            after = await get_current_actor(http_request({"Cookie": "test_session=test-cookie"}))
+        assert before.role == "admin"
+        assert after.role == "evaluator"
+
     @pytest.mark.parametrize("origin,csrf,code", [
         ("https://untrusted.invalid", "csrf-test", "origin_rejected"),
         ("http://test", "wrong", "csrf_rejected"),
@@ -171,3 +191,54 @@ class TestPersistedIdentity:
         with patch("app.core.db.fetch_one", AsyncMock(return_value=None)):
             with pytest.raises(AuthenticationError):
                 await get_optional_user(http_request({"Cookie": "test_session=expired"}))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["evaluator", "admin"])
+async def test_evaluator_dependency_retains_owned_workbench_access(role):
+    actor = ActorContext(owner_id=7, role=role)
+    assert await get_evaluator(actor) is actor
+
+
+@pytest.mark.asyncio
+async def test_evaluator_dependency_rejects_learner():
+    with pytest.raises(AppError) as caught:
+        await get_evaluator(ActorContext(owner_id=7))
+    assert (caught.value.status, caught.value.code) == (403, "evaluator_required")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("locked", [False, True])
+@pytest.mark.parametrize("role", ["admin", "evaluator", "learner", "unknown", None])
+async def test_system_model_permission_requires_current_database_admin(role, locked):
+    conn = object() if locked else None
+    row = {"role": role} if role is not None else None
+    with patch("app.core.db.fetch_one", AsyncMock(return_value=row)) as fetch:
+        if role == "admin":
+            await require_system_model_admin(7, conn=conn)
+        else:
+            with pytest.raises(AppError) as caught:
+                await require_system_model_admin(7, conn=conn)
+            assert (caught.value.status, caught.value.code) == (
+                403, "system_model_admin_required"
+            )
+    fetch.assert_awaited_once_with(
+        "SELECT role FROM users WHERE id=%s" + (" FOR SHARE" if locked else ""),
+        (7,),
+        conn=conn,
+    )
+
+
+@pytest.mark.asyncio
+async def test_admin_dependency_does_not_trust_stale_actor_or_cache_permission():
+    actor = ActorContext(owner_id=7, role="admin")
+    with patch("app.core.db.fetch_one", AsyncMock(side_effect=[
+        {"role": "admin"}, {"role": "evaluator"}
+    ])) as fetch:
+        assert await get_admin(actor) is actor
+        with pytest.raises(AppError) as caught:
+            await get_admin(actor)
+    assert (caught.value.status, caught.value.code) == (
+        403, "system_model_admin_required"
+    )
+    assert fetch.await_count == 2

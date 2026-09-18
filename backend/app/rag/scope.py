@@ -84,8 +84,8 @@ def require_execution_scope(actor, context, scope: ResolvedScope) -> None:
     if context.mode == "production" and scope.namespace != "production":
         raise ScopeRevoked("Production execution requires production sources")
     if context.mode == "evaluation":
-        if "evaluator" not in actor.roles:
-            raise ScopeRevoked("Evaluation permission is required")
+        if "admin" not in actor.roles:
+            raise ScopeRevoked("System model admin permission is required")
         if scope.namespace != "evaluation" and not scope.namespace.startswith(
             "evaluation:"
         ):

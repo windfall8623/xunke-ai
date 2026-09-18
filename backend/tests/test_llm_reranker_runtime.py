@@ -50,7 +50,8 @@ async def test_native_runtime_uses_messages_api_and_independent_ranking_output_c
             # by purpose; constructing another adapter must not make a request.
             assert [
                 meter for meter in meters if meter.get("purpose") == "reranker"
-            ] == [{"purpose": "reranker", "output_upper": 512}]
+            ] == [{"purpose": "reranker", "output_upper": 512,
+                   "config_source": "system", "api_key": "test-native-key"}]
             assert len(server.requests) == 1
             request = server.requests[0]
             assert request.path == "/v1/messages"

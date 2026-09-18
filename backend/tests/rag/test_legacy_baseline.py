@@ -182,7 +182,7 @@ async def test_owner_baseline_binding_executes_tool_summary_then_frozen_quiz_wit
         config = engine.configure_legacy_baseline(
             source_archive=archive_path, archive_sha256=checksum, llm=ToolModel()
         )
-        actor = ActorContext(owner_id=7, roles=["evaluator"])
+        actor = ActorContext(owner_id=7, roles=["admin"])
         context = ExecutionContext(
             mode="evaluation", run_id="b0-run", storage_namespace="evaluation:7"
         )

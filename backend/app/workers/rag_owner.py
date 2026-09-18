@@ -87,7 +87,7 @@ async def _actor(job):
     if (
         job["mode"] == "evaluation"
         and job["kind"] != "delete"
-        and "evaluator" not in actor.roles
+        and "admin" not in actor.roles
     ):
         raise ScopeRevoked("Evaluation permission is no longer available")
     return actor
@@ -226,7 +226,10 @@ async def _learning_evaluation_usage(job, usage):
             }
         )
     data["calls"] = calls
-    data["unknown_call_count"] = sum(call["cost_cny"] is None for call in calls)
+    data["unknown_call_count"] = sum(
+        call["cost_cny"] is None and call.get("config_source") != "user"
+        for call in calls
+    )
     data["unknown_reserved_cost_cny"] = data["reserved_cost_cny"]
     data["stage_ms"] = {**usage.get("stage_ms", {}), **data["stage_ms"]}
     if tasks[0].get("created_at") is not None:
@@ -252,8 +255,14 @@ class OwnerWorker:
         course_tutor_generator=None,
         worker_id=None,
         role=None,
+        runtime_resolver=None,
     ):
         self.engine = engine
+        from app.workers.user_dispatch import resolve_task_llm_config
+
+        self.runtime_resolver = runtime_resolver
+        if self.runtime_resolver is None and getattr(engine, "requires_actor_llm", False):
+            self.runtime_resolver = resolve_task_llm_config
         self.report_generator = report_generator
         self.practice_provider = practice_provider
         self.grading_provider = grading_provider
@@ -381,87 +390,92 @@ class OwnerWorker:
             await self._execute_managed(job)
 
     async def _execute_managed(self, job):
-        # The ContextVar propagates into the provider adapters and the managed
-        # LangGraph tasks, so no production/evaluation charge can cross jobs.
+        from app.workers.user_dispatch import isolated_dispatch
+
+        # ContextVar metering remains task-local, as do all actor chat clients.
         with execution(job):
             actor = await _actor(job)
-            if job["kind"] == "ingest":
-                await job_service.heartbeat(job, "parsing_indexing")
-                request = await source_service.build_request(job)
-                budget = BudgetLedger(
-                    BudgetLimits(
-                        max_embedding_calls=1000,
-                        max_input_tokens=32 * 1024 * 1024,
-                        deadline_seconds=min(1800, _remaining(job)),
-                    )
-                )
-                result = await self.engine.build(request, budget=budget)
-                await source_service.publish_build(job, result)
-            elif job["kind"] == "quiz":
-                await self._quiz(job, actor)
-            elif job["kind"] == "practice_generate":
-                from app.workers.practice_job import (
-                    load_practice_usage,
-                    run_practice_generation,
-                )
+            async with isolated_dispatch(self, job, actor) as worker:
+                await worker._dispatch(job, actor)
 
-                await run_practice_generation(
-                    job,
-                    actor,
-                    self.engine,
-                    provider=self.practice_provider,
-                    usage_loader=load_practice_usage,
+    async def _dispatch(self, job, actor):
+        if job["kind"] == "ingest":
+            await job_service.heartbeat(job, "parsing_indexing")
+            request = await source_service.build_request(job)
+            budget = BudgetLedger(
+                BudgetLimits(
+                    max_embedding_calls=1000,
+                    max_input_tokens=32 * 1024 * 1024,
+                    deadline_seconds=min(1800, _remaining(job)),
                 )
-            elif job["kind"] == "practice_grade":
-                from app.workers.practice_grading_job import run_practice_grading
-                from app.workers.practice_job import load_practice_usage
+            )
+            result = await self.engine.build(request, budget=budget)
+            await source_service.publish_build(job, result)
+        elif job["kind"] == "quiz":
+            await self._quiz(job, actor)
+        elif job["kind"] == "practice_generate":
+            from app.workers.practice_job import (
+                load_practice_usage,
+                run_practice_generation,
+            )
 
-                await run_practice_grading(
-                    job,
-                    actor,
-                    self.engine,
-                    provider=self.grading_provider,
-                    usage_loader=load_practice_usage,
-                )
-            elif job["kind"] == "qa":
-                from app.workers.qa_job import run_qa
+            await run_practice_generation(
+                job,
+                actor,
+                self.engine,
+                provider=self.practice_provider,
+                usage_loader=load_practice_usage,
+            )
+        elif job["kind"] == "practice_grade":
+            from app.workers.practice_grading_job import run_practice_grading
+            from app.workers.practice_job import load_practice_usage
 
-                await run_qa(job, actor, self.engine, usage_loader=_metered_usage)
-            elif job["kind"] in {"course_outline", "course_lesson"}:
-                from app.workers.course_job import run_course
+            await run_practice_grading(
+                job,
+                actor,
+                self.engine,
+                provider=self.grading_provider,
+                usage_loader=load_practice_usage,
+            )
+        elif job["kind"] == "qa":
+            from app.workers.qa_job import run_qa
 
-                await run_course(job, self.engine, self.course_generator, usage_loader=_metered_usage)
-            elif job["kind"] == "course_tutor":
-                from app.workers.course_tutor_job import run_course_tutor
+            await run_qa(job, actor, self.engine, usage_loader=_metered_usage)
+        elif job["kind"] in {"course_outline", "course_lesson"}:
+            from app.workers.course_job import run_course
 
-                await run_course_tutor(
-                    job, actor, self.engine, generator=self.course_tutor_generator,
-                    usage_loader=_metered_usage,
-                )
-            elif job["kind"] == "report":
-                await self._report(job, actor)
-            elif job["kind"] == "learning_project":
-                from app.workers.learning_projection_job import run_learning_projection
+            await run_course(job, self.engine, self.course_generator, usage_loader=_metered_usage)
+        elif job["kind"] == "course_tutor":
+            from app.workers.course_tutor_job import run_course_tutor
 
-                await run_learning_projection(job)
-            elif job["kind"] == "delete":
-                await job_service.heartbeat(job, "removing_artifacts")
-                await source_service.cleanup_document(
-                    actor.owner_id, job["request"]["doc_id"], self.engine.store
-                )
-                await job_service.complete_job(
-                    job, {"doc_id": job["request"]["doc_id"], "status": "deleted"}
-                )
-            elif job["kind"] == "eval_sample":
-                await self._evaluation(job, actor)
-            elif job["kind"] == "images":
-                if job["mode"] != "production":
-                    raise ScopeRevoked("Evaluation cannot create learning images")
-                from app.services.image_job_service import run_images
+            await run_course_tutor(
+                job, actor, self.engine, generator=self.course_tutor_generator,
+                usage_loader=_metered_usage,
+            )
+        elif job["kind"] == "report":
+            await self._report(job, actor)
+        elif job["kind"] == "learning_project":
+            from app.workers.learning_projection_job import run_learning_projection
 
-                await run_images(job)
-            else:
-                raise AppError(422, "unsupported_job", "任务类型不受支持")
+            await run_learning_projection(job)
+        elif job["kind"] == "delete":
+            await job_service.heartbeat(job, "removing_artifacts")
+            await source_service.cleanup_document(
+                actor.owner_id, job["request"]["doc_id"], self.engine.store
+            )
+            await job_service.complete_job(
+                job, {"doc_id": job["request"]["doc_id"], "status": "deleted"}
+            )
+        elif job["kind"] == "eval_sample":
+            await self._evaluation(job, actor)
+        elif job["kind"] == "images":
+            if job["mode"] != "production":
+                raise ScopeRevoked("Evaluation cannot create learning images")
+            from app.services.image_job_service import run_images
+
+            await run_images(job)
+        else:
+            raise AppError(422, "unsupported_job", "任务类型不受支持")
 
     async def _quiz(self, job, actor):
         if job["mode"] != "production":
@@ -687,11 +701,9 @@ class OwnerWorker:
         # independent scorer. The outer publication already owns this job row.
         from app.services.evaluation_scoring import _locked_context
 
-        evaluator = await fetch_one(
-            "SELECT role FROM users WHERE id=%s FOR SHARE", (job["user_id"],), conn=conn
-        )
-        if not evaluator or evaluator["role"] != "evaluator":
-            raise ScopeRevoked("Evaluation permission is no longer available")
+        from app.core.auth import require_system_model_admin
+
+        await require_system_model_admin(job["user_id"], conn=conn)
         prepared = await _locked_context(job["request"]["result_id"], conn)
         if prepared is None:
             raise conflict("evaluation_busy", "评测结果正由其他进程处理")
@@ -1047,6 +1059,7 @@ class OwnerWorker:
 async def _main(args):
     from app.core.redis_client import close_redis, init_redis
     from app.workers.providers import build_runtime
+    from app.workers.user_dispatch import resolve_task_llm_config
 
     await init_pool()
     # 通知客户端与 API 共享同一套 Redis 运行时；初始化失败只降级。
@@ -1066,6 +1079,7 @@ async def _main(args):
             course_tutor_generator=runtime.course_tutor_generator,
             worker_id=args.worker_id,
             role=role,
+            runtime_resolver=resolve_task_llm_config,
         )
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

@@ -36,7 +36,32 @@ def _amount(value, *, allow_string=False) -> float | None:
     return None
 
 
+def _personal_cost_na(version: str, *, unit="CNY") -> dict:
+    return metric(
+        None, 0, version=version, unit=unit, status="na",
+        reason="personal_model_not_platform_billed",
+        details={"cost_status": "not_applicable", "aggregation": "system_calls_only"},
+    )
+
+
 def _reservation_metrics(usage: dict, calls: list, missing: bool, version: str) -> dict:
+    system_calls = [call for call in calls if call.get("config_source") != "user"]
+    if calls and not system_calls and not missing:
+        return {
+            name: _personal_cost_na(version)
+            for name in ("reserved_cost_cny", "unknown_reserved_cost_cny")
+        }
+    personal_calls = [call for call in calls if call.get("config_source") == "user"]
+    source_aware_totals = not personal_calls or (
+        usage.get("cost_status_cny") in {"estimated", "unknown"}
+        and all(
+            call.get("cost_status") == "not_applicable"
+            and call.get("cost_cny") is None
+            and call.get("reserved_cost_cny") is None
+            for call in personal_calls
+        )
+    )
+    calls = system_calls
     output = {}
     for name, selected in (
         ("reserved_cost_cny", calls),
@@ -50,7 +75,7 @@ def _reservation_metrics(usage: dict, calls: list, missing: bool, version: str) 
             ],
         ),
     ):
-        if name in usage:
+        if name in usage and source_aware_totals:
             value = _amount(usage[name], allow_string=True)
             unknown = int(value is None) + int(missing)
             total = value or 0
@@ -187,12 +212,19 @@ def cost_metrics(
             continue
         seen[key] = call
         calls.append(call)
-    totals, unknowns = {}, {}
+    personal_calls = [call for call in calls if call.get("config_source") == "user"]
+    totals, unknowns, personal_stages, billable_stages = {}, {}, set(), set()
     estimated = 0
     for call in calls:
         stage = call.get("stage", "unknown")
-        stage = {"llm": "generation", "reranker": "rerank"}.get(stage, stage)
+        stage = "rerank" if stage == "llm" and call.get("purpose") == "reranker" else {
+            "llm": "generation", "reranker": "rerank"
+        }.get(stage, stage)
         metric_applies(f"{stage}_cost_cny", artifact.get("case_type", "retrieval"))
+        if call.get("config_source") == "user":
+            personal_stages.update(("total", stage))
+            continue
+        billable_stages.update(("total", stage))
         cost = _amount(call.get("cost_cny"), allow_string=learning)
         known = cost is not None and call.get("cost_status") in {
             "actual",
@@ -203,6 +235,7 @@ def cost_metrics(
             totals[name] = totals.get(name, 0) + (cost if known else 0)
             unknowns[name] = unknowns.get(name, 0) + int(not known)
         estimated += int(call.get("cost_status") == "estimated")
+    personal_only = bool(personal_calls) and len(personal_calls) == len(calls)
     output = {}
     for stage in {
         "total",
@@ -212,7 +245,13 @@ def cost_metrics(
         "retrieval",
         "rerank",
         *totals,
+        *personal_stages,
     }:
+        if not ledger_missing and (
+            personal_only or stage in personal_stages and stage not in billable_stages
+        ):
+            output[f"{stage}_cost_cny"] = _personal_cost_na(version)
+            continue
         value, unknown = (
             totals.get(stage, 0),
             unknowns.get(stage, 0) + int(ledger_missing),
@@ -256,7 +295,11 @@ def cost_metrics(
         **ledger_state,
     )
     output["provider_error_rate"] = metric(
-        sum(call.get("status") in {"failed", "error", "timeout"} for call in calls),
+        sum(
+            call.get("status") in {"failed", "error", "timeout"}
+            or call.get("status") == "unknown" and bool(call.get("error_code") or call.get("error_type"))
+            for call in calls
+        ),
         max(1, len(calls)) if ledger_unknown else len(calls),
         version=version,
         **ledger_state,
@@ -301,6 +344,8 @@ def cost_metrics(
         declared_unknown = usage.get("unknown_call_count", 0)
         if type(declared_unknown) is not int or declared_unknown < 0:
             raise ValueError("unknown_call_count must be a nonnegative integer")
+        if personal_calls:
+            declared_unknown = unknowns.get("total", 0)
         output["unknown_call_count"] = metric(
             max(declared_unknown, unknowns.get("total", 0)),
             unit="count",
@@ -321,9 +366,14 @@ def cost_metrics(
             },
         )
     elif confirmed_valid is not None:
-        if confirmed_valid == 0:
-            output["cost_per_valid_question_cny"] = not_applicable(
-                "no_confirmed_valid_output", version=version
+        if personal_only and not ledger_missing:
+            output["cost_per_valid_question_cny"] = _personal_cost_na(
+                version, unit="CNY/question"
+            )
+        elif confirmed_valid == 0:
+            output["cost_per_valid_question_cny"] = metric(
+                None, 0, status="na", reason="no_confirmed_valid_output",
+                version=version, unit="CNY/question",
             )
         else:
             output["cost_per_valid_question_cny"] = metric(

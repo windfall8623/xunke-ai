@@ -80,7 +80,7 @@ export function PracticeAttemptActions({ attempt }: { attempt: PracticeAttempt }
               {retry.isPending ? '正在请求评分…' : '重试评分'}
             </button>
           )}
-          {user?.role === 'evaluator' && !reviewOpen && (
+          {['evaluator', 'admin'].includes(user?.role || '') && !reviewOpen && (
             <button className="button secondary" onClick={() => setReviewOpen(true)}>
               人工复核
             </button>
@@ -90,7 +90,7 @@ export function PracticeAttemptActions({ attempt }: { attempt: PracticeAttempt }
       {(retry.error || cancel.error) && (
         <ErrorNotice error={practiceErrorMessage(retry.error || cancel.error)} />
       )}
-      {reviewOpen && user?.role === 'evaluator' && (
+      {reviewOpen && ['evaluator', 'admin'].includes(user?.role || '') && (
         <ReviewForm
           attemptId={attempt.attempt_id}
           onChanged={onChanged}

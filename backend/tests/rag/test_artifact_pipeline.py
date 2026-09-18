@@ -38,7 +38,7 @@ def context_and_scope():
     e = e.model_copy(update={"namespace": "evaluation:7"})
     return (
         e,
-        ActorContext(owner_id=7, roles=["evaluator"]),
+        ActorContext(owner_id=7, roles=["admin"]),
         ExecutionContext(
             mode="evaluation", run_id="run1", storage_namespace="evaluation:7"
         ),

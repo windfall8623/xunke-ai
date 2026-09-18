@@ -128,9 +128,13 @@ class PracticeCallUsage(Contract):
     attempt: int = Field(ge=1)
     stage: Literal["llm", "embedding", "reranker", "search", "fetch", "images"]
     status: Literal["reserved", "completed", "unknown"]
+    # Omit absent historical provenance to preserve sealed artifact hashes.
+    config_source: Literal["user", "system"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     cost_cny: CnyAmount | None = None
     reserved_cost_cny: CnyAmount | None = None
-    cost_status: Literal["estimated", "unknown"] = "unknown"
+    cost_status: Literal["estimated", "unknown", "not_applicable"] = "unknown"
 
 
 class PracticeUsage(Usage):
@@ -141,7 +145,9 @@ class PracticeUsage(Usage):
     cost_cny: CnyAmount | None = None
     known_cost_cny: CnyAmount = Decimal("0")
     reserved_cost_cny: CnyAmount | None = None
-    cost_status_cny: Literal["unreported", "estimated", "unknown"] = "unreported"
+    cost_status_cny: Literal[
+        "unreported", "estimated", "unknown", "not_applicable"
+    ] = "unreported"
 
 
 class BlankResponse(Contract):

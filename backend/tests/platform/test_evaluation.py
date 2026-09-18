@@ -81,7 +81,7 @@ async def test_eval_run_idempotency_role_scope_and_cancel(learner):
     from app.core.db import execute, fetch_one
 
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     r = await api.post("/api/v1/eval/datasets", json=policy_dataset())
     dataset = r.json()["data"]
@@ -111,7 +111,22 @@ async def test_eval_run_idempotency_role_scope_and_cancel(learner):
         "/api/v1/eval/runs", json={**body, "repeat_count": 2}, headers=headers
     )
     assert bad.status_code == 409
-    cancel = await api.post(f"/api/v1/eval/runs/{run['run_id']}/cancel")
+    await execute(
+        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+    )
+    for key in (headers["Idempotency-Key"], uuid.uuid4().hex):
+        denied = await api.post(
+            "/api/v1/eval/runs", json=body, headers={"Idempotency-Key": key}
+        )
+        assert denied.status_code == 403, denied.text
+        assert denied.json()["error_code"] == "system_model_admin_required"
+    path = f"/api/v1/eval/runs/{run['run_id']}"
+    assert (await api.get(path)).status_code == 200
+    assert (await api.get(path + "/export")).status_code == 200
+    denied_resume = await api.post(path + "/resume")
+    assert denied_resume.status_code == 403
+    assert denied_resume.json()["error_code"] == "system_model_admin_required"
+    cancel = await api.post(path + "/cancel")
     assert cancel.status_code == 200
     assert cancel.json()["data"]["status"] == "cancelled"
     assert (
@@ -513,7 +528,7 @@ async def test_new_run_freezes_cost_protocol_with_the_immutable_budget(learner):
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     dataset_id = await frozen_policy(api)
     response = await api.post(
@@ -586,7 +601,7 @@ async def test_resume_rechecks_budget_stop_after_concurrent_state_change(
 
     api, session = learner
     owner = session["user"]["id"]
-    await execute("UPDATE users SET role='evaluator' WHERE id=%s", (owner,))
+    await execute("UPDATE users SET role='admin' WHERE id=%s", (owner,))
     dataset_id = await frozen_policy(api)
     response = await api.post(
         "/api/v1/eval/runs",
@@ -635,7 +650,7 @@ async def test_concurrent_different_dataset_same_run_key_returns_conflict(
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     dataset_ids = [await frozen_policy(api), await frozen_policy(api)]
     original = service.execute
@@ -701,7 +716,7 @@ async def test_external_judge_selection_is_pinned_per_run_without_credentials(
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     config = {
         "enabled": True,
@@ -785,8 +800,8 @@ async def test_expired_run_retains_metric_view_but_cannot_resume_or_review(quiz_
     ]
     resume = await fixture["api"].post(path + "/resume")
     assert (
-        resume.status_code == 409
-        and resume.json()["error_code"] == "raw_artifacts_expired"
+        resume.status_code == 403
+        and resume.json()["error_code"] == "system_model_admin_required"
     )
     review = await fixture["api"].put(
         path + f"/results/{fixture['result_id']}/review",
@@ -795,4 +810,10 @@ async def test_expired_run_retains_metric_view_but_cannot_resume_or_review(quiz_
     assert (
         review.status_code == 409
         and review.json()["error_code"] == "raw_artifacts_expired"
+    )
+    await execute("UPDATE users SET role='admin' WHERE id=%s", (fixture["owner"],))
+    admin_resume = await fixture["api"].post(path + "/resume")
+    assert (
+        admin_resume.status_code == 409
+        and admin_resume.json()["error_code"] == "raw_artifacts_expired"
     )

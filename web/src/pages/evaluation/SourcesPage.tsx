@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { FileSearch, FileText, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useIdentityKey } from '../../app/AuthProvider'
+import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import { Dialog } from '../../components/Dialog'
 import {
   EmptyState,
@@ -17,6 +17,7 @@ import { evaluationApi } from '../../services/evaluation'
 import type { DocumentItem } from '../../types/api'
 
 export function SourcesPage() {
+  const canBuild = useAuth().user?.role === 'admin'
   const identity = useIdentityKey()
   const [selected, setSelected] = useState<DocumentItem | null>(null)
   const [removing, setRemoving] = useState<DocumentItem | null>(null)
@@ -36,8 +37,10 @@ export function SourcesPage() {
     void query.refetch()
   }
   const reindex = useMutation({
-    mutationFn: (docId: string) =>
-      evaluationApi.reindexDocument(docId, profiles[docId] || 'legacy-char-v1'),
+    mutationFn: (docId: string) => {
+      if (!canBuild) throw new Error('评测资料导入和重建需要管理员权限。')
+      return evaluationApi.reindexDocument(docId, profiles[docId] || 'legacy-char-v1')
+    },
     onSuccess: refresh,
   })
   const remove = useMutation({
@@ -60,11 +63,11 @@ export function SourcesPage() {
           </button>
         }
       />
-      <DocumentUpload
-        purpose="evaluation"
-        onUploaded={refresh}
-        disabled={(query.data?.total || 0) >= 300}
-      />
+      {canBuild ? (
+        <DocumentUpload purpose="evaluation" onUploaded={refresh} disabled={(query.data?.total || 0) >= 300} />
+      ) : (
+        <p className="notice">评测人员可查看、标注或撤销本人的资料；导入和重建使用系统服务，需要管理员权限。</p>
+      )}
       <p className="tiny muted">评测资料使用独立额度。原文和工件仍受本人权限及授权撤销约束。</p>
       <ErrorNotice error={query.error || reindex.error} onRetry={refresh} />
       {query.isPending ? (
@@ -121,7 +124,7 @@ export function SourcesPage() {
                 <button
                   className="text-button"
                   disabled={
-                    reindex.isPending ||
+                    !canBuild || reindex.isPending ||
                     !document.active_version_id ||
                     ['processing', 'queued', 'running', 'deleting'].includes(document.status)
                   }

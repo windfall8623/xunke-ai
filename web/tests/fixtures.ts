@@ -4,7 +4,7 @@ import { documentFixture, learner, questions, quiz } from '../src/test/fixtures'
 type ObjectData = Record<string, unknown>
 export async function installTestApi(
   page: Page,
-  options: { guest?: boolean; evaluator?: boolean; longName?: boolean } = {},
+  options: { guest?: boolean; evaluator?: boolean; admin?: boolean; longName?: boolean } = {},
 ) {
   const baseDataset = {
     dataset_id: 'data-1',
@@ -79,7 +79,7 @@ export async function installTestApi(
     authenticated: !options.guest,
     user: {
       ...learner,
-      role: options.evaluator ? 'evaluator' : 'learner',
+      role: options.admin ? 'admin' : options.evaluator ? 'evaluator' : 'learner',
       nickname: options.longName
         ? '一个保持好奇心并持续学习的很长很长昵称'.repeat(3)
         : learner.nickname,

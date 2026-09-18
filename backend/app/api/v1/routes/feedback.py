@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.auth import get_current_actor, get_evaluator
+from app.core.auth import get_admin, get_current_actor, get_evaluator
 from app.models.common import ApiResponse
 from app.models.feedback import (
     FeedbackCreate,
@@ -18,6 +18,7 @@ from app.services import feedback_service as service
 router = APIRouter(tags=["feedback"])
 Learner = Annotated[ActorContext, Depends(get_current_actor)]
 Evaluator = Annotated[ActorContext, Depends(get_evaluator)]
+Admin = Annotated[ActorContext, Depends(get_admin)]
 
 
 @router.post(
@@ -52,5 +53,5 @@ async def review(feedback_id: str, body: FeedbackReview, actor: Evaluator):
     status_code=202,
     response_model=ApiResponse[PromotionView],
 )
-async def promote(feedback_id: str, body: FeedbackPromote, actor: Evaluator):
+async def promote(feedback_id: str, body: FeedbackPromote, actor: Admin):
     return ApiResponse.success(await service.promote_feedback(actor, feedback_id, body))

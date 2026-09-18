@@ -36,5 +36,5 @@ async def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--user-id", type=int, required=True)
-    parser.add_argument("--role", choices=["learner", "evaluator"], required=True)
+    parser.add_argument("--role", choices=["learner", "evaluator", "admin"], required=True)
     asyncio.run(run(parser.parse_args()))

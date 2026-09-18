@@ -5,6 +5,7 @@ import json
 import zipfile
 from pathlib import Path
 
+from app.core.auth import require_system_model_admin
 from app.core.config import get_settings
 from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict, not_found
@@ -172,6 +173,8 @@ async def read_upload(file):
 
 
 async def upload_document(actor, file, *, purpose="production", doc_id=None):
+    if purpose == "evaluation":
+        await require_system_model_admin(actor.owner_id)
     name, ext, raw = await read_upload(file)
     new_doc = doc_id is None
     doc_id = doc_id or uid("doc")
@@ -191,6 +194,8 @@ async def upload_document(actor, file, *, purpose="production", doc_id=None):
                 (actor.owner_id,),
                 conn=conn,
             )
+            if purpose == "evaluation":
+                await require_system_model_admin(actor.owner_id, conn=conn)
             if new_doc:
                 count = await fetch_one(
                     "SELECT COUNT(*) AS n FROM kb_documents WHERE user_id=%s AND purpose=%s AND deleted_at IS NULL",
@@ -267,8 +272,12 @@ async def upload_document(actor, file, *, purpose="production", doc_id=None):
 
 
 async def reindex_document(actor, doc_id, index_profile_id, *, purpose="production"):
+    if purpose == "evaluation":
+        await require_system_model_admin(actor.owner_id)
     index_profile_id = profile(index_profile_id).profile_id
     async with transaction() as conn:
+        if purpose == "evaluation":
+            await require_system_model_admin(actor.owner_id, conn=conn)
         row = await owned_document(
             actor.owner_id, doc_id, purpose=purpose, conn=conn, lock=True
         )
@@ -350,6 +359,8 @@ async def build_request(job):
 async def publish_build(job, result):
     async def publisher(current, payload, conn):
         request = current["request"]
+        if current["mode"] == "evaluation" or request["purpose"] == "evaluation":
+            await require_system_model_admin(current["user_id"], conn=conn)
         row = await owned_document(
             current["user_id"],
             request["doc_id"],
@@ -617,12 +628,9 @@ async def copy_for_evaluation(actor, source_manifest, idempotency_key):
     This is called after explicit feedback consent and reviewer authorization.
     It copies source bytes, never promotes generated answers to gold labels.
     """
+    await require_system_model_admin(actor.owner_id)
     source = SourceManifest.model_validate(source_manifest)
-    if (
-        "evaluator" not in actor.roles
-        or source.owner_id != actor.owner_id
-        or source.namespace != "production"
-    ):
+    if source.owner_id != actor.owner_id or source.namespace != "production":
         raise not_found()
     if not idempotency_key or len(idempotency_key) > 128:
         raise AppError(422, "idempotency_required", "需要有效副本操作标识")
@@ -645,6 +653,7 @@ async def copy_for_evaluation(actor, source_manifest, idempotency_key):
                 (actor.owner_id,),
                 conn=conn,
             )
+            await require_system_model_admin(actor.owner_id, conn=conn)
             await reauthorize_scope(
                 ResolvedScope(
                     owner_id=actor.owner_id, namespace="production", documents=[source]

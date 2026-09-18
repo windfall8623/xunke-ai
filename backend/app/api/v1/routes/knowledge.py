@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 
-from app.core.auth import get_current_actor, get_evaluator
+from app.core.auth import get_admin, get_current_actor, get_evaluator
 from app.models.common import ApiResponse
 from app.models.sources import (
     DocumentDeletionView,
@@ -85,7 +85,7 @@ async def source(
 
 
 @eval_router.post("", status_code=202, response_model=ApiResponse[DocumentView])
-async def eval_upload(file: UploadFile = File(...), actor=Depends(get_evaluator)):
+async def eval_upload(file: UploadFile = File(...), actor=Depends(get_admin)):
     return ApiResponse.success(
         await service.upload_document(actor, file, purpose="evaluation")
     )
@@ -119,7 +119,7 @@ async def eval_delete(doc_id: str, actor=Depends(get_evaluator)):
 @eval_router.post(
     "/{doc_id}/reindex", status_code=202, response_model=ApiResponse[DocumentView]
 )
-async def eval_reindex(doc_id: str, body: ReindexBody, actor=Depends(get_evaluator)):
+async def eval_reindex(doc_id: str, body: ReindexBody, actor=Depends(get_admin)):
     return ApiResponse.success(
         await service.reindex_document(
             actor, doc_id, body.index_profile_id, purpose="evaluation"

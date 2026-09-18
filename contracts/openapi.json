@@ -1367,6 +1367,43 @@
         "title": "ApiResponse[JudgeProfileList]",
         "type": "object"
       },
+      "ApiResponse_LLMConfigView_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfigView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[LLMConfigView]",
+        "type": "object"
+      },
       "ApiResponse_LoginResponse_": {
         "properties": {
           "code": {
@@ -7720,6 +7757,139 @@
         "title": "JudgeProfileList",
         "type": "object"
       },
+      "LLMConfigRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "base_url": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "deepseek",
+              "anthropic",
+              "openai_compatible"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "base_url"
+        ],
+        "title": "LLMConfigRequest",
+        "type": "object"
+      },
+      "LLMConfigView": {
+        "properties": {
+          "api_key_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Hint"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "can_use_system": {
+            "title": "Can Use System",
+            "type": "boolean"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "enum": [
+                  "deepseek",
+                  "anthropic",
+                  "openai_compatible"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "user",
+                  "system"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "configured",
+          "provider",
+          "model",
+          "base_url",
+          "api_key_hint",
+          "can_use_system",
+          "source"
+        ],
+        "title": "LLMConfigView",
+        "type": "object"
+      },
       "LearningEvaluationUsage": {
         "additionalProperties": false,
         "description": "One outer provider ledger; private artifact usage is trace-only.",
@@ -7764,7 +7934,8 @@
             "enum": [
               "unreported",
               "estimated",
-              "unknown"
+              "unknown",
+              "not_applicable"
             ],
             "title": "Cost Status Cny",
             "type": "string"
@@ -9011,6 +9182,22 @@
             "title": "Call Id",
             "type": "string"
           },
+          "config_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "user",
+                  "system"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Config Source"
+          },
           "cost_cny": {
             "anyOf": [
               {
@@ -9032,7 +9219,8 @@
             "default": "unknown",
             "enum": [
               "estimated",
-              "unknown"
+              "unknown",
+              "not_applicable"
             ],
             "title": "Cost Status",
             "type": "string"
@@ -9161,6 +9349,14 @@
       "PracticeCostPreview": {
         "additionalProperties": false,
         "properties": {
+          "config_source": {
+            "enum": [
+              "user",
+              "system"
+            ],
+            "title": "Config Source",
+            "type": "string"
+          },
           "cost_cny_upper": {
             "anyOf": [
               {
@@ -9176,7 +9372,8 @@
           "cost_status": {
             "enum": [
               "estimated",
-              "unknown"
+              "unknown",
+              "not_applicable"
             ],
             "title": "Cost Status",
             "type": "string"
@@ -9207,8 +9404,48 @@
             "title": "Output Token Upper",
             "type": "integer"
           },
+          "personal_model_cost_status": {
+            "anyOf": [
+              {
+                "const": "not_applicable",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Model Cost Status"
+          },
           "pricing_version": {
-            "title": "Pricing Version",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Version"
+          },
+          "system_cost_cny_upper": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Cost Cny Upper"
+          },
+          "system_cost_status": {
+            "enum": [
+              "estimated",
+              "unknown",
+              "not_applicable"
+            ],
+            "title": "System Cost Status",
             "type": "string"
           }
         },
@@ -9217,6 +9454,9 @@
           "input_token_upper",
           "output_token_upper",
           "embedding_token_upper",
+          "config_source",
+          "system_cost_cny_upper",
+          "system_cost_status",
           "cost_cny_upper",
           "cost_status",
           "pricing_version"
@@ -10178,7 +10418,8 @@
             "enum": [
               "unreported",
               "estimated",
-              "unknown"
+              "unknown",
+              "not_applicable"
             ],
             "title": "Cost Status Cny",
             "type": "string"
@@ -20777,6 +21018,85 @@
         "summary": "Version",
         "tags": [
           "knowledge"
+        ]
+      }
+    },
+    "/api/v1/me/llm": {
+      "delete": {
+        "operationId": "delete_my_llm_api_v1_me_llm_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_LLMConfigView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete My Llm",
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "operationId": "get_my_llm_api_v1_me_llm_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_LLMConfigView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get My Llm",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "operationId": "put_my_llm_api_v1_me_llm_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_LLMConfigView_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put My Llm",
+        "tags": [
+          "me"
         ]
       }
     },

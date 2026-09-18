@@ -35,6 +35,7 @@ def main():
             "MYSQL_PASSWORD",
             "MYSQL_ROOT_PASSWORD",
             "JWT_SECRET",
+            "USER_LLM_KEY_SECRET",
             "EVAL_WORKER_TOKEN",
             "EMAIL_CODE_SECRET",
             "REDIS_PASSWORD",

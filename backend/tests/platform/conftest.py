@@ -1,5 +1,6 @@
 """Isolated MySQL integration fixtures; never use deployment credentials."""
 
+import os
 import uuid
 
 import httpx
@@ -9,12 +10,15 @@ import pytest_asyncio
 
 @pytest.fixture
 def platform_settings(monkeypatch, tmp_path):
+    database_name = os.environ.get("XUNKE_TEST_DATABASE", "yu_ai_learn_test")
+    if not database_name.startswith("yu_ai_learn_test") or not database_name.replace("_", "").isalnum():
+        raise ValueError("XUNKE_TEST_DATABASE must name an isolated yu_ai_learn_test database")
     values = {
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "13316",
         "MYSQL_USER": "root",
         "MYSQL_PASSWORD": "yu-local-test",
-        "MYSQL_DATABASE": "yu_ai_learn_test",
+        "MYSQL_DATABASE": database_name,
         "MYSQL_AUTO_INIT": "false",
         "APP_ENV": "test",
         "COOKIE_SECURE": "false",

@@ -24,6 +24,7 @@ x-backend-env: &backend-env
   COOKIE_SECURE: "true"
   WEB_ORIGINS: ${WEB_ORIGINS:?Set an HTTPS WEB_ORIGINS JSON array in deploy/.env}
   JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET in deploy/.env}
+  USER_LLM_KEY_SECRET: ${USER_LLM_KEY_SECRET:?Set a random USER_LLM_KEY_SECRET in deploy/.env}
   EVAL_WORKER_TOKEN: ${EVAL_WORKER_TOKEN:?Set a random EVAL_WORKER_TOKEN in deploy/.env}
   LEGACY_LINK_ENABLED: ${LEGACY_LINK_ENABLED:-false}
   WECHAT_APP_ID:

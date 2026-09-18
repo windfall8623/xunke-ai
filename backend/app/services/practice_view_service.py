@@ -25,6 +25,7 @@ from app.services import (
     practice_service,
     provider_meter,
     source_service,
+    user_llm_config_service,
 )
 
 
@@ -104,7 +105,7 @@ async def get_practice_review_context(actor, attempt_id):
         )
         if submission is None:
             raise not_found()
-        if "evaluator" not in actor.roles:
+        if not {"evaluator", "admin"}.intersection(actor.roles):
             raise AppError(403, "evaluator_required", "此操作需要本账号的评阅权限")
         row, request, scope = await practice_service.authorize_practice(
             conn, actor.owner_id, submission["practice_id"]
@@ -155,49 +156,63 @@ async def get_practice_review_context(actor, attempt_id):
         )
 
 
-def calculate_practice_cost(body, config, settings):
-    """Conservative complete generation + grading upper bound, never a bill."""
+def calculate_practice_cost(body, config, settings, *, config_source):
+    """Bound technical usage and system money, never price personal providers."""
+    if config_source not in {"user", "system"}:
+        raise ValueError("An explicit model configuration source is required")
     grading_calls = (
         2 * body.question_count if "short_answer" in body.question_types else 0
     )
-    generation_inputs = 5 * config.model_context_window
-    generation_outputs = (
-        4 * config.output_token_reserve + settings.reranker_llm_max_output_tokens
-    )
-    grading_output = getattr(settings, "practice_grading_output_tokens", 2048)
-    grading_window = getattr(settings, "practice_grading_context_window", 32768)
-    inputs = generation_inputs + grading_calls * grading_window
-    outputs = generation_outputs + grading_calls * grading_output
+    generation_inputs = 4 * config.model_context_window
+    generation_outputs = 4 * config.output_token_reserve
+    grading_output = settings.practice_grading_output_tokens
+    grading_window = settings.practice_grading_context_window
+    personal_inputs = generation_inputs + grading_calls * grading_window
+    personal_outputs = generation_outputs + grading_calls * grading_output
+    ranking = config.reranker.llm if config.reranker.provider == "llm" else None
+    ranking_inputs = ranking.max_input_tokens if ranking else 0
+    ranking_outputs = ranking.max_output_tokens if ranking else 0
     embeddings = BudgetLimits().max_embedding_calls * count_tokens(
         "；".join(body.objectives)
     )
-    llm_cost = provider_meter.estimate("llm", inputs, outputs, reserve=True)
-    embedding_cost = provider_meter.estimate("embedding", embeddings, 0)
-    remote_cost = (
-        0 if config.reranker.provider in {"none", "llm"} else settings.rerank_call_cny
-    )
-    known = all(item is not None for item in (llm_cost, embedding_cost, remote_cost))
+    costs = []
+    if config_source == "system":
+        costs.append(provider_meter.estimate(
+            "llm", personal_inputs, personal_outputs, reserve=True
+        ))
+    if ranking:
+        costs.append(provider_meter.estimate(
+            "llm", ranking_inputs, ranking_outputs, reserve=True
+        ))
+    if embeddings:
+        costs.append(provider_meter.estimate("embedding", embeddings, 0))
+    if config.reranker.provider not in {"none", "llm"}:
+        costs.append(settings.rerank_call_cny)
+    known = all(item is not None for item in costs)
     cost = (
-        sum(
-            (Decimal(str(item)) for item in (llm_cost, embedding_cost, remote_cost)),
-            Decimal(0),
-        )
-        if known
-        else None
+        sum((Decimal(str(item)) for item in costs), Decimal("0"))
+        if costs and known else None
     )
+    status = "not_applicable" if not costs else "estimated" if known else "unknown"
     return PracticeCostPreview(
+        generation_llm_call_upper=4 + int(ranking is not None),
         grading_llm_call_upper=grading_calls,
-        input_token_upper=inputs,
-        output_token_upper=outputs,
+        input_token_upper=personal_inputs + ranking_inputs,
+        output_token_upper=personal_outputs + ranking_outputs,
         embedding_token_upper=embeddings,
+        config_source=config_source,
+        personal_model_cost_status="not_applicable" if config_source == "user" else None,
+        system_cost_cny_upper=cost,
+        system_cost_status=status,
         cost_cny_upper=cost,
-        cost_status="estimated" if known else "unknown",
-        pricing_version=settings.pricing_version,
+        cost_status=status,
+        pricing_version=settings.pricing_version if costs else None,
     )
 
 
 async def preview_practice_cost(actor, body):
     body = PracticeSpec.model_validate(body.model_dump(mode="json"))
+    settings = get_settings()
     async with transaction() as conn:
         space = await scopes.owned_space(
             actor.owner_id, body.space_id, conn=conn, lock=True
@@ -227,5 +242,10 @@ async def preview_practice_cost(actor, body):
                 item["revision"],
             ):
                 raise conflict("concept_scope_conflict", "概念已更新，请刷新后重试")
+        selected_model = await user_llm_config_service.resolve_actor_llm_config(
+            actor.owner_id, settings, conn=conn
+        )
     _, config = practice_service._pipeline_selection()
-    return calculate_practice_cost(body, config, get_settings())
+    return calculate_practice_cost(
+        body, config, settings, config_source=selected_model.source
+    )

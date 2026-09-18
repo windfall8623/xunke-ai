@@ -5,6 +5,7 @@ import { apiFailure, documentFixture, json, session } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 const evaluatorSession = { ...session, user: { ...session.user, role: 'evaluator' } }
+const adminSession = { ...session, user: { ...session.user, role: 'admin' } }
 const frozen = {
   dataset_id: 'data-1',
   version: 1,
@@ -64,6 +65,28 @@ const result = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('evaluation workbench', () => {
+  it('keeps evaluator history available without allowing system execution', async () => {
+    renderApp('/evaluations/runs', (path) => {
+      if (path.endsWith('/auth/session')) return json(evaluatorSession)
+      if (path.endsWith('/eval/runs')) return json({ items: [run], total: 1 })
+      return json({ items: [], total: 0 })
+    })
+    expect(await screen.findByText(/创建或恢复使用系统模型的评测运行需要管理员权限/)).toBeVisible()
+    expect(await screen.findByRole('button', { name: '创建运行' })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: '运行记录' })).toBeVisible()
+  })
+
+  it.each(['evaluator', 'admin'])('limits resume actions for %s', async (role) => {
+    renderApp('/evaluations/runs/run-1', (path) => {
+      if (path.endsWith('/auth/session')) return json({ ...session, user: { ...session.user, role } })
+      if (path.endsWith('/results')) return json({ items: [], total: 0 })
+      return json({ ...run, status: 'cancelled', can_resume: true })
+    })
+    await screen.findByRole('heading', { name: '运行详情' })
+    await waitFor(() => expect(screen.getByTestId('release-status')).toBeVisible())
+    expect(!!screen.queryByRole('button', { name: '恢复运行' })).toBe(role === 'admin')
+  })
+
   it('does not offer feedback promotion without explicit source-use authorization', async () => {
     renderApp('/evaluations/feedback', (path) => {
       if (path.endsWith('/auth/session')) return json(evaluatorSession)
@@ -108,7 +131,7 @@ describe('evaluation workbench', () => {
       promotion: null,
     }
     renderApp('/evaluations/feedback', (path, init) => {
-      if (path.endsWith('/auth/session')) return json(evaluatorSession)
+      if (path.endsWith('/auth/session')) return json(adminSession)
       if (path.endsWith('/eval/datasets')) return json({ items: [], total: 0 })
       if (path.endsWith('/promote')) {
         const request = JSON.parse(init.body as string)
@@ -261,7 +284,7 @@ describe('evaluation workbench', () => {
     let created: Record<string, unknown> | undefined
     let key: string | null = null
     renderApp('/evaluations/runs', (path, init) => {
-      if (path.endsWith('/auth/session')) return json(evaluatorSession)
+      if (path.endsWith('/auth/session')) return json(adminSession)
       if (path.endsWith('/eval/datasets')) return json({ items: [frozen], total: 1 })
       if (path.endsWith('/eval/pipelines'))
         return json({

@@ -53,7 +53,7 @@ describe('authentication and authorization', () => {
     expect(localStorage.length).toBe(0)
   })
 
-  it.each(['learner', 'admin', 'unrecognized'])(
+  it.each(['learner', 'unrecognized'])(
     'hides the workbench without an evaluator grant (%s)',
     async (role) => {
       mount('/evaluations', (path) =>
@@ -65,6 +65,13 @@ describe('authentication and authorization', () => {
       expect(screen.queryByRole('link', { name: '评测工作台' })).not.toBeInTheDocument()
     },
   )
+  it.each(['evaluator', 'admin'])('allows the owned workbench for %s', async (role) => {
+    mount('/evaluations', (path) => path.endsWith('/auth/session')
+      ? json({ ...session, user: { ...session.user, role } })
+      : json({ items: [], total: 0 }))
+    expect(await screen.findByRole('link', { name: '评测工作台' })).toBeVisible()
+    expect(screen.queryByRole('heading', { name: '此页面需要评测权限' })).not.toBeInTheDocument()
+  })
 })
 
 describe('learning state and source consent', () => {

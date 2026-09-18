@@ -29,11 +29,15 @@ class PracticeCostPreview(Contract):
     input_token_upper: int = Field(ge=0)
     output_token_upper: int = Field(ge=0)
     embedding_token_upper: int = Field(ge=0)
+    config_source: Literal["user", "system"]
+    personal_model_cost_status: Literal["not_applicable"] | None = None
+    system_cost_cny_upper: Decimal | None
+    system_cost_status: Literal["estimated", "unknown", "not_applicable"]
     cost_cny_upper: Decimal | None
-    cost_status: Literal["estimated", "unknown"]
-    pricing_version: str
+    cost_status: Literal["estimated", "unknown", "not_applicable"]
+    pricing_version: str | None
 
-    @field_serializer("cost_cny_upper", when_used="json")
+    @field_serializer("cost_cny_upper", "system_cost_cny_upper", when_used="json")
     def decimal_cost(self, value):
         return str(value) if value is not None else None
 

@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.core.db import execute, fetch_one, transaction
 from app.core.errors import AppError
 from app.core.values import dump, load, now, uid
-from app.llm.provider_errors import provider_failure
+from app.llm.provider_errors import provider_failure, user_provider_failure
 from app.services import budget_service, job_service
 
 _job = ContextVar("provider_job", default=None)
@@ -187,8 +187,12 @@ def _chat_usage(normalized, metadata):
 
 
 async def call_external(
-    stage, call, *, input_upper=0, output_upper=0, purpose=None, model=None
+    stage, call, *, input_upper=0, output_upper=0, purpose=None, model=None,
+    config_source="system", api_key="",
 ):
+    if config_source not in {"system", "user"} or (config_source == "user" and stage != "llm"):
+        raise ValueError("Invalid provider configuration source")
+    user_owned = config_source == "user"
     job = _job.get()
     if job is None:
         raise RuntimeError("External model calls require a durable job context")
@@ -205,7 +209,9 @@ async def call_external(
     s = get_settings()
     day = now().date().isoformat()
     call_id = uid("call")
-    cost = estimate(stage, input_upper, output_upper, reserve=True)
+    if job["mode"] == "evaluation" and user_owned:
+        raise AppError(403, "system_model_required", "平台评测只能使用管理员的系统模型")
+    cost = None if user_owned else estimate(stage, input_upper, output_upper, reserve=True)
     if job["mode"] == "evaluation" and cost is None:
         raise AppError(409, "pricing_required", "评测费用上限需要配置对应模型的价格")
     if cost is not None and cost < 0:
@@ -247,6 +253,11 @@ async def call_external(
         ),
         (f"job:{job['task_id']}:{stage}", cap),
     ]
+    if user_owned:
+        counts = [
+            (f"user_llm:user:{job['user_id']}:{day}:calls", daily),
+            (f"job:{job['task_id']}:{stage}", cap),
+        ]
     if stage == "llm" and purpose == "reranker":
         counts.append(
             (
@@ -257,6 +268,10 @@ async def call_external(
     logical_id = None
     async with transaction() as conn:
         current = await job_service.locked_job(job, conn)
+        if current["mode"] == "evaluation":
+            from app.core.auth import require_system_model_admin
+
+            await require_system_model_admin(current["user_id"], conn=conn)
         if current["kind"] == "course_tutor":
             from app.teaching.prompts import INPUT_LIMIT
 
@@ -352,13 +367,6 @@ async def call_external(
                     counts.append(
                         (f"evaluation:practice_generate:{logical_id}:reranker", 1)
                     )
-            evaluator = await fetch_one(
-                "SELECT role FROM users WHERE id=%s FOR SHARE",
-                (current["user_id"],),
-                conn=conn,
-            )
-            if not evaluator or evaluator["role"] != "evaluator":
-                raise AppError(403, "evaluation_permission_required", "评测权限已撤销")
             if current["request"].get("result_id"):
                 from app.services.evaluation_scoring import _locked_context
 
@@ -445,7 +453,10 @@ async def call_external(
                 "reserved",
                 dump(
                     {
-                        "pricing_version": s.pricing_version,
+                        "config_source": config_source,
+                        "pricing_version": None if user_owned else s.pricing_version,
+                        "cost_cny": None,
+                        "cost_status": "not_applicable" if user_owned else "unknown",
                         "reserved_cost_cny": cost,
                         "attempt": job["attempt"],
                         "purpose": purpose,
@@ -479,7 +490,7 @@ async def call_external(
         )
         input_tokens = usage["input_tokens"]
         output_tokens = usage["output_tokens"]
-        actual = (
+        actual = None if user_owned else (
             estimate(
                 stage,
                 input_tokens,
@@ -504,8 +515,9 @@ async def call_external(
             "estimated_input_tokens": input_upper,
             "cost_cny": actual,
             "reserved_cost_cny": cost,
-            "cost_status": "estimated" if actual is not None else "unknown",
-            "pricing_version": s.pricing_version,
+            "cost_status": "not_applicable" if user_owned else "estimated" if actual is not None else "unknown",
+            "config_source": config_source,
+            "pricing_version": None if user_owned else s.pricing_version,
             "purpose": purpose,
             "model": model,
             "logical_request_id": logical_id,
@@ -528,14 +540,16 @@ async def call_external(
                 )
         return result
     except BaseException as exc:
-        failure = provider_failure(exc)
+        failure = user_provider_failure(exc, api_key=api_key) if user_owned else provider_failure(exc)
         record = {
             "call_id": call_id,
             "stage": stage,
             "attempt": job["attempt"],
             "status": "unknown",
             "cost_cny": None,
-            "cost_status": "unknown",
+            "cost_status": "not_applicable" if user_owned else "unknown",
+            "config_source": config_source,
+            "pricing_version": None if user_owned else s.pricing_version,
             "reserved_cost_cny": cost,
             "purpose": purpose,
             "model": model,
@@ -562,6 +576,8 @@ async def call_external(
                 failure.code,
                 type(exc).__name__,
             )
+            if user_owned:
+                raise failure from None
             raise failure from exc
         raise
 
@@ -569,10 +585,20 @@ async def call_external(
 class MeteredChat:
     max_retries = 0
 
-    def __init__(self, llm, *, purpose="generation", output_upper=4096):
+    def __init__(
+        self,
+        llm,
+        *,
+        purpose="generation",
+        output_upper=4096,
+        config_source="system",
+        api_key="",
+    ):
         self.llm = llm
         self.purpose = purpose
         self.output_upper = output_upper
+        self.config_source = config_source
+        self.api_key = api_key
         self.model_name = "configured"
         current, seen = llm, set()
         while current is not None and id(current) not in seen:
@@ -590,6 +616,8 @@ class MeteredChat:
             self.llm.bind_tools(tools, **kwargs),
             purpose=self.purpose,
             output_upper=self.output_upper,
+            config_source=self.config_source,
+            api_key=self.api_key,
         )
 
     async def ainvoke(self, messages):
@@ -613,6 +641,8 @@ class MeteredChat:
             output_upper=self.output_upper,
             purpose=self.purpose,
             model=self.model_name,
+            config_source=self.config_source,
+            api_key=self.api_key,
         )
 
 

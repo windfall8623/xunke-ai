@@ -23,6 +23,7 @@ from rag_eval.judges.config import validate_judge_config
 from rag_eval.metrics import score_sample
 from rag_eval.quiz_rubric import REQUIRED_SEMANTICS
 
+from app.core.auth import require_system_model_admin
 from app.core.config import get_settings
 from app.core.db import execute, fetch_all, fetch_one, transaction
 from app.core.errors import AppError, conflict, not_found
@@ -376,6 +377,7 @@ async def locked_run(owner, run_id, conn):
 
 
 async def create_run(actor, body, key):
+    await require_system_model_admin(actor.owner_id)
     if not key or len(key) > 128:
         raise AppError(422, "idempotency_required", "需要有效 Idempotency-Key")
     request_hash = digest(dump(body.model_dump()))
@@ -496,6 +498,7 @@ async def create_run(actor, body, key):
             grading_auto_confirmation=False,
         )
     async with transaction() as conn:
+        await require_system_model_admin(actor.owner_id, conn=conn)
         for scope in scopes.values():
             await reauthorize_scope(scope, conn=conn)
         locked = await datasets.dataset_row(
@@ -781,11 +784,13 @@ async def cancel_run(owner, run_id, reason="user_cancelled"):
 
 
 async def resume_run(owner, run_id):
+    await require_system_model_admin(owner)
     row = await authorized_run(owner, run_id)
     require_reproducible(row)
     if row["status"] not in ("failed", "cancelled"):
         return await get_run(owner, run_id)
     async with transaction() as conn:
+        await require_system_model_admin(owner, conn=conn)
         # The owner publishes job -> source -> dataset -> run -> result. Resume
         # follows that order and rechecks mutable stop/budget state under lock.
         jobs = await fetch_all(

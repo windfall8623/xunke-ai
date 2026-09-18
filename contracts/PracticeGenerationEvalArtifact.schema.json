@@ -675,7 +675,8 @@
           "enum": [
             "unreported",
             "estimated",
-            "unknown"
+            "unknown",
+            "not_applicable"
           ],
           "title": "Cost Status Cny",
           "type": "string"
@@ -1152,6 +1153,22 @@
           "title": "Call Id",
           "type": "string"
         },
+        "config_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "user",
+                "system"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Source"
+        },
         "cost_cny": {
           "anyOf": [
             {
@@ -1173,7 +1190,8 @@
           "default": "unknown",
           "enum": [
             "estimated",
-            "unknown"
+            "unknown",
+            "not_applicable"
           ],
           "title": "Cost Status",
           "type": "string"
@@ -1274,7 +1292,8 @@
           "enum": [
             "unreported",
             "estimated",
-            "unknown"
+            "unknown",
+            "not_applicable"
           ],
           "title": "Cost Status Cny",
           "type": "string"

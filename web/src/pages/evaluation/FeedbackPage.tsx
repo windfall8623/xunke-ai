@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, MessageSquare, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { useIdentityKey } from '../../app/AuthProvider'
+import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import { EmptyState, ErrorNotice, Loading, PageHeading, StatusBadge } from '../../components/ui'
 import { WorkbenchNav } from '../../features/evaluation/WorkbenchNav'
 import { evaluationApi } from '../../services/evaluation'
@@ -117,6 +117,7 @@ function FeedbackEditor({
   datasets: DatasetVersion[]
   onSaved: (value: FeedbackView) => void
 }) {
+  const canPromote = useAuth().user?.role === 'admin'
   const [verdict, setVerdict] = useState<'approved' | 'rejected' | 'needs_changes'>(
     feedback.review?.verdict || 'needs_changes',
   )
@@ -140,11 +141,13 @@ function FeedbackEditor({
     onSuccess: onSaved,
   })
   const promotion = useMutation({
-    mutationFn: () =>
-      evaluationApi.promoteFeedback(feedback.feedback_id, {
+    mutationFn: () => {
+      if (!canPromote) throw new Error('建立评测候选需要管理员权限。')
+      return evaluationApi.promoteFeedback(feedback.feedback_id, {
         ...parameters,
         expected_revision: feedback.revision,
-      }),
+      })
+    },
     onSuccess: (result) => onSaved(result.feedback),
   })
   function saveReview(event: FormEvent) {
@@ -153,7 +156,7 @@ function FeedbackEditor({
   }
   function promote(event: FormEvent) {
     event.preventDefault()
-    if (!promotion.isPending) promotion.mutate()
+    if (canPromote && !promotion.isPending) promotion.mutate()
   }
   return (
     <div className="sample-inspector">
@@ -208,7 +211,10 @@ function FeedbackEditor({
           </button>
         </form>
       )}
-      {feedback.allow_evaluation_use && ['approved', 'preparing'].includes(feedback.status) && (
+      {!canPromote && !promoted && (
+        <p className="notice">可继续人工复核；建立候选涉及系统资料处理，需要管理员权限。</p>
+      )}
+      {canPromote && feedback.allow_evaluation_use && ['approved', 'preparing'].includes(feedback.status) && (
         <form className="stack-form human-review" onSubmit={promote}>
           <h3>建立待标注的回归候选</h3>
           <p className="tiny muted">

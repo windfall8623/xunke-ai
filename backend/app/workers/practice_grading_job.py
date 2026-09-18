@@ -42,9 +42,11 @@ async def run_practice_grading(job, actor, engine, *, provider, usage_loader):
     snapshot, scope = state.snapshot, state.scope
     if actor.owner_id != snapshot.owner_id:
         raise ScopeRevoked("Grading requires its production owner")
-    configuration = grading.grading_model_configuration()
+    # The authorized state already carries the owner's own production identity.
+    configuration = state.model_configuration
     if (
         provider is None
+        or configuration is None
         or getattr(provider, "model_fingerprint", None) != snapshot.model_fingerprint
         or getattr(provider, "output_token_limit", None)
         != configuration["output_token_limit"]

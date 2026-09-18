@@ -31,7 +31,7 @@ async def test_owner_engine_build_retrieve_and_generate_without_learning_ports(
             normalize_spec(
                 {"user_input": "光合作用", "doc_id": "d1", "question_count": 3}
             ),
-            ActorContext(owner_id=7, roles=["evaluator"]),
+            ActorContext(owner_id=7, roles=["admin"]),
             ExecutionContext(
                 mode="evaluation", run_id="run1", storage_namespace="evaluation:7"
             ),

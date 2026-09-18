@@ -2,6 +2,27 @@ import pytest
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["learner", "evaluator"])
+@pytest.mark.parametrize(
+    "case_type",
+    ["retrieval", "quiz", "qa", "policy", "practice_generation", "answer_grading"],
+)
+async def test_nonadmin_evaluation_denied_before_dispatch(role, case_type):
+    from unittest.mock import Mock
+
+    from app.rag.errors import ScopeRevoked
+    from app.rag.evaluation import run_eval_sample
+    from tests.rag.test_artifact_pipeline import context_and_scope
+
+    _, actor, context, scope = context_and_scope()
+    actor = actor.model_copy(update={"roles": [role]})
+    engine = Mock()
+    with pytest.raises(ScopeRevoked):
+        await run_eval_sample({"case_type": case_type}, actor, context, engine, scope)
+    assert engine.mock_calls == []
+
+
+@pytest.mark.asyncio
 async def test_retrieval_evaluation_never_calls_quiz_generator():
     from app.rag.contracts import RetrievalArtifact, RetrievalResult
     from app.rag.evaluation import run_eval_sample

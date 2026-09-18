@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowRight, Play, RefreshCw } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useIdentityKey } from '../../app/AuthProvider'
+import { useAuth, useIdentityKey } from '../../app/AuthProvider'
 import {
   EmptyState,
   ErrorNotice,
@@ -37,6 +37,7 @@ function costAmount(value: number | null | undefined) {
 }
 
 export function RunsPage() {
+  const canRun = useAuth().user?.role === 'admin'
   const identity = useIdentityKey()
   const navigate = useNavigate()
   const [dataset, setDataset] = useState('')
@@ -91,6 +92,7 @@ export function RunsPage() {
   })
   const create = useMutation({
     mutationFn: () => {
+      if (!canRun) throw new Error('只有管理员可以使用系统模型创建评测运行。')
       if (
         !selectedDataset ||
         selectedDataset.status !== 'frozen' ||
@@ -114,7 +116,7 @@ export function RunsPage() {
   })
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (!create.isPending) create.mutate()
+    if (canRun && !create.isPending) create.mutate()
   }
   return (
     <div className="evaluation-page">
@@ -124,12 +126,15 @@ export function RunsPage() {
         title="评测运行"
         description="使用冻结数据集与白名单方案，在明确预算内运行。"
       />
+      {!canRun && (
+        <p className="notice">评测人员可查看本人记录、维护数据集和人工复核。创建或恢复使用系统模型的评测运行需要管理员权限。</p>
+      )}
       <section className="card run-create">
         <div className="card-heading">
           <span className="icon-tile indigo">
             <Play size={20} />
           </span>
-          <h2>创建一次运行</h2>
+          <h2>{canRun ? '创建一次运行' : '评测方案与费用预览'}</h2>
         </div>
         <ErrorNotice error={datasets.error || pipelines.error || judges.error} />
         {datasets.isPending || pipelines.isPending || judges.isPending ? (
@@ -299,7 +304,7 @@ export function RunsPage() {
               <button
                 className="button primary"
                 disabled={
-                  !selectedDataset || !selectedPipeline || !selectedJudge || create.isPending
+                  !canRun || !selectedDataset || !selectedPipeline || !selectedJudge || create.isPending
                 }
               >
                 {create.isPending ? '正在创建…' : '创建运行'}

@@ -22,7 +22,7 @@ export function AppShell() {
   const { user, error, refresh } = useAuth()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  const evaluator = user?.role === 'evaluator'
+  const evaluator = ['evaluator', 'admin'].includes(user?.role || '')
   const reading = /^\/study\/courses\/(?!new(?:\/|$))[^/]+/.test(location.pathname)
   const navigation = [
     { to: '/', icon: BookOpen, label: '学习首页', end: true },

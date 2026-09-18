@@ -1,5 +1,5 @@
 import { LoaderCircle, RefreshCw, Square } from 'lucide-react'
-import { ErrorNotice } from '../../components/ui'
+import { ErrorNotice, LlmSettingsLink } from '../../components/ui'
 import { providerErrorMessage } from '../../services/providerErrors'
 import type { QaTask } from '../../types/qa'
 import { activeTask } from './useQaSession'
@@ -68,6 +68,7 @@ export function TaskProgress({
       ) : (
         settling && <p className="tiny muted">任务已结束，记录同步中</p>
       )}
+      {task?.status === 'failed' && <LlmSettingsLink code={task.error_code} />}
       <ErrorNotice error={taskError} onRetry={onRefresh} />
       <ErrorNotice error={cancelError} />
       <div className="button-row">

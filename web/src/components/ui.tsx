@@ -1,5 +1,15 @@
 import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { ApiError } from '../services/http'
+import { isLlmSettingsError, providerErrorMessage } from '../services/providerErrors'
+
+export function LlmSettingsLink({ code }: { code?: string | number | null }) {
+  return isLlmSettingsError(code) ? (
+    <a className="text-link" href="/me#llm-settings">
+      检查模型设置
+    </a>
+  ) : null
+}
 
 export function Loading({ children = '正在加载…' }: { children?: ReactNode }) {
   return (
@@ -15,7 +25,16 @@ export function ErrorNotice({ error, onRetry }: { error: unknown; onRetry?: () =
     <div className="notice error" role="alert">
       <AlertCircle size={19} />
       <div>
-        {error instanceof Error ? error.message : String(error)}
+        {error instanceof ApiError
+          ? providerErrorMessage(String(error.code)) || error.message
+          : error instanceof Error
+            ? error.message
+            : String(error)}
+        {error instanceof ApiError && isLlmSettingsError(error.code) && (
+          <div>
+            <LlmSettingsLink code={error.code} />
+          </div>
+        )}
         {onRetry && (
           <button className="text-button" type="button" onClick={onRetry}>
             <RefreshCw size={14} />

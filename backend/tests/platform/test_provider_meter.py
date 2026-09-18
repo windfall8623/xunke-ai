@@ -53,7 +53,7 @@ async def test_evaluation_ingest_has_its_own_cost_budget_without_a_run(
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     uploaded = await api.post(
         "/api/v1/eval/documents",

@@ -4,7 +4,8 @@ import math
 
 import pytest
 from conftest import make_evidence, make_source, make_span
-from rag_eval.metrics import score_sample
+from rag_eval.metrics import cost_metrics, score_sample
+from rag_eval.contracts import LEARNING_METRIC_VERSION
 
 
 def test_duplicate_evidence_does_not_increase_recall(
@@ -357,3 +358,93 @@ def test_metric_values_expose_shared_applicability_and_error_counts(
     assert results["evidence_group_recall@10"]["applicable_count"] == 1
     assert results["evidence_group_recall@10"]["error_count"] == 0
     assert results["ndcg@10"]["applicable_count"] == 0
+
+
+def personal_call(**changes):
+    return {
+        "call_id": "personal-call", "attempt": 1, "stage": "llm",
+        "config_source": "user", "cost_status": "not_applicable",
+        "cost_cny": None, "reserved_cost_cny": None, "status": "completed",
+        "input_tokens": 12, "output_tokens": 5, **changes,
+    }
+
+
+@pytest.mark.parametrize("status", ["completed", "timeout", "unknown"])
+def test_personal_metrics_are_na_money_but_keep_technical_usage(status):
+    call = personal_call(status=status, error_type="ReadTimeout" if status != "completed" else None)
+    scores = cost_metrics(
+        {"case_type": "practice_generation", "usage": {
+            "calls": [call, dict(call)], "ledger_complete": True,
+            "reserved_cost_cny": None, "unknown_reserved_cost_cny": None,
+            "unknown_call_count": 1,
+        }}, {"metric_version": LEARNING_METRIC_VERSION}, 3,
+    )
+    for name in ("total_cost_cny", "generation_cost_cny", "reserved_cost_cny", "unknown_reserved_cost_cny", "cost_per_valid_question_cny"):
+        metric = scores[name]
+        assert metric["status"] == "na" and metric["value"] is None
+        assert metric["unknown_count"] == 0 and metric["unit"].startswith("CNY")
+    assert scores["provider_call_count"]["value"] == 1
+    assert scores["input_tokens"]["value"] == 12
+    assert scores["output_tokens"]["value"] == 5
+    assert scores["unknown_call_count"]["value"] == 0
+    assert scores["provider_error_rate"]["value"] == int(status != "completed")
+
+
+def test_mixed_metrics_keep_only_system_money_without_masking_outstanding_aggregate():
+    usage = {
+        "calls": [personal_call(), {
+            "call_id": "system-call", "attempt": 1, "stage": "embedding",
+            "config_source": "system", "cost_status": "estimated", "status": "completed",
+            "cost_cny": "0.02", "reserved_cost_cny": "0.05", "input_tokens": 8, "output_tokens": 0,
+        }],
+        "ledger_complete": True, "cost_status_cny": "estimated",
+        "reserved_cost_cny": "0", "unknown_reserved_cost_cny": "0",
+    }
+    scores = cost_metrics(
+        {"case_type": "practice_generation", "usage": usage},
+        {"metric_version": LEARNING_METRIC_VERSION}, 2,
+    )
+    assert scores["total_cost_cny"]["value"] == pytest.approx(0.02)
+    assert scores["generation_cost_cny"]["status"] == "na"
+    assert scores["embedding_cost_cny"]["value"] == pytest.approx(0.02)
+    assert scores["cost_per_valid_question_cny"]["value"] == pytest.approx(0.01)
+    assert scores["reserved_cost_cny"]["value"] == 0
+    assert scores["unknown_reserved_cost_cny"]["value"] == 0
+    assert scores["provider_call_count"]["value"] == 2
+
+
+def test_system_llm_reranker_keeps_separate_money_category():
+    usage = {"calls": [personal_call(), personal_call(
+        call_id="system-ranking", config_source="system", purpose="reranker",
+        cost_cny="0.1", cost_status="estimated", reserved_cost_cny="0.2",
+    )]}
+    scores = cost_metrics(
+        {"case_type": "practice_generation", "usage": usage},
+        {"metric_version": LEARNING_METRIC_VERSION},
+    )
+    assert scores["generation_cost_cny"]["status"] == "na"
+    assert scores["rerank_cost_cny"]["value"] == pytest.approx(0.1)
+    assert scores["total_cost_cny"]["value"] == pytest.approx(0.1)
+
+
+@pytest.mark.parametrize("source", [None, "system"])
+def test_missing_or_system_source_never_becomes_nonbillable_from_null_cost(source):
+    scores = cost_metrics(
+        {"case_type": "practice_generation", "usage": {"calls": [personal_call(
+            config_source=source, cost_status="unknown"
+        )]}}, {"metric_version": LEARNING_METRIC_VERSION},
+    )
+    assert scores["total_cost_cny"]["status"] == "error"
+    assert scores["total_cost_cny"]["unknown_count"] == 1
+
+
+def test_personal_cost_na_does_not_hide_incomplete_call_ledger():
+    scores = cost_metrics(
+        {"case_type": "practice_generation", "usage": {
+            "calls": [personal_call()], "ledger_complete": False,
+        }}, {"metric_version": LEARNING_METRIC_VERSION}, 3,
+    )
+    assert scores["total_cost_cny"]["status"] == "error"
+    assert scores["reserved_cost_cny"]["status"] == "error"
+    assert scores["cost_per_valid_question_cny"]["status"] == "error"
+    assert scores["provider_call_count"]["status"] == "error"

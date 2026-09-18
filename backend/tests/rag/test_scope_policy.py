@@ -71,3 +71,37 @@ def test_invalid_or_ambiguous_scope_is_rejected(payload):
 
     with pytest.raises(InvalidScope):
         normalize_spec({"user_input": "topic", **payload})
+
+
+@pytest.mark.parametrize("role", ["learner", "evaluator", "admin"])
+@pytest.mark.parametrize("mode", ["production", "evaluation"])
+def test_execution_scope_only_admin_can_evaluate(role, mode):
+    from app.rag.contracts import ActorContext, ExecutionContext, ResolvedScope
+    from app.rag.errors import ScopeRevoked
+    from app.rag.scope import require_execution_scope
+
+    actor = ActorContext(owner_id=7, role=role)
+    namespace = "production" if mode == "production" else "evaluation:7"
+    scope = ResolvedScope(owner_id=7, namespace=namespace)
+    context = ExecutionContext(mode=mode, run_id="run", storage_namespace=namespace)
+    if mode == "evaluation" and role != "admin":
+        with pytest.raises(ScopeRevoked):
+            require_execution_scope(actor, context, scope)
+    else:
+        require_execution_scope(actor, context, scope)
+
+
+@pytest.mark.parametrize("change", ["owner", "namespace"])
+def test_admin_execution_still_requires_own_isolated_scope(change):
+    from app.rag.contracts import ActorContext, ExecutionContext, ResolvedScope
+    from app.rag.errors import ScopeRevoked
+    from app.rag.scope import require_execution_scope
+
+    actor = ActorContext(owner_id=7, role="admin")
+    namespace = "production" if change == "namespace" else "evaluation:7"
+    scope = ResolvedScope(owner_id=8 if change == "owner" else 7, namespace=namespace)
+    context = ExecutionContext(
+        mode="evaluation", run_id="run", storage_namespace=namespace
+    )
+    with pytest.raises(ScopeRevoked):
+        require_execution_scope(actor, context, scope)

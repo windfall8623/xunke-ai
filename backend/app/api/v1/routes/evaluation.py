@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, Query
 from fastapi.responses import Response
 
-from app.core.auth import get_evaluator
+from app.core.auth import get_admin, get_evaluator
 from app.models.common import ApiResponse
 from app.models.evaluation import (
     DatasetCreate,
@@ -28,6 +28,7 @@ from app.services.evaluation_cost_preview import preview_run_cost
 
 router = APIRouter(prefix="/eval", tags=["evaluation"])
 Evaluator = Annotated[ActorContext, Depends(get_evaluator)]
+Admin = Annotated[ActorContext, Depends(get_admin)]
 
 
 @router.get("/datasets", response_model=ApiResponse[DatasetList])
@@ -108,7 +109,7 @@ async def judges(actor: Evaluator):
 @router.post("/runs", status_code=202, response_model=ApiResponse[RunView])
 async def create_run(
     body: RunCreate,
-    actor: Evaluator,
+    actor: Admin,
     idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
 ):
     return ApiResponse.success(await runs.create_run(actor, body, idempotency_key))
@@ -140,7 +141,7 @@ async def cancel_run(run_id: str, actor: Evaluator):
 
 
 @router.post("/runs/{run_id}/resume", response_model=ApiResponse[RunView])
-async def resume_run(run_id: str, actor: Evaluator):
+async def resume_run(run_id: str, actor: Admin):
     return ApiResponse.success(await runs.resume_run(actor.owner_id, run_id))
 
 

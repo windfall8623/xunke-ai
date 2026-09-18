@@ -177,7 +177,7 @@ async def test_eval_owner_executes_native_cases_and_scoring_without_learning_sid
     owner = session["user"]["id"]
     platform_settings.dashscope_embedding_model = "fixture-vector-v1"
     platform_settings.embedding_dimensions = 3
-    await execute("UPDATE users SET role='evaluator' WHERE id=%s", (owner,))
+    await execute("UPDATE users SET role='admin' WHERE id=%s", (owner,))
 
     class Generator:
         async def generate(self, spec, pack, coverage, attempt, feedback=None):

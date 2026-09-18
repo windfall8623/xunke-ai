@@ -25,7 +25,7 @@ test('unknown scores remain unknown and human review is persisted with revision'
 test('dataset new-version review and explicit freeze then create a bounded run', async ({
   page,
 }) => {
-  const state = await installTestApi(page, { evaluator: true })
+  const state = await installTestApi(page, { admin: true })
   await page.goto('/evaluations/datasets/data-1/versions/1')
   await expect(page.getByRole('button', { name: '保存草稿' })).toHaveCount(0)
   await page.getByRole('button', { name: '创建新版本' }).click()
@@ -78,7 +78,7 @@ test('comparison presents percentage points, intervals and an explicit explorato
 test('evaluation sources and original spans remain separate from production documents', async ({
   page,
 }) => {
-  const state = await installTestApi(page, { evaluator: true })
+  const state = await installTestApi(page, { admin: true })
   await page.goto('/evaluations/sources')
   await page.getByRole('button', { name: '查看原文与来源标识' }).click()
   await expect(page.getByLabel('可登记的来源 JSON')).toContainText('original-hash')
@@ -105,6 +105,20 @@ test('evaluation sources and original spans remain separate from production docu
   await expect.poll(() => state.datasets[0].samples[0].gold_evidence_groups.length).toBe(1)
 })
 
+test('evaluators keep history and review access without system execution controls', async ({ page }) => {
+  const state = await installTestApi(page, { evaluator: true })
+  await page.goto('/evaluations/runs')
+  await expect(page.getByRole('button', { name: '创建运行', exact: true })).toBeDisabled()
+  await expect(page.getByText(/创建或恢复使用系统模型的评测运行需要管理员权限/)).toBeVisible()
+  state.runs[0].status = 'cancelled'
+  await page.goto('/evaluations/runs/run-1')
+  await expect(page.getByRole('button', { name: '恢复运行' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '授权导出' })).toBeVisible()
+  await page.goto('/evaluations/sources')
+  await expect(page.getByLabel('选择评测资料文件')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '查看原文与来源标识' })).toBeVisible()
+})
+
 test('revoked export displays an error without downloading a response body', async ({ page }) => {
   await installTestApi(page, { evaluator: true })
   await page.route('**/api/v1/eval/runs/run-1/export?*', (route) =>
@@ -125,7 +139,7 @@ test('revoked export displays an error without downloading a response body', asy
 test('authorized feedback becomes a draft candidate after review and preparation survives reload', async ({
   page,
 }) => {
-  await installTestApi(page, { evaluator: true })
+  await installTestApi(page, { admin: true })
   let feedback: FeedbackView = {
     feedback_id: 'feedback-1',
     quiz_id: 'quiz-1',

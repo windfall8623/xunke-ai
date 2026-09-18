@@ -58,6 +58,9 @@ async def test_feedback_is_owned_and_explicit_consent_is_required_for_promotion(
     )
     reviewed = await approve(api, feedback)
     assert reviewed["revision"] == 1
+    await execute(
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
+    )
     response = await api.post(
         f"/api/v1/eval/feedback/{feedback['feedback_id']}/promote",
         json={
@@ -98,6 +101,12 @@ async def test_feedback_promotes_a_new_draft_version_without_changing_frozen_gol
         "question_count": 3,
     }
     endpoint = f"/api/v1/eval/feedback/{feedback['feedback_id']}/promote"
+    denied = await api.post(endpoint, json=payload)
+    assert denied.status_code == 403
+    assert denied.json()["error_code"] == "system_model_admin_required"
+    await execute(
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
+    )
     promoted = await api.post(endpoint, json=payload)
     assert promoted.status_code == 202, promoted.text
     result = promoted.json()["data"]
@@ -145,10 +154,10 @@ async def test_concurrent_promotion_replays_the_same_committed_draft(
 
     api, session, quiz_id = saved_quiz
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     feedback = await approve(api, await submit(api, quiz_id))
-    actor = ActorContext(owner_id=session["user"]["id"], role="evaluator")
+    actor = ActorContext(owner_id=session["user"]["id"], role="admin")
     body = FeedbackPromote(
         expected_revision=1,
         name="Concurrent candidate",
@@ -199,7 +208,7 @@ async def test_feedback_source_copy_and_revocation_are_real_and_isolated(
 
     api, session = learner
     await execute(
-        "UPDATE users SET role='evaluator' WHERE id=%s", (session["user"]["id"],)
+        "UPDATE users SET role='admin' WHERE id=%s", (session["user"]["id"],)
     )
     platform_settings.dashscope_embedding_model = "fixture-vector-v1"
     platform_settings.embedding_dimensions = 3

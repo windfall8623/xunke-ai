@@ -347,7 +347,7 @@ async def execute_cases(manifest, samples, dataset_root, workspace, *, progress=
     config = PipelineConfig(
         retriever="bm25", parent_expansion=False, require_semantic_validation=True
     )
-    actor = ActorContext(owner_id=OWNER, roles=["evaluator"])
+    actor = ActorContext(owner_id=OWNER, roles=["admin"])
     needed = {ref["doc_id"] for sample in samples for ref in sample["source_refs"]}
     source_map = {
         source["doc_id"]: source

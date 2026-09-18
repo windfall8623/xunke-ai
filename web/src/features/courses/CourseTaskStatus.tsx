@@ -1,5 +1,5 @@
 import { CircleStop, RefreshCw } from 'lucide-react'
-import { ErrorNotice, Loading } from '../../components/ui'
+import { ErrorNotice, LlmSettingsLink, Loading } from '../../components/ui'
 import {
   courseErrorMessage,
   courseTaskErrorMessage,
@@ -53,6 +53,7 @@ export function CourseTaskStatus({
               ? courseTaskErrorMessage(task)
               : '正在读取已保存的内容…'}
       </p>
+      {task.status === 'failed' && <LlmSettingsLink code={task.error_code} />}
       {settling && <p className="tiny muted">任务已结束，记录同步中</p>}
       <ErrorNotice
         error={query.error ? courseErrorMessage(query.error) : null}
